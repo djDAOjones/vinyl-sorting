@@ -21,6 +21,7 @@
  *   node tools/photo-import.mjs <reply.txt> [more-replies.txt ...]
  *                               [--ids data/photo-packs/row-ids.csv]
  *                               [--out data/photo-extract.json]
+ *                               [--truth data/label-photos/ground-truth.csv]
  *                               [--model "the chat you used"]
  */
 
@@ -31,7 +32,7 @@ import { parseChatReply } from './lib/photo-fields.mjs';
 const argv = process.argv.slice(2);
 const argOf = (n, d) => { const i = argv.indexOf(n); return i >= 0 && argv[i + 1] ? argv[i + 1] : d; };
 const flagged = new Set();
-for (const n of ['--ids', '--out', '--model']) {
+for (const n of ['--ids', '--out', '--truth', '--model']) {
   const i = argv.indexOf(n);
   if (i >= 0) { flagged.add(i); flagged.add(i + 1); }
 }
@@ -39,6 +40,7 @@ const replies = argv.filter((_, i) => !flagged.has(i));
 
 const idsPath = argOf('--ids', 'data/photo-packs/row-ids.csv');
 const outPath = argOf('--out', 'data/photo-extract.json');
+const truthPath = argOf('--truth', 'data/label-photos/ground-truth.csv');
 const model = argOf('--model', 'unknown chat');
 
 if (!replies.length) {
@@ -52,6 +54,26 @@ if (!existsSync(idsPath)) {
 }
 
 const expectedIds = readCsv(readFileSync(idsPath, 'utf8')).map((r) => r.row_id).filter(Boolean);
+
+/**
+ * Which rows already had a typed answer BEFORE this reading arrived.
+ *
+ * A reader with access to this repository can open the ground truth
+ * whatever the prompt asks, so the prompt cannot be the guard. This is:
+ * a reading of a row whose answer already existed is not an independent
+ * measurement, and the scorer refuses to count it as one. Looking
+ * therefore cannot manufacture a pass — it can only waste a photograph.
+ *
+ * A row present but entirely blank does not count: a seeded skeleton is
+ * not an answer, and treating it as one would condemn every row before
+ * anybody typed anything.
+ */
+const VALUE_COLUMNS = ['catno_raw', 'label_raw', 'name_raw', 'title_raw', 'year_raw', 'decoy_numbers'];
+const answered = new Set(
+  (existsSync(truthPath) ? readCsv(readFileSync(truthPath, 'utf8')) : [])
+    .filter((r) => VALUE_COLUMNS.some((c) => (r[c] ?? '').trim() !== ''))
+    .map((r) => r.row_id)
+    .filter(Boolean));
 
 const run = existsSync(outPath)
   ? JSON.parse(readFileSync(outPath, 'utf8'))
@@ -72,6 +94,12 @@ for (const file of replies) {
     continue;
   }
   const got = Object.keys(parsed.results);
+  for (const [id, result] of Object.entries(parsed.results)) {
+    // Stamped at import, never recomputed later: by the time anyone
+    // scores this, the ground truth will exist for every row, and the
+    // only moment this is knowable is now.
+    result.truthPreexisting = answered.has(id);
+  }
   Object.assign(run.results, parsed.results);
   imported += got.length;
   console.log(`${file}: ${got.length} row(s) — ${got.join(', ') || 'none'}`);
@@ -92,6 +120,15 @@ console.log(`\n${imported} row(s) imported this run; ${Object.keys(run.results).
 if (stillMissing.length) {
   console.log(`\nNo reading yet for ${stillMissing.length}: ${stillMissing.join(', ')}`);
   console.log('Re-upload those images and import the reply — nothing already imported is lost.');
+}
+
+const compromised = Object.entries(run.results)
+  .filter(([, r]) => r.truthPreexisting).map(([id]) => id);
+if (compromised.length) {
+  console.log(`\n${compromised.length} row(s) already had a typed answer when this reading`);
+  console.log(`arrived: ${compromised.join(', ')}`);
+  console.log('They are recorded, but the scorer will not count them as an');
+  console.log('independent measurement — the reader could have read the answer.');
 }
 
 if (problems.length) {

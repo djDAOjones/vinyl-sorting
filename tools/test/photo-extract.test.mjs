@@ -303,9 +303,14 @@ test('the blindness clause survives editing and reaches every pack', () => {
   // In an agent session these words are the whole guard — nothing
   // mechanical can prove a context never opened a file. Same shape as
   // the no-inference test, and for the same reason.
-  assert.match(BLIND_READ, /READ NOTHING OUTSIDE THIS DIRECTORY/);
+  assert.match(BLIND_READ, /DO NOT LOOK UP THE ANSWER/);
   assert.match(BLIND_READ, /ground-truth\.csv/);
   assert.match(BLIND_READ, /answer sheet/);
+  // A reader with repo access can open the file whatever this says, so
+  // the words must not be the only guard — and must say they are not.
+  assert.match(BLIND_READ, /photo-extract\.json/, 'earlier readings are named too');
+  assert.match(BLIND_READ, /asked of you rather than enforced/);
+  assert.match(BLIND_READ, /non-independent measurement/);
   assert.ok(packInstructions(['A'], 'pack-01', 'r.txt').includes(BLIND_READ));
 });
 
@@ -385,6 +390,70 @@ test('import then score, over a reply that lost a row on the way back', () => {
   assert.match(report, /PASSES/, 'one refusal, nothing wrong');
   assert.match(report, /refused: \*\*1\*\*/);
   assert.match(report, /typed but never read back: B/, 'the gap is named, not omitted');
+});
+
+test('a reading taken after the answer was typed cannot earn a pass', () => {
+  // The reader has repository access, so it can open ground-truth.csv
+  // however firmly the prompt asks it not to. Independence therefore
+  // cannot be assumed — it is recorded at import, when it is the only
+  // moment anyone can still tell.
+  const dir = scratch();
+  writeFileSync(join(dir, 'row-ids.csv'), 'row_id,original_file\nA,a.jpg\nB,b.jpg\n');
+  // A is already answered; B is a blank skeleton row, which is not an
+  // answer and must not condemn B.
+  writeFileSync(join(dir, 'truth.csv'),
+    'row_id,catno_raw,label_raw,name_raw,title_raw,year_raw,decoy_numbers\n'
+    + 'A,SXL 6529,Decca,Britten,Serenade,1972,ZAL-13045\n'
+    + 'B,,,,,,\n');
+  writeFileSync(join(dir, 'reply.txt'), REPLY([
+    { row_id: 'A', catno_raw: 'SXL 6529', label_raw: 'Decca', name_raw: 'Britten',
+      title_raw: 'Serenade', year_raw: '1972' },
+    { row_id: 'B', catno_raw: 'ASD 2532', label_raw: 'HMV', name_raw: 'Elgar',
+      title_raw: 'Cello Concerto', year_raw: '1965' },
+  ]));
+
+  const imported = execFileSync(process.execPath, ['tools/photo-import.mjs', join(dir, 'reply.txt'),
+    '--ids', join(dir, 'row-ids.csv'), '--truth', join(dir, 'truth.csv'),
+    '--out', join(dir, 'extract.json')], { encoding: 'utf8' });
+  assert.match(imported, /already had a typed answer/);
+  assert.match(imported, /arrived: A$/m, 'only A — a blank row is not an answer');
+
+  const stamped = JSON.parse(readFileSync(join(dir, 'extract.json'), 'utf8'));
+  assert.equal(stamped.results.A.truthPreexisting, true);
+  assert.equal(stamped.results.B.truthPreexisting, false);
+
+  // Now both are typed, as they would be by scoring time.
+  writeFileSync(join(dir, 'truth.csv'),
+    'row_id,catno_raw,label_raw,name_raw,title_raw,year_raw,decoy_numbers\n'
+    + 'A,SXL 6529,Decca,Britten,Serenade,1972,ZAL-13045\n'
+    + 'B,ASD 2532,HMV,Elgar,Cello Concerto,1965,XEX 1234\n');
+  const report = execFileSync(process.execPath, ['tools/photo-score.mjs',
+    '--extract', join(dir, 'extract.json'), '--truth', join(dir, 'truth.csv'),
+    '--out', join(dir, 'score.md')], { encoding: 'utf8' });
+
+  assert.match(report, /over 1 independently-read label photo/, 'A is not counted');
+  assert.match(report, /Held out — the answer existed before the reading/);
+  assert.match(report, /^- `A`$/m);
+});
+
+test('a run where every row was read after its answer scores nothing at all', () => {
+  // The degenerate case: if looking still produced a report, the guard
+  // would be decoration. It must refuse outright.
+  const dir = scratch();
+  writeFileSync(join(dir, 'row-ids.csv'), 'row_id,original_file\nA,a.jpg\n');
+  writeFileSync(join(dir, 'truth.csv'),
+    'row_id,catno_raw,label_raw,name_raw,title_raw,year_raw,decoy_numbers\nA,SXL 6529,Decca,B,S,1972,Z\n');
+  writeFileSync(join(dir, 'reply.txt'), REPLY([
+    { row_id: 'A', catno_raw: 'SXL 6529', label_raw: 'Decca', name_raw: 'B', title_raw: 'S', year_raw: '1972' },
+  ]));
+  execFileSync(process.execPath, ['tools/photo-import.mjs', join(dir, 'reply.txt'),
+    '--ids', join(dir, 'row-ids.csv'), '--truth', join(dir, 'truth.csv'),
+    '--out', join(dir, 'extract.json')], { encoding: 'utf8' });
+
+  assert.throws(() => execFileSync(process.execPath, ['tools/photo-score.mjs',
+    '--extract', join(dir, 'extract.json'), '--truth', join(dir, 'truth.csv'),
+    '--out', join(dir, 'score.md')], { encoding: 'utf8', stdio: 'pipe' }),
+  /Command failed/, 'a perfect-looking run of looked-up answers still scores nothing');
 });
 
 test('a reply naming an id nobody sent exits non-zero, so a bad round trip cannot be scored quietly', () => {

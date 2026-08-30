@@ -146,16 +146,23 @@ export function chatPrompt(rowIds) {
  * mechanical can prove a context never saw a file.
  */
 export const BLIND_READ = [
-  'READ NOTHING OUTSIDE THIS DIRECTORY.',
+  'DO NOT LOOK UP THE ANSWER.',
   '',
-  'Everything you need is here. In particular, do not open',
-  '`data/label-photos/ground-truth.csv` — it is what a person typed off',
-  'these same labels, and it is the answer sheet for this exercise. A',
-  'reading produced by a session that has seen it measures nothing.',
+  'If you can read this repository, you can also read',
+  '`data/label-photos/ground-truth.csv`. That file is what a person',
+  'typed off these same labels — it is the answer sheet, and a reading',
+  'produced with it in context measures nothing at all.',
   '',
-  'If that file is already in your context, stop now and say so plainly',
-  'rather than answering. A fresh session costs minutes; a contaminated',
-  'run costs the entire question this spike exists to settle.',
+  'Do not open it. Do not grep for a catalogue number. Do not read',
+  '`data/photo-extract.json`, `data/photo-score.md`, or any earlier',
+  'reply file: those carry previous readings of these same photographs.',
+  '',
+  'This is asked of you rather than enforced, so the pipeline does not',
+  'rely on it: every import records whether an answer already existed',
+  'for that row, and any row whose truth predates its reading is',
+  'reported as a non-independent measurement rather than counted as a',
+  'pass. Looking does not fake a good result; it only wastes the',
+  'photograph.',
 ].join('\n');
 
 /**

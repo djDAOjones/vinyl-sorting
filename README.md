@@ -106,9 +106,14 @@ Point a session on this machine at it:
 > Read `data/photo-packs/pack-01/READ-THIS-FIRST.md` and do what it says.
 
 That file carries the task, the ids and the destination, so there is
-nothing to paste beside it. It must be a session that has never seen
-`data/label-photos/ground-truth.csv` — that is the answer sheet, and a
-reading taken with it in context measures nothing.
+nothing to paste beside it.
+
+**Photograph, read, and only then type what the label says.** A reader
+with repository access can open `ground-truth.csv` whatever the prompt
+asks, so the order is the guard rather than the promise: the import
+records whether an answer already existed for each row, and the scorer
+holds those rows out of the bar and names them. Looking it up cannot
+produce a pass — only a wasted photograph.
 
 The zip is the browser fallback: unzip it, drag the images in, paste
 `PROMPT.txt`. Uploading the zip whole does not work on claude.ai, which

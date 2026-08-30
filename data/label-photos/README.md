@@ -77,14 +77,24 @@ there is nothing to paste alongside it. No upload, no dragging, and no
 per-message image cap — the batch size only ever costs a browser
 upload.
 
-**It must be a session that has never seen `ground-truth.csv`.** That
-file is two directories away on the same disk, and it is the answer
-sheet. A reading produced with it in context measures nothing — the
-same fault as verifying Discogs with Discogs, which this project has
-already made twice and caught twice. `READ-THIS-FIRST.md` says so in
-its own words, and a test asserts those words survive editing, but
-nothing mechanical can prove a context never opened a file. Starting a
-fresh session is the guard.
+### The order matters more than the promise
+
+**Photograph, read, and only then type what the label says.**
+
+A reader with access to this repository can open `ground-truth.csv`
+however firmly the prompt asks it not to. So the prompt is not the
+guard — the ordering is, and it is enforced rather than requested:
+
+- `photo-import.mjs` records, for every row, whether an answer already
+  existed at the moment the reading arrived. That is the only moment it
+  is knowable; by scoring time everything is typed.
+- `photo-score.mjs` holds those rows out of the bar entirely and names
+  them under "Held out". A run in which every row was read after its
+  answer was typed scores nothing and exits non-zero.
+
+So looking it up cannot manufacture a pass. It can only waste the
+photograph. `READ-THIS-FIRST.md` still asks, and says plainly that it
+is asking rather than enforcing.
 
 ### The browser path
 
