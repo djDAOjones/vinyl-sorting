@@ -13,10 +13,11 @@
 - [ ] **M2-FIRST-RUN Run the matcher over all 446 and clear the queue
   once** — The operation, not the code — deploy, let the cron matcher work
   through all 446 rows, then clear the review queue by keyboard.
-- [ ] **M2-DISCOGS-PACING Tune Discogs pacing — 7 of 12 queries still
+- [~] **M2-DISCOGS-PACING Tune Discogs pacing — 7 of 12 queries still
   fail in the Worker** (2026-08-30) — Spacing requests 2s apart made the
-  deployed matcher work, but a majority of queries still fail, which costs
-  recall; find the rate that holds from Cloudflare's shared egress.
+  deployed matcher work, but a majority of queries still fail, costing
+  recall; the gap is now tunable without a deploy and every run records
+  its failures, so the remaining work is measuring rather than building.
 
 ### Next milestone
 

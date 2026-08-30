@@ -61,3 +61,21 @@ capture screen is for.
 | 18 | `6527 118` | Messiah Ausschnitte | 5 | margin 0 < 25 over the runner-up |
 
 Clear it at `/review.html`: `1`–`5` choose, `N` none, `S` skip, `B` back.
+
+## Pacing — how many queries are being refused
+
+Every failed rung is lost recall: the best match may have been in one
+of them. This is the number to watch when widening the Discogs gap,
+which is tunable without a deploy —
+`wrangler kv key put --binding=CACHE rl:discogs:min-interval 3000`.
+The override may only widen the gap, never narrow it, and the batch
+size follows it so a tick stays the same length.
+
+| Measure | Value |
+|---|---|
+| Runs with counts recorded | 0 of 446 |
+| Queries run | 0 |
+| Queries failed | 0 (—) |
+| Rows with at least one failed query | 0 |
+
+446 run(s) predate the counts and are excluded rather than counted as clean — re-verify to bring them in.

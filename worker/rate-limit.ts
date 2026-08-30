@@ -68,6 +68,21 @@ export interface Decision {
 const lastKey = (upstream: string) => `rl:${upstream}:last`;
 
 /**
+ * Key holding a tuning override for the minimum gap, in milliseconds.
+ *
+ * Exists so the pacing can be tuned WITHOUT A DEPLOY — set it with
+ * `wrangler kv key put` and the next tick picks it up. Finding the
+ * interval that holds from Cloudflare's shared egress is a
+ * measure-and-adjust loop (M2-DISCOGS-PACING), and a loop whose every
+ * step costs a deploy does not get run.
+ */
+export const minIntervalKey = (upstream: string) => `rl:${upstream}:min-interval`;
+
+/** Nothing may sit longer than this between requests; a fat-fingered
+ *  override should slow the matcher, never wedge it for an hour. */
+const MAX_MIN_INTERVAL_MS = 60_000;
+
+/**
  * Fixed-window counter. Chosen over a sliding log because the state is
  * one integer per window rather than a list of timestamps, which is
  * what makes it cheap enough to share across isolates.
@@ -84,17 +99,41 @@ export class RateLimiter {
     this.#now = now;
   }
 
+  /**
+   * The gap actually in force: the shipped budget, or a stored override
+   * that WIDENS it.
+   *
+   * Widen-only, deliberately. The override exists to slow the matcher
+   * down while the safe rate is being found; letting it narrow the gap
+   * would mean one bad KV value could switch off the spacing that
+   * stopped Discogs refusing us — a config typo turning into an
+   * account-level throttle. Anything unparseable, negative, narrower
+   * than the shipped default or wider than the cap is ignored in favour
+   * of the default, because failing closed here costs only recall
+   * whereas failing open costs the token.
+   */
+  async effectiveMinInterval(upstream: keyof typeof BUDGETS): Promise<number> {
+    const floor = BUDGETS[upstream].minIntervalMs;
+    const raw = await this.#store.get(minIntervalKey(upstream));
+    if (raw === null) return floor;
+    const wanted = Number(raw);
+    if (!Number.isFinite(wanted)) return floor;
+    if (wanted < floor || wanted > MAX_MIN_INTERVAL_MS) return floor;
+    return wanted;
+  }
+
   async take(upstream: keyof typeof BUDGETS): Promise<Decision> {
     const budget = BUDGETS[upstream];
     const t = this.#now();
+    const minInterval = await this.effectiveMinInterval(upstream);
 
     // Spacing first. Without it the window budget is spent as a burst,
     // which is the shape of request that gets refused however modest
     // the per-minute total.
     const last = Number((await this.#store.get(lastKey(upstream))) ?? 0);
     const since = t - last;
-    if (last && since < budget.minIntervalMs) {
-      return { allowed: false, retryAfterMs: budget.minIntervalMs - since, remaining: -1 };
+    if (last && since < minInterval) {
+      return { allowed: false, retryAfterMs: minInterval - since, remaining: -1 };
     }
 
     const windowStart = t - (t % budget.windowMs);
@@ -108,7 +147,7 @@ export class RateLimiter {
       // Outlive the window so a late read cannot resurrect a spent one.
       expirationTtl: ttl(budget.windowMs * 2),
     });
-    await this.#store.put(lastKey(upstream), String(t), { expirationTtl: ttl(budget.minIntervalMs * 4) });
+    await this.#store.put(lastKey(upstream), String(t), { expirationTtl: ttl(minInterval * 4) });
     return { allowed: true, retryAfterMs: 0, remaining: budget.limit - used - 1 };
   }
 }

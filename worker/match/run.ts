@@ -154,7 +154,16 @@ export async function persistRun(
      VALUES (?, ?, ?, ?) RETURNING id`,
   ).bind(
     row.itemId, state,
-    JSON.stringify({ reason: result.outcome.reason, queries: result.queries }),
+    // queriesRun/queryErrors ride in the existing JSON rather than new
+    // columns: M2-DISCOGS-PACING has to measure failures PER ROW to
+    // pick an interval, and match-report already reads this column
+    // with json_extract. No migration, same evidence.
+    JSON.stringify({
+      reason: result.outcome.reason,
+      queries: result.queries,
+      queriesRun: result.outcome.queriesRun,
+      queryErrors: result.outcome.queryErrors,
+    }),
     releaseId,
   ).first<{ id: number }>();
   if (!run) throw new Error('match_run insert returned no id');

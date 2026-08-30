@@ -255,6 +255,43 @@ export const WRITE_BUDGET_PER_TICK = 200;
  * is the difference between a test suite that takes a second and one
  * that spends 95 of them genuinely waiting out the Discogs spacing.
  */
+/**
+ * A row costs about five Discogs queries — the ladder stops as soon as
+ * scored candidates exist, so this is the observed average, not the
+ * worst case.
+ */
+export const QUERIES_PER_ROW = 5;
+
+/**
+ * Wall-clock a tick may spend waiting on the Discogs spacing.
+ *
+ * 40s of a five-minute tick, which is exactly what four rows at the
+ * current 2s gap already cost — so at today's pacing this changes
+ * nothing. It exists so that WIDENING the gap narrows the batch
+ * automatically: at 4s a tick takes two rows, not four, and the
+ * invocation stays the same length instead of quietly doubling.
+ * Tuning the interval without this would silently retune the tick.
+ */
+export const TICK_WORK_BUDGET_MS = 40_000;
+
+/** How often the cron fires. One row must always fit inside this. */
+export const CRON_PERIOD_MS = 300_000;
+
+/**
+ * Rows per tick at a given gap.
+ *
+ * Never zero, and that floor deliberately outranks the soft budget: at
+ * gaps beyond 8s a single row costs more than TICK_WORK_BUDGET_MS, and
+ * a tick that rounded down to no rows would stall the matcher for good
+ * — worse than a long tick. Waiting is not CPU, so a long tick costs
+ * nothing against cpu_ms; it only has to finish inside CRON_PERIOD_MS,
+ * which is what caps the override at 60s (5 queries x 60s = one full
+ * period, the point past which a row could not complete at all).
+ */
+export const batchSizeFor = (minIntervalMs: number): number => Math.max(
+  1, Math.floor(TICK_WORK_BUDGET_MS / (QUERIES_PER_ROW * Math.max(1, minIntervalMs))),
+);
+
 export interface MatchBatchOptions {
   batchSize?: number;
   writeBudget?: number;
@@ -266,9 +303,7 @@ export async function runMatchBatch(
   env: Env,
   opts: MatchBatchOptions = {},
 ): Promise<{ processed: number; rowsWritten: number; stoppedShort: boolean }> {
-  const {
-    batchSize = 4, writeBudget = WRITE_BUDGET_PER_TICK, now, sleep,
-  } = opts;
+  const { batchSize, writeBudget = WRITE_BUDGET_PER_TICK, now, sleep } = opts;
   if (!env.DISCOGS_TOKEN) {
     console.warn('match: DISCOGS_TOKEN is not set; nothing to do');
     return { processed: 0, rowsWritten: 0, stoppedShort: false };
@@ -277,13 +312,16 @@ export async function runMatchBatch(
     get: (k) => env.CACHE.get(k),
     put: (k, v, o) => env.CACHE.put(k, v, o),
   }, now);
+  // Derived from the gap in force rather than fixed, so tuning the
+  // pacing cannot silently change how long an invocation runs.
+  const rowsThisTick = batchSize ?? batchSizeFor(await limiter.effectiveMinInterval('discogs'));
   // fetchImpl left to the client's own default ON PURPOSE: naming
   // fetch here would put an outbound call in a second file and break
   // the invariant that every upstream request goes through the one
   // rate-limited client. Only the clock is injected.
   const client = new DiscogsClient(env.DISCOGS_TOKEN, limiter, undefined, sleep);
 
-  const rows = await pendingRows(env, batchSize);
+  const rows = await pendingRows(env, rowsThisTick);
   let rowsWritten = 0;
   let processed = 0;
   let stoppedShort = false;

@@ -55,6 +55,24 @@ const queueSample = all(`
     FROM match_run m LEFT JOIN capture c ON c.item_id = m.item_id
    WHERE m.state = 'needs-review' ORDER BY m.item_id LIMIT 12`);
 
+/**
+ * Query failures per row — the measurement M2-DISCOGS-PACING needs to
+ * pick an interval instead of guessing at one. Older runs predate the
+ * counts and report NULL; they are counted separately rather than as
+ * zero failures, because "not recorded" and "none failed" are the two
+ * answers it would be worst to confuse here.
+ */
+const pacing = one(`
+  SELECT COUNT(*)                                                    AS runs,
+         SUM(json_extract(queries_json, '$.queriesRun')  IS NULL)    AS unrecorded,
+         SUM(COALESCE(json_extract(queries_json, '$.queriesRun'), 0)) AS ran,
+         SUM(COALESCE(json_extract(queries_json, '$.queryErrors'), 0)) AS failed,
+         SUM(COALESCE(json_extract(queries_json, '$.queryErrors'), 0) > 0) AS rowsWithFailures
+    FROM match_run`);
+const recorded = Number(pacing.runs) - Number(pacing.unrecorded ?? 0);
+const failRate = Number(pacing.ran) > 0
+  ? `${((Number(pacing.failed) / Number(pacing.ran)) * 100).toFixed(1)}%` : '—';
+
 const pct = (x) => `${((x / Math.max(matched, 1)) * 100).toFixed(1)}%`;
 
 writeFileSync('data/match-report.md', `# Matcher run
@@ -103,6 +121,27 @@ capture screen is for.
 ${queueSample.map((r) => `| ${r.item_id} | \`${r.catno_raw ?? '—'}\` | ${String(r.title_raw ?? '—').slice(0, 30)} | ${r.cands} | ${String(r.reason ?? '').slice(0, 60)} |`).join('\n')}
 
 Clear it at \`/review.html\`: \`1\`–\`5\` choose, \`N\` none, \`S\` skip, \`B\` back.
+
+## Pacing — how many queries are being refused
+
+Every failed rung is lost recall: the best match may have been in one
+of them. This is the number to watch when widening the Discogs gap,
+which is tunable without a deploy —
+\`wrangler kv key put --binding=CACHE rl:discogs:min-interval 3000\`.
+The override may only widen the gap, never narrow it, and the batch
+size follows it so a tick stays the same length.
+
+| Measure | Value |
+|---|---|
+| Runs with counts recorded | ${recorded} of ${pacing.runs} |
+| Queries run | ${pacing.ran} |
+| Queries failed | ${pacing.failed} (${failRate}) |
+| Rows with at least one failed query | ${pacing.rowsWithFailures} |
+
+${Number(pacing.unrecorded ?? 0) > 0
+    ? `${pacing.unrecorded} run(s) predate the counts and are excluded rather than \
+counted as clean — re-verify to bring them in.`
+    : 'Every run carries its counts.'}
 `);
 
 console.log(`match-report: ${matched}/${total} matched, ${eligible} eligible, ${errors} errored -> data/match-report.md`);
