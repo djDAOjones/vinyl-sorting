@@ -65,14 +65,22 @@ say "Creating R2 bucket (skipped if R2 is not enabled)"
 # Worker treats PHOTOS as optional, so this is a warning, not a stop.
 if w r2 bucket list >/dev/null 2>&1; then
   w r2 bucket create deep-groove-photos 2>&1 | tail -2 || echo "bucket already exists"
+  # Attach the binding ourselves rather than asking for a hand-edit of
+  # TOML. The block is commented out in the repo because a binding to a
+  # bucket that cannot exist yet fails the deploy outright; once R2
+  # answers, the only correct next step is to uncomment it, so do it.
   if grep -q '^# \[\[r2_buckets\]\]' wrangler.toml; then
-    echo "R2 is enabled — uncomment the [[r2_buckets]] block in wrangler.toml and re-run to attach it"
+    sed -i '' -e 's|^# \(\[\[r2_buckets\]\]\)$|\1|' \
+              -e 's|^# \(binding = "PHOTOS"\)$|\1|' \
+              -e 's|^# \(bucket_name = "deep-groove-photos"\)$|\1|' wrangler.toml
+    echo "R2 is enabled — attached the PHOTOS binding in wrangler.toml"
   fi
 else
-  echo "R2 is not enabled on this account. Everything else will deploy;"
-  echo "label photos stay queued on the phone until you enable R2 at"
-  echo "  https://dash.cloudflare.com  ->  R2"
-  echo "then uncomment [[r2_buckets]] in wrangler.toml and re-run this script."
+  echo "R2 is not enabled on this account. Everything else will deploy,"
+  echo "but LABEL PHOTOS WILL NEVER LEAVE THE PHONE — the upload returns"
+  echo "503 and the app keeps them queued. To fix it, once:"
+  echo "  1. https://dash.cloudflare.com  ->  R2  ->  enable it"
+  echo "  2. run this script again — it attaches the binding for you"
 fi
 
 say "Creating KV namespace (skipped if it exists)"

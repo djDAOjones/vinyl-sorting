@@ -18,6 +18,14 @@
   checks, and the scorer keeps refusals apart from wrong answers; twenty
   photographed labels are now the only thing left, because synthesising
   labels would score the model against its own output.
+- [~] **PHOTOS-TO-DESKTOP Pull captured photos and their row ids out for
+  a chat pack** [detail](records/PHOTOS-TO-DESKTOP.md) [blocked: R2 is not
+  enabled on the Cloudflare account, so no photo has ever reached the
+  bucket] (2026-08-30) — Built and gated — photos.pull reads (item_id,
+  r2_key) pairs from D1 and fetches each object by name, writing
+  data/label-photos plus a ground-truth starter taken from the values a
+  person typed into capture; it cannot run until R2 is switched on in the
+  dashboard, which is why no photograph has ever left a phone.
 - [ ] **M2-FIRST-RUN Run the matcher over all 446 and clear the queue
   once** — The operation, not the code — deploy, let the cron matcher work
   through all 446 rows, then clear the review queue by keyboard.
@@ -33,18 +41,12 @@
 
 ### Icebox
 
-<!-- Intent: M2–M5 — verify, resolve works, cluster and decide — committed and sequenced behind capture, each triggered by the milestone before it going green; plus the spikes and open questions those milestones need answered, which unblock on their own evidence rather than on a milestone. -->
+<!-- Intent: M3–M5 — resolve works, cluster and decide — committed and sequenced, each triggered by the milestone before it going green; plus the open questions those milestones need answered, which unblock on their own evidence rather than on a milestone. The photo path left here on 2026-08-30. -->
 
 - [ ] **OPEN-PASSAGE-SELECTION Should the app propose the comparison
   passage?** [sign-off] (2026-08-30) — Whether the app proposes the
   two-to-three-minute comparison passage from the track listing, or the
   listener always chooses it themselves.
-- [ ] **PHOTOS-TO-DESKTOP Pull captured photos and their row ids out for
-  a chat pack** [detail](records/PHOTOS-TO-DESKTOP.md) (2026-08-30) —
-  Photos taken on the phone land in R2 and nothing can read them back —
-  the Worker has a PUT and no GET — so the desktop needs a way to fetch
-  them with their item ids, without turning "no route reads a photo" into
-  "one route returns all of them" in an app with no sign-in.
 - [ ] **M3-WORKS-PERFORMANCES MusicBrainz works, performances and
   per-track completeness** — Resolve work and recording identity from
   MusicBrainz, resolve composers for the 131 Various/Unknown rows, and

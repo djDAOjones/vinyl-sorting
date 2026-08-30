@@ -1,55 +1,62 @@
 ---
 id: PHOTOS-TO-DESKTOP
 name: Pull captured photos and their row ids out for a chat pack
-summary: Photos taken on the phone land in R2 and nothing can read them back — the Worker has a PUT and no GET — so the desktop needs a way to fetch them with their item ids, without turning "no route reads a photo" into "one route returns all of them" in an app with no sign-in.
-status: open
+summary: Built and gated — photos.pull reads (item_id, r2_key) pairs from D1 and fetches each object by name, writing data/label-photos plus a ground-truth starter taken from the values a person typed into capture; it cannot run until R2 is switched on in the dashboard, which is why no photograph has ever left a phone.
+status: in-progress
 date: 2026-08-30
-milestone: icebox
-order: 5
-flags: detail
+milestone: current
+order: 4
+flags: detail, blocked
+blocked-on: R2 is not enabled on the Cloudflare account, so no photo has ever reached the bucket
 ---
 # Pull captured photos and their row ids out for a chat pack
 
 `tools/photo-pack.mjs` reads a local directory. Photos taken on the
-phone are not in a local directory; they are in R2, and the Worker
-exposes `PUT /api/photos/:key` and no GET at all. Today the HTTP
-surface can write a photograph and can never read one.
+phone are not in one; they belong in R2, and the Worker exposes
+`PUT /api/photos/:key` and no GET at all.
 
-## The obvious design is the wrong one
+## Built and green (2026-08-30)
 
-A zip-download route in the app is the shape this suggests, and it
-inverts the property above: "no route reads a photo" becomes "one route
-enumerates and returns all of them". In a v1 with **no sign-in**, that
-is the household's photographs behind a URL, and unlike the matcher —
-which runs from cron and has no caller — an export route exists to be
-called. It would want the auth conversation the 2026-08-30 decision
-deferred.
+`node tools/photos-pull.mjs` — one query, one fetch per object, no new
+route.
 
-## The design that costs nothing
+- **Pairs come from D1, never from a bucket listing.** `item_photo`
+  carries `(item_id, r2_key)`, which was the record's open question and
+  the schema answers it. A tool that enumerated R2 would be one step
+  from the export route this design exists to avoid.
+- **It is read-only against production**, and tests assert it: no
+  INSERT, UPDATE, DELETE, DROP, ALTER or CREATE, and `get` as the only
+  R2 verb. It runs with real credentials against `--remote`, so a stray
+  verb would be a production write rather than a failing test.
+- **The row ids are `item.id`** — what actually ties a reading back to
+  a record, and better than the filename stems the spike falls back to.
+- **Ground truth is generated, not retyped.** `capture` holds what a
+  human read off the label, which is the definition of ground truth
+  here, so the CSV is written from it with only `decoy_numbers` left
+  blank. Retyping those values would be transcribing them twice and
+  inviting a discrepancy. An existing file is never overwritten — the
+  decoys are the expensive half.
 
-Pull from the desktop, with credentials Joe already has from deploying.
-`item_photo` carries `(item_id, r2_key)`, so:
+## The obvious design is still the wrong one
 
-- `wrangler d1 execute` for the pairs,
-- `wrangler r2 object get` for each object,
-- write `data/label-photos/<item_id>.jpg` and a `row-ids.csv`.
+A zip-download route in the app inverts the property that keeps a
+sign-in-free v1 safe: "no route reads a photo" becomes "one route
+enumerates and returns all of them". Unlike the matcher, which runs
+from cron and has no caller, an export route exists to be called. A
+test now asserts the Worker still has a photo PUT and no photo GET.
 
-`photo-pack.mjs` then runs unchanged, and the row ids are `item.id` —
-which is exactly what ties a reading back to a record, and better than
-the filename stems the spike falls back to.
+## Why nothing has come through yet
 
-No new route, no new exposure, no auth conversation, and the M1/M2
-invariant about what the HTTP surface can reach survives intact.
+**R2 is not enabled on the account.** `[[r2_buckets]]` is commented out
+in `wrangler.toml` because a binding to a bucket that cannot exist
+fails the deploy, so the live Worker has no `PHOTOS` binding and every
+photo upload returns 503. The app does the right thing — it keeps them
+queued — but the consequence is that no photograph has ever left a
+phone, and the capture screen gives no sign of it.
 
-**To check first:** whether wrangler can enumerate and fetch R2 objects
-the way this assumes. If it cannot, the fallback is a route carrying a
-shared secret, and that is a smaller conversation than a public export.
+`tools/deploy.sh` now attaches the binding itself once R2 answers,
+rather than asking for a hand-edit of TOML, and says plainly what is
+lost while it is off.
 
-## On the zip itself
-
-Keep the zip as transport only — download, unzip on the desktop, drag
-the loose images into the chat. Whether ChatGPT's vision reads images
-out of an uploaded zip is genuinely unclear (its code interpreter can
-unzip; whether the extracted files reach the vision path is not
-documented either way), and no part of this should depend on the
-answer.
+**Done when** a photograph taken on the phone appears in
+`data/label-photos/` named by its item id.

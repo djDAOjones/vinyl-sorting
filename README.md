@@ -140,6 +140,31 @@ the measurement exists to inform.
 
 It needs ~20 photographed labels first — `data/label-photos/README.md`.
 
+### Getting the photos off the phone
+
+Photograph a crate through the app, then pull them down. No renaming:
+each file is named after its item id, which is what ties a reading back
+to a record.
+
+```bash
+node tools/photos-pull.mjs --limit 20
+```
+
+That reads `(item_id, r2_key)` pairs from D1, fetches each object by
+name, and writes `data/label-photos/` plus a `ground-truth.csv`
+pre-filled from the values you typed into capture — leaving only
+`decoy_numbers` to add by hand. It is read-only against production, and
+a test asserts it: no write verb, and `get` as the only R2 verb. It
+never enumerates the bucket, so no photo-reading route was added to the
+Worker, which is what keeps a sign-in-free v1 safe.
+
+**It returns nothing until R2 is switched on.** `[[r2_buckets]]` is
+commented out because a binding to a bucket that cannot exist fails the
+deploy, so photo uploads currently return 503 and the app keeps them
+queued on the phone for ever. Enable R2 once at
+<https://dash.cloudflare.com> → R2, then re-run `bash tools/deploy.sh`
+— it attaches the binding itself.
+
 ## Deploying — needs your Cloudflare account
 
 Everything that can be automated is. Two commands are yours because
