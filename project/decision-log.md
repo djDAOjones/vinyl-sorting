@@ -2,6 +2,50 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — M2-MATCHER: the gate works, and the audit nearly marked its own homework
+
+**Decision:** Ship the ported ladder with the three intended changes —
+MacRoman repair upstream, an input sanity check before any API call,
+and the corroboration gate (score >= 80, families >= 2, margin >= 25).
+Matching runs from a **cron trigger, not a route**, which is how "no
+sign-in" survives the arrival of a live token: there is no HTTP entry
+point to aim, and the query set is a pure function of stored capture
+values.
+
+**The audit had to be corrected before it measured anything.** The
+first run scored each claimed release against the captured `label` —
+but on those 277 rows the label came FROM Discogs, so the label family
+always fired and 276 of 277 looked corroborated. That is Discogs
+agreeing with itself. Re-run using only values whose recorded
+provenance is `legacy` or `shelf`, it reports **12 unsupported**, 4 of
+them labelled "Exact". The AGENTS.md rule — verification runs on what a
+human read, not on what a bad match wrote — turns out to apply to the
+verifier as much as to the data.
+
+**What the gate caught.** A conductor captured as "Kletski" matched to
+King Diamond's *Abigail II* on a colliding `2241-2`. `CFP 4016`, a
+Classics for Pleasure number, matched to a Fontana pop single and
+labelled "Exact". A 1938 Carnatic 78. A 2014 dance compilation. These
+are precisely the collisions the margin and family tests exist to
+refuse, and the old rule accepted them.
+
+**The brief's figure of 26 cannot be reproduced, and is not claimed.**
+It does not say which rows it meant or how they were identified, so
+there is nothing to compare against. 12 is what the gate measures on
+the evidence available. Reporting 26 would be fitting the number to the
+story.
+
+**Where risk remains:** 102 of the 265 supported rows carry no people
+evidence at all — catalogue number, title and format only — and 29 of
+those have no year either. A generic compilation title plus a colliding
+catalogue number clears 80 unaided, so that is where a wrong match is
+likeliest to be hiding.
+
+**Alternatives:** Weight the catalogue number higher so more rows
+auto-accept — rejected, that is the defect. Keep the label in the
+audit — rejected, it is circular and produced a flattering, meaningless
+result.
+
 ## 2026-08-30 — M1-CAPTURE-UI: the queue is the product, and it was verified in a browser
 
 **Decision:** A single-screen PWA. Every capture is written to

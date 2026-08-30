@@ -23,6 +23,30 @@ npm run dev     # the capture app on :5173, proxying /api
 npm run gate    # tsc --noEmit + the whole test suite
 ```
 
+Two screens: capture at `/`, the review queue at `/review.html`.
+`npm run api -- --demo` seeds a few review items so the queue has work
+in it.
+
+## Re-verify the existing matches
+
+Audits every row that already claims a Discogs release, asking whether
+the evidence actually supports the claim. Releases are cached, so a
+second run costs no API calls.
+
+```bash
+node tools/reverify.mjs
+```
+
+It scores **only values a person supplied**, judged by recorded
+provenance. That matters more than it sounds: on the 277 enriched rows
+the `label` column came from Discogs, so letting it corroborate a
+Discogs match compares Discogs with itself. A first run did exactly
+that and reported 1 unsupported out of 277 — a measurement of nothing.
+
+"Unsupported" means *not corroborated by independent human evidence*,
+which is not the same as *wrong*. Those rows go to the review queue,
+where a person decides.
+
 ## Rebuild the M0 dataset
 
 Reads the frozen archive, writes `data/`. The archive is read-only for
@@ -81,14 +105,21 @@ Deploy the Worker, then the built client:
 npx wrangler deploy && npm run build && npx wrangler pages deploy dist
 ```
 
-## One thing to know before M2
+## How no-sign-in stays safe now the matcher exists
 
-v1 has **no sign-in**, by your decision on 2026-08-30. That costs
-nothing today because capture never calls Discogs and the Worker makes
-no outbound request at all. It stops being free at M2, when the matcher
-starts issuing Discogs queries against your live token — `M2-MATCHER`
-carries the gate, with the option of keeping matching server-side as a
-queued job so "no sign-in" can stay true.
+v1 has **no sign-in**, by your decision on 2026-08-30. M2 gives the
+Worker a live Discogs token and an upstream to call, so the M1
+guarantee — no outbound request exists — no longer holds. What replaces
+it is stricter about what matters:
 
-Until then, deploy to the Pages subdomain rather than a guessable
-custom domain.
+- **The matcher runs from a cron trigger, not a route.** There is no
+  HTTP entry point to it, so no visitor can make it run or aim a query.
+  The query set is a pure function of stored capture values.
+- **Nothing served over HTTP can reach Discogs or the token.** A test
+  extracts the whole `createApp()` body and asserts it mentions neither
+  the token, the client, nor the batch runner.
+- **Every upstream call goes through one rate-limited client**, and a
+  test asserts that exactly one file in `worker/` makes an outbound
+  request.
+
+Deploy to the Pages subdomain rather than a guessable custom domain.
