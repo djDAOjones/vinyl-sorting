@@ -60,13 +60,42 @@ the run on a single occurrence.
 node tools/photo-pack.mjs
 ```
 
-Packs of 20, because that is the per-message image cap on claude.ai and
-other clients are lower. Each `data/photo-packs/pack-NN.zip` holds the
-images, a `PROMPT.txt` to paste above them, and a manifest.
+Packs of 10. Each pack is written **twice** — as a directory
+`data/photo-packs/pack-NN/` and as `pack-NN.zip` beside it — because
+there are two ways to get the reading done and they want different
+things. Both hold the images named after their row ids, a `PROMPT.txt`,
+a `READ-THIS-FIRST.md` and a manifest.
 
-Upload one pack's images to the chat, paste its `PROMPT.txt`, and save
-the reply to a text file — prose and code fences around the JSON are
-fine, the importer digs it out.
+### The cheap path — no upload
+
+Point a session on this machine at the pack directory:
+
+> Read `data/photo-packs/pack-01/READ-THIS-FIRST.md` and do what it says.
+
+That file carries the whole task and says where to write the answer, so
+there is nothing to paste alongside it. No upload, no dragging, and no
+per-message image cap — the batch size only ever costs a browser
+upload.
+
+**It must be a session that has never seen `ground-truth.csv`.** That
+file is two directories away on the same disk, and it is the answer
+sheet. A reading produced with it in context measures nothing — the
+same fault as verifying Discogs with Discogs, which this project has
+already made twice and caught twice. `READ-THIS-FIRST.md` says so in
+its own words, and a test asserts those words survive editing, but
+nothing mechanical can prove a context never opened a file. Starting a
+fresh session is the guard.
+
+### The browser path
+
+Unzip a pack, drag its images into the chat, paste `PROMPT.txt` above
+them, and save the reply to a text file. Prose and code fences around
+the JSON are fine — the importer digs it out.
+
+Do not upload the zip itself expecting it to be unpacked: claude.ai
+does not pass a zip's contents to the vision path, and whether
+ChatGPT's code interpreter hands extracted images to vision is
+documented nowhere. The zip is transport, not a shortcut.
 
 ```bash
 node tools/photo-import.mjs data/photo-packs/reply-01.txt
@@ -76,14 +105,19 @@ node tools/photo-import.mjs data/photo-packs/reply-01.txt
 node tools/photo-score.mjs
 ```
 
+Replies live in `data/photo-packs/` alongside the packs, and re-running
+`photo-pack.mjs` rebuilds the packs while leaving them alone — the cost
+of a reading was never the upload, it was doing the reading.
+
 Import is additive and repeatable: a reply covering rows you already
 imported overwrites just those, and anything still missing is named so
 you can re-upload only what is outstanding. An id that was never sent
 is refused and the import exits non-zero — a reply that lost alignment
 must not be scored as though it were data.
 
-Uploading a pack sends those photographs to whichever chat provider you
+The browser path sends those photographs to whichever chat provider you
 use, which is the one place this project's data leaves the household.
+The pack directory path sends them nowhere.
 The photos here are gitignored; `ground-truth.csv` is committed, because
 it is the evidence and it is what makes a re-run a comparison rather
 than a fresh guess.

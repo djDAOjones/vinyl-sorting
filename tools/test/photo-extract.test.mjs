@@ -14,13 +14,13 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, mkdtempSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, mkdtempSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
-  FIELD_SPEC, NO_INFERENCE, PHOTO_FIELDS,
-  chatPrompt, parseChatReply, scoreOne, trapSprung, summarise,
+  FIELD_SPEC, NO_INFERENCE, BLIND_READ, PHOTO_FIELDS,
+  chatPrompt, packInstructions, parseChatReply, scoreOne, trapSprung, summarise,
 } from '../lib/photo-fields.mjs';
 
 const TOOLS = ['tools/photo-pack.mjs', 'tools/photo-import.mjs', 'tools/photo-score.mjs', 'tools/lib/photo-fields.mjs'];
@@ -87,7 +87,7 @@ test('the prompt carries the ids in its text, not only in the filenames', () => 
   const p = chatPrompt(['DG-0001', 'DG-0002']);
   assert.match(p, /DG-0001/);
   assert.match(p, /DG-0002/);
-  assert.match(p, /2 photographs/);
+  assert.match(p, /Here are 2 photographs/);
   assert.match(p, /Report that id in `row_id`/);
 });
 
@@ -269,6 +269,83 @@ test('packing batches to the chat upload cap and names every image after its row
   const ids = readFileSync(join(dir, 'packs', 'row-ids.csv'), 'utf8');
   assert.match(ids, /^row_id,original_file$/m);
   assert.match(ids, /^a,a\.jpg$/m, 'the row id defaults to the filename stem');
+});
+
+test('a pack is a directory as well as a zip, and carries its own instructions', () => {
+  // The directory is the cheap path — a session reads it in place, so
+  // there is no upload, no drag and no per-message image cap. Deleting
+  // it after zipping would leave the expensive path as the only one.
+  const dir = scratch();
+  const photos = join(dir, 'photos');
+  makePhotos(photos, ['a.jpg', 'b.jpg']);
+
+  execFileSync(process.execPath, ['tools/photo-pack.mjs',
+    '--photos', photos, '--out', join(dir, 'packs')], { encoding: 'utf8' });
+
+  const pack = join(dir, 'packs', 'pack-01');
+  assert.ok(existsSync(pack), 'the pack directory survives zipping');
+  assert.ok(existsSync(join(pack, 'a.jpg')) && existsSync(join(pack, 'b.jpg')));
+  assert.ok(existsSync(join(pack, 'pack-01.zip')) === false, 'the zip sits beside the pack, not inside it');
+  assert.ok(existsSync(join(dir, 'packs', 'pack-01.zip')));
+
+  const instructions = readFileSync(join(pack, 'READ-THIS-FIRST.md'), 'utf8');
+  assert.match(instructions, /^# pack-01 — read these 2 record labels$/m);
+  assert.ok(instructions.includes(chatPrompt(['a', 'b'])),
+    'the task travels verbatim, so the two statements of it cannot drift');
+  assert.match(instructions, /reply-01\.txt/, 'and it says where the answer goes');
+
+  const listing = execFileSync('unzip', ['-Z1', join(dir, 'packs', 'pack-01.zip')], { encoding: 'utf8' });
+  assert.match(listing, /pack-01\/READ-THIS-FIRST\.md/, 'the zip carries them too');
+});
+
+test('the blindness clause survives editing and reaches every pack', () => {
+  // In an agent session these words are the whole guard — nothing
+  // mechanical can prove a context never opened a file. Same shape as
+  // the no-inference test, and for the same reason.
+  assert.match(BLIND_READ, /READ NOTHING OUTSIDE THIS DIRECTORY/);
+  assert.match(BLIND_READ, /ground-truth\.csv/);
+  assert.match(BLIND_READ, /answer sheet/);
+  assert.ok(packInstructions(['A'], 'pack-01', 'r.txt').includes(BLIND_READ));
+});
+
+test('no pack ever contains the ground truth that scores it', () => {
+  // The no-upload path is cheaper in every way except this one: the
+  // answer sheet now sits on the same disk as the photographs. A pack
+  // carrying it would be verifying Discogs with Discogs, third time.
+  const dir = scratch();
+  const photos = join(dir, 'photos');
+  makePhotos(photos, ['a.jpg']);
+  writeFileSync(join(photos, 'ground-truth.csv'), 'row_id,catno_raw\na,SXL 6529\n');
+
+  execFileSync(process.execPath, ['tools/photo-pack.mjs',
+    '--photos', photos, '--out', join(dir, 'packs')], { encoding: 'utf8' });
+
+  assert.ok(!readdirSync(join(dir, 'packs', 'pack-01')).some((f) => /ground-truth/i.test(f)),
+    'the pack directory is clean');
+  const listing = execFileSync('unzip', ['-Z1', join(dir, 'packs', 'pack-01.zip')], { encoding: 'utf8' });
+  assert.ok(!/ground-truth/i.test(listing), 'and so is the zip');
+});
+
+test('re-packing rebuilds the packs and keeps replies already collected', () => {
+  // The replies live in the pack directory because that is where the
+  // instructions send them. Re-packing used to wipe the directory
+  // wholesale, which would destroy readings whose cost was never the
+  // upload — it was doing the reading.
+  const dir = scratch();
+  const photos = join(dir, 'photos');
+  const packs = join(dir, 'packs');
+  makePhotos(photos, ['a.jpg']);
+
+  execFileSync(process.execPath, ['tools/photo-pack.mjs',
+    '--photos', photos, '--out', packs], { encoding: 'utf8' });
+  writeFileSync(join(packs, 'reply-01.txt'), REPLY([{ row_id: 'a', catno_raw: 'SXL 6529' }]));
+
+  makePhotos(photos, ['b.jpg']);
+  execFileSync(process.execPath, ['tools/photo-pack.mjs',
+    '--photos', photos, '--out', packs], { encoding: 'utf8' });
+
+  assert.ok(existsSync(join(packs, 'reply-01.txt')), 'the reading survived the re-pack');
+  assert.match(readFileSync(join(packs, 'row-ids.csv'), 'utf8'), /^b,b\.jpg$/m, 'and the new photo is packed');
 });
 
 test('packing refuses two photos that would share one row id', () => {

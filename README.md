@@ -75,11 +75,24 @@ Cloudflare Free plan and OPS-SPEND-GUARD's wall still holds.
 node tools/photo-pack.mjs
 ```
 
-That writes `data/photo-packs/pack-NN.zip`, batched to 20 images
-because that is the per-message cap on claude.ai and other clients are
-lower. Each zip holds the images named after their row ids, a
-`PROMPT.txt` to paste above them, and a manifest. Upload a pack, paste
-the prompt, save the reply as a text file, then:
+That writes each pack twice — a directory `data/photo-packs/pack-NN/`
+and a `pack-NN.zip` beside it — batched to 10 images, which is under
+every chat client's per-message cap. Both hold the images named after
+their row ids, a `READ-THIS-FIRST.md`, a `PROMPT.txt` and a manifest.
+
+**The cheap path is the directory, and it involves no upload at all.**
+Point a session on this machine at it:
+
+> Read `data/photo-packs/pack-01/READ-THIS-FIRST.md` and do what it says.
+
+That file carries the task, the ids and the destination, so there is
+nothing to paste beside it. It must be a session that has never seen
+`data/label-photos/ground-truth.csv` — that is the answer sheet, and a
+reading taken with it in context measures nothing.
+
+The zip is the browser fallback: unzip it, drag the images in, paste
+`PROMPT.txt`. Uploading the zip whole does not work on claude.ai, which
+never passes a zip's contents to the vision path. Either way, then:
 
 ```bash
 node tools/photo-import.mjs data/photo-packs/reply-01.txt

@@ -85,7 +85,10 @@ export const NO_INFERENCE = [
 ].join('\n');
 
 /**
- * The message to paste into the chat above the uploaded images.
+ * The statement of the task, on both paths: pasted into a browser chat
+ * above an upload, and embedded verbatim in the pack's own
+ * instructions where nothing is uploaded at all. It therefore says
+ * nothing about uploading.
  *
  * The id list is included in the text as well as in the filenames.
  * Some chat interfaces do not show a model the filename of an upload,
@@ -94,7 +97,7 @@ export const NO_INFERENCE = [
  */
 export function chatPrompt(rowIds) {
   return [
-    `I am uploading ${rowIds.length} photographs of vinyl record centre labels.`,
+    `Here are ${rowIds.length} photographs of vinyl record centre labels.`,
     'Read each one and return the printed information as JSON.',
     '',
     NO_INFERENCE,
@@ -117,11 +120,73 @@ export function chatPrompt(rowIds) {
     '',
     'Each image is named after its row id. Report that id in `row_id`, so',
     'a row can never be attributed to the wrong record. The ids in this',
-    'batch, in upload order, are:',
+    'batch, in order, are:',
     '',
     ...rowIds.map((id) => `  ${id}`),
     '',
     'Return the JSON array and nothing else.',
+  ].join('\n');
+}
+
+/**
+ * The clause that keeps the measurement honest when the reading happens
+ * in an agent session on this machine rather than in a browser chat.
+ *
+ * The no-upload path is cheaper in every way except one: a session
+ * reading photographs off this disk can also read the answer sheet off
+ * the same disk. `data/label-photos/ground-truth.csv` is what a person
+ * typed off these very labels, and a reading produced with it in
+ * context measures nothing at all — the same fault as verifying Discogs
+ * with Discogs, which this project has now made twice and caught twice.
+ *
+ * Its own constant because a test asserts it survives editing, and
+ * because in an agent session these words are the whole guard: nothing
+ * mechanical can prove a context never saw a file.
+ */
+export const BLIND_READ = [
+  'READ NOTHING OUTSIDE THIS DIRECTORY.',
+  '',
+  'Everything you need is here. In particular, do not open',
+  '`data/label-photos/ground-truth.csv` — it is what a person typed off',
+  'these same labels, and it is the answer sheet for this exercise. A',
+  'reading produced by a session that has seen it measures nothing.',
+  '',
+  'If that file is already in your context, stop now and say so plainly',
+  'rather than answering. A fresh session costs minutes; a contaminated',
+  'run costs the entire question this spike exists to settle.',
+].join('\n');
+
+/**
+ * The instruction file written at the root of every pack, so the pack
+ * can be handed over whole — a directory to point a session at, or a
+ * zip for a client that unpacks one — with nothing to paste alongside.
+ *
+ * It carries `chatPrompt` verbatim rather than paraphrasing it. Two
+ * statements of one contract drift, and the one that drifts is always
+ * the copy nobody tests.
+ */
+export function packInstructions(rowIds, packName, replyPath) {
+  return [
+    `# ${packName} — read these ${rowIds.length} record labels`,
+    '',
+    'You are looking at photographs of vinyl record centre labels. Each',
+    'image in this directory is named after its row id.',
+    '',
+    BLIND_READ,
+    '',
+    '## What to do',
+    '',
+    'Read every image in this directory, then write your JSON array to:',
+    '',
+    `    ${replyPath}`,
+    '',
+    'Prose and code fences around it are fine — the importer digs the',
+    'array out. What it will not do is guess which record an answer',
+    'belongs to, so every object needs its `row_id`.',
+    '',
+    '## The task',
+    '',
+    chatPrompt(rowIds),
   ].join('\n');
 }
 

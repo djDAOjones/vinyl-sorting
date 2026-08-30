@@ -8,8 +8,16 @@
 
 ### Current milestone
 
-<!-- Intent: M2 — the matcher and the review queue. Re-verify all 446 under a corroboration gate that treats a catalogue number as a lead, then clear the queue by keyboard. Promoted 2026-08-30 after M1 shipped. -->
+<!-- Intent: M2 and the photo path, side by side. M2's remaining work is all maintainer work — all 446 rows already have a match_run from the local runner, so what is left is a deploy and clearing the queue by keyboard. The photo path was promoted out of the icebox on 2026-08-30 because it is the buildable work, and because the brief's stated risk is building the app instead of cataloguing the records. -->
 
+- [~] **SPIKE-PHOTO-TO-FIELDS Can a label photograph populate the
+  capture fields?** [spike] [blocked: twenty photographed labels with
+  typed ground truth] (2026-08-30) — The round trip is built, tested and
+  in the gate — each pack is a directory a session reads in place with no
+  upload as well as a zip for browser chat, the reply imports under id
+  checks, and the scorer keeps refusals apart from wrong answers; twenty
+  photographed labels are now the only thing left, because synthesising
+  labels would score the model against its own output.
 - [ ] **M2-FIRST-RUN Run the matcher over all 446 and clear the queue
   once** — The operation, not the code — deploy, let the cron matcher work
   through all 446 rows, then clear the review queue by keyboard.
@@ -31,13 +39,6 @@
   passage?** [sign-off] (2026-08-30) — Whether the app proposes the
   two-to-three-minute comparison passage from the track listing, or the
   listener always chooses it themselves.
-- [~] **SPIKE-PHOTO-TO-FIELDS Can a label photograph populate the
-  capture fields?** [spike] [blocked: twenty photographed labels with
-  typed ground truth] (2026-08-30) — The round trip is built, tested and
-  in the gate — photos pack into chat-sized zips, the reply imports under
-  id checks, and the scorer keeps refusals apart from wrong answers;
-  twenty photographed labels are now the only thing left, because
-  synthesising labels would score the model against its own output.
 - [ ] **CAPTURE-BULK-PHOTOS Photograph a crate in one pass, one row per
   photo** [detail](records/CAPTURE-BULK-PHOTOS.md) (2026-08-30) — Capture
   takes one disc at a time, so walking a crate of twenty is twenty form
