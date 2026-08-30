@@ -176,7 +176,9 @@ export const BLIND_READ = [
  */
 export function packInstructions(rowIds, packName, replyPath) {
   return [
-    `# ${packName} — read these ${rowIds.length} record labels`,
+    rowIds.length === 1
+      ? `# ${packName} — read this record label`
+      : `# ${packName} — read these ${rowIds.length} record labels`,
     '',
     'You are looking at photographs of vinyl record centre labels. Each',
     'image in this directory is named after its row id.',
