@@ -25,12 +25,18 @@
 
 ### Icebox
 
-<!-- Intent: M2–M5 — verify, resolve works, cluster and decide. Committed and sequenced behind capture; trigger is the milestone before it going green. -->
+<!-- Intent: M2–M5 — verify, resolve works, cluster and decide — committed and sequenced behind capture, each triggered by the milestone before it going green; plus the spikes and open questions those milestones need answered, which unblock on their own evidence rather than on a milestone. -->
 
 - [ ] **OPEN-PASSAGE-SELECTION Should the app propose the comparison
   passage?** [sign-off] (2026-08-30) — Whether the app proposes the
   two-to-three-minute comparison passage from the track listing, or the
   listener always chooses it themselves.
+- [ ] **SPIKE-PHOTO-TO-FIELDS Can a label photograph populate the
+  capture fields?** [spike] (2026-08-30) — Measure whether reading the
+  stored label photo with a vision model yields usable leads for catno,
+  label, composer, title and year — the cost question is settled at
+  pennies and the provenance question is settled by the existing schema,
+  but accuracy cannot be measured until real labels are photographed.
 - [ ] **M3-WORKS-PERFORMANCES MusicBrainz works, performances and
   per-track completeness** — Resolve work and recording identity from
   MusicBrainz, resolve composers for the 131 Various/Unknown rows, and
