@@ -150,6 +150,19 @@ never passes a zip's contents to the vision path. Either way, then:
 node tools/photo-import.mjs data/photo-packs/reply-01.txt
 ```
 
+If the reading says photographs arrived turned, stand them up and read
+those rows again rather than re-photographing — the disc has been
+handled once already:
+
+```bash
+node tools/photo-rotate.mjs
+```
+
+It applies the `rotate_cw` degrees the reading reported, and is
+idempotent by ledger rather than by inspection: a corrected photograph
+is indistinguishable from one that was always upright, so nothing else
+could stop a second run turning it twice.
+
 ```bash
 node tools/photo-score.mjs
 ```

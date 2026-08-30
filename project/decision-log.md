@@ -2,6 +2,52 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-31 — PHOTO-ROTATION: the stream does not turn with the phone
+
+**Decision:** The camera stream is re-acquired whenever the phone
+turns, the preview switches from `cover` to `contain`, the reading
+reports `rotate_cw` in degrees rather than a word, and
+`tools/photo-rotate.mjs` stands already-taken photographs upright from
+that reading.
+
+**Rationale:** Yesterday's measurement asked whether photographs arrive
+rotated. Sixty real ones answered: yes, and intermittently, which is
+the detail that identifies the cause. `451-1.jpg` arrived 90° out with
+its catalogue number running vertically, while `449-1` and `452-1` from
+the same session were upright.
+
+**On iOS a track's dimensions are fixed when `getUserMedia` is called
+and do not follow the device.** Open the camera in portrait, turn the
+phone to frame a wide sleeve, and the frame stays portrait while it is
+held sideways — so the label is stored rotated. Photographs taken
+without turning the phone were fine, which is exactly the intermittency
+observed. Restarting the stream on `orientationchange` renegotiates it
+for the orientation now in use, and costs a black frame while turning.
+
+**`contain` rather than `cover`, so the preview is what gets stored.**
+Cover fills the screen by cropping, so the frame being composed was
+never quite the frame being saved — and composing a catalogue number at
+the edge of a sleeve is precisely what this is for. Letterbox bars cost
+less than a cropped-off number.
+
+**Degrees, not words.** The field was `orientation` with values like
+`left`, which has to be interpreted before anything can act on it and
+is ambiguous about whether it names the fault or the fix. `rotate_cw`
+in degrees drives `sips -r` straight through. Verified against a real
+photograph: 451-1 reported at 270° came back upright and legible, and
+the 90° guess came back upside down — a direction convention that can
+be checked is worth more than one that reads well.
+
+**The sixty already taken are corrected, not re-shot.** The disc has
+been handled once already, which the brief names as the expensive
+resource. `photo-rotate.mjs` applies what a reading reported and is
+idempotent by ledger rather than by inspection — a corrected photograph
+is pixel-for-pixel indistinguishable from one that was always upright,
+so re-running against the same reading would turn it twice.
+
+Nothing detects an angle. A reading already reports one, and a
+heuristic that disagreed would leave two answers and no way to choose.
+
 ## 2026-08-30 — PHOTO-ORIENTATION: ask before building a detector
 
 **Decision:** The reading contract gains an `orientation` field —

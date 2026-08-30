@@ -147,7 +147,7 @@ for (const row of rows) {
   try {
     wrangler(['r2', 'object', 'get', `${BUCKET}/${row.r2_key}`, '--file', dest, remote]);
     pulled.push(row);
-    console.log(`  ${row.item_id}.jpg`);
+    console.log(`  ${row.file}`);
   } catch (err) {
     // A missing object is not fatal: the row may have been captured
     // while R2 was off, so the capture exists and the photo never

@@ -64,24 +64,28 @@ export const FIELD_SPEC = [
   ['side', 'the side, if printed'],
   ['other_numbers', 'an array of EVERY other number or code visible that you did not assign above'],
   ['unreadable', 'an array naming the fields you left null because the label was illegible there'],
-  ['orientation', 'how the writing sat in the frame: upright, left, right, upside-down, or mixed'],
+  ['rotate_cw', 'degrees to turn this image CLOCKWISE to stand the writing upright: 0, 90, 180 or 270'],
 ];
 
 /**
- * The orientations a reading may report, and what each means.
+ * The rotations a reading may report, as degrees clockwise.
  *
- * Asked rather than detected, and asked BEFORE anything is built to fix
- * it. A record label is round and its text runs in arcs, so "which way
- * up" is not obviously a well-formed question — and nobody yet knows
- * whether photographs arrive rotated often enough to matter, or whether
- * a rotated one even reads worse. One field in a reply answers both,
- * and costs nothing.
+ * Asked as a NUMBER rather than as "left" or "upside-down", because a
+ * word has to be interpreted before anything can act on it and "rotated
+ * left" is ambiguous about whether it describes the fault or the fix.
+ * Degrees clockwise drives `sips -r` directly, so a reported rotation
+ * can be corrected without anyone deciding what it meant.
  *
- * `mixed` is a real answer, not a refusal: a label with its company
- * name curved over the top and the title straight across the middle
- * genuinely has no single orientation.
+ * 0 covers both "already upright" and "reads in several directions" —
+ * a round label with its company name curved over the top and the title
+ * straight across genuinely has no single angle, and turning it would
+ * help nothing.
+ *
+ * Measured before anything was built to correct it, and the measurement
+ * paid: 60 real photographs showed rotation is real but intermittent —
+ * `451-1.jpg` arrived 90° out while `449-1` and `452-1` were upright.
  */
-export const ORIENTATIONS = ['upright', 'left', 'right', 'upside-down', 'mixed'];
+export const ROTATIONS = [0, 90, 180, 270];
 
 /**
  * The clause that keeps an invented value out of the data, kept in its
@@ -147,11 +151,14 @@ export function chatPrompt(rows) {
     'than the record simply not carrying it.',
     '',
     'Read the record whichever way up it arrives — a rotated photograph',
-    `is still readable. Report in \`orientation\` how the writing sat: one of`,
-    `${ORIENTATIONS.map((o) => `\`${o}\``).join(', ')}. \`mixed\` is a correct`,
-    'answer for a label whose company name curves over the top while the',
-    'title runs straight across, which is most of them. This is being',
-    'measured, not corrected: say what you saw.',
+    'is still readable. Then say, in `rotate_cw`, how many degrees the',
+    `image would have to turn CLOCKWISE to stand the writing upright: `
+      + `${ROTATIONS.join(', ')}.`,
+    '',
+    'Use 0 if it is already upright, and also if the label reads in',
+    'several directions at once — a company name curving over the top',
+    'while the title runs straight across has no single angle, and',
+    'turning it would help nothing.',
     '',
     'A record carries many numbers — matrix and stamper codes, side',
     'numbers, opus and K. numbers, timings, (P) and (C) years. Assign one',

@@ -19,11 +19,12 @@ import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
-  FIELD_SPEC, NO_INFERENCE, BLIND_READ, ORIENTATIONS, PHOTO_FIELDS,
+  FIELD_SPEC, NO_INFERENCE, BLIND_READ, ROTATIONS, PHOTO_FIELDS,
   chatPrompt, packInstructions, parseChatReply, scoreOne, trapSprung, summarise,
 } from '../lib/photo-fields.mjs';
 
-const TOOLS = ['tools/photo-pack.mjs', 'tools/photo-import.mjs', 'tools/photo-score.mjs', 'tools/lib/photo-fields.mjs'];
+const TOOLS = ['tools/photo-pack.mjs', 'tools/photo-import.mjs', 'tools/photo-score.mjs',
+  'tools/photo-rotate.mjs', 'tools/lib/photo-fields.mjs'];
 const strip = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 const scratch = () => mkdtempSync(join(tmpdir(), 'dg-photo-'));
 
@@ -111,22 +112,71 @@ test('several photographs of one record are asked for as one object', () => {
   assert.match(single, /^  A$/m);
 });
 
-test('orientation is asked for, and is not one of the scored fields', () => {
-  // Asked rather than detected, and BEFORE anything is built to correct
-  // it: a detector is only worth writing if photographs arrive rotated
-  // AND rotated ones read worse. One field in the reply answers both.
-  assert.ok(FIELD_SPEC.some(([k]) => k === 'orientation'));
-  assert.ok(!PHOTO_FIELDS.includes('orientation'),
-    'it describes the photograph, not the record — scoring it against a label would be meaningless');
+test('rotation is asked for as degrees, and is not a scored field', () => {
+  // A number rather than a word: "rotated left" has to be interpreted
+  // before anything can act on it, and it is ambiguous about whether it
+  // names the fault or the fix. Degrees clockwise drive `sips -r`
+  // directly.
+  assert.ok(FIELD_SPEC.some(([k]) => k === 'rotate_cw'));
+  assert.ok(!PHOTO_FIELDS.includes('rotate_cw'),
+    'it describes the photograph, not the record');
+  assert.deepEqual(ROTATIONS, [0, 90, 180, 270]);
   const p = chatPrompt(['A']);
-  assert.match(p, /Report in `orientation` how the writing sat/);
+  assert.match(p, /how many degrees the\nimage would have to turn CLOCKWISE/);
   assert.match(p, /whichever way up it arrives/, 'a rotated photo is still to be read');
-  assert.match(p, /This is being\nmeasured, not corrected/);
-  for (const o of ORIENTATIONS) assert.ok(p.includes(`\`${o}\``), `${o} is offered`);
-  // A round label with an arc of company name over a straight title has
-  // no single orientation, and saying so must be a correct answer
-  // rather than a refusal.
-  assert.ok(ORIENTATIONS.includes('mixed'));
+  // A round label reading several ways at once has no single angle, and
+  // forcing a choice would manufacture a fact.
+  assert.match(p, /several directions at once/);
+  assert.match(p, /Use 0 if it is already upright/);
+});
+
+test('rotation applies what was reported, once, and never twice', () => {
+  // A corrected photograph is pixel-for-pixel indistinguishable from one
+  // that was always upright, so re-running cannot be made safe by
+  // inspecting the file. The ledger is what makes it idempotent.
+  const dir = scratch();
+  makePhotos(dir, ['A-1.jpg', 'A-2.jpg', 'B-1.jpg']);
+  const before = execFileSync('sips', ['-g', 'pixelWidth', '-g', 'pixelHeight', join(dir, 'A-1.jpg')],
+    { encoding: 'utf8' });
+
+  writeFileSync(join(dir, 'extract.json'), JSON.stringify({
+    source: 'chat', model: 'test',
+    results: {
+      A: { fields: { rotate_cw: 90 } },
+      B: { fields: { rotate_cw: 0 } },      // upright — must not be touched
+    },
+  }));
+
+  const first = execFileSync(process.execPath, ['tools/photo-rotate.mjs',
+    '--extract', join(dir, 'extract.json'), '--photos', dir], { encoding: 'utf8' });
+  assert.match(first, /A-1\.jpg — 90° clockwise/);
+  assert.match(first, /A-2\.jpg — 90° clockwise/, 'every photograph of that record turns');
+  assert.ok(!first.includes('B-1.jpg'), '0° is left alone rather than rewritten');
+  assert.match(first, /2 image\(s\)/);
+
+  const after = execFileSync('sips', ['-g', 'pixelWidth', '-g', 'pixelHeight', join(dir, 'A-1.jpg')],
+    { encoding: 'utf8' });
+  assert.notEqual(before, after, 'the image really turned');
+
+  const second = execFileSync(process.execPath, ['tools/photo-rotate.mjs',
+    '--extract', join(dir, 'extract.json'), '--photos', dir], { encoding: 'utf8' });
+  assert.match(second, /0 image\(s\)/, 're-running turns nothing');
+  assert.match(second, /2 already corrected/);
+  const twice = execFileSync('sips', ['-g', 'pixelWidth', '-g', 'pixelHeight', join(dir, 'A-1.jpg')],
+    { encoding: 'utf8' });
+  assert.equal(after, twice, 'and the pixels are untouched the second time');
+});
+
+test('a rotation nobody offered is refused rather than passed to sips', () => {
+  const dir = scratch();
+  makePhotos(dir, ['A-1.jpg']);
+  writeFileSync(join(dir, 'extract.json'), JSON.stringify({
+    results: { A: { fields: { rotate_cw: 45 } } },
+  }));
+  const out = execFileSync(process.execPath, ['tools/photo-rotate.mjs',
+    '--extract', join(dir, 'extract.json'), '--photos', dir], { encoding: 'utf8' });
+  assert.match(out, /45° is not one of 0, 90, 180, 270 — skipped/);
+  assert.match(out, /0 image\(s\)/);
 });
 
 // ── the reply, which is where a hand-run trip goes wrong ──────────

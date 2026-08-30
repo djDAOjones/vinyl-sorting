@@ -192,6 +192,49 @@ function camEls() {
   };
 }
 
+/**
+ * Re-acquire the stream when the phone turns.
+ *
+ * THE BUG THIS FIXES, found in 60 real photographs: on iOS the track's
+ * dimensions are fixed when `getUserMedia` is called and do not follow
+ * the device. Open the camera in portrait, turn the phone to landscape
+ * to frame a sleeve, and the frame stays portrait while you hold it
+ * sideways — so the label arrives rotated 90°, as `451-1.jpg` did,
+ * while photographs taken without turning the phone came out upright.
+ * That is why it looked intermittent.
+ *
+ * Restarting renegotiates the stream for the orientation now in use, so
+ * the preview and the capture agree again. It costs a brief black frame
+ * when you turn the phone, which is a fair price for not silently
+ * storing a sideways label.
+ */
+function watchOrientation(): void {
+  const onTurn = () => {
+    if (!stream) return;
+    // A restart mid-turn can land on the old dimensions, so let the
+    // rotation settle before asking again.
+    setTimeout(() => { if (stream) void restartStream(); }, 350);
+  };
+  screen.orientation?.addEventListener?.('change', onTurn);
+  addEventListener('orientationchange', onTurn);
+}
+
+/** Swap the stream without closing the viewfinder or losing the shots. */
+async function restartStream(): Promise<void> {
+  const { video } = camEls();
+  if (!video) return;
+  for (const t of stream?.getTracks() ?? []) t.stop();
+  stream = null;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia(videoConstraints());
+  } catch {
+    flash('Lost the camera when the phone turned. Tap Done and start it again.', 'err');
+    return;
+  }
+  video.srcObject = stream;
+  await video.play().catch(() => {});
+}
+
 async function startCamera(): Promise<void> {
   const { cam, video, torch, shot, note } = camEls();
   if (!cam || !video || !shot) return;
@@ -215,6 +258,7 @@ async function startCamera(): Promise<void> {
   cam.hidden = false;
   shot.hidden = true;
   document.body.classList.add('shooting');
+  watchOrientation();
   if (note) note.textContent = 'Tap the shutter for each photograph — no confirming, '
     + 'no closing. Done when this disc is finished, then Queue it.';
   renderPhotos();
