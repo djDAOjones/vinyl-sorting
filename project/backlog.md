@@ -10,10 +10,6 @@
 
 <!-- Intent: M0 — reconcile the existing spreadsheets into one clean, provenance-tagged dataset. No app required; can start now. -->
 
-- [ ] **M0-SPLIT-LABEL-CATNO Split combined label and catalogue
-  strings** — Label is captured on 0% of the backlog because it was mashed
-  into one free-text field with the catalogue number; split them into
-  first-class separate fields.
 - [ ] **M0-IMPORT-ENRICHED Import the 305 enriched rows as unverified**
   — Import the 305 enriched records from Vinyl Records Record 2 Jen.xlsx
   with every Discogs-derived field marked unverified, so none of them can

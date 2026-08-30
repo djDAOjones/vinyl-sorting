@@ -2,6 +2,49 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — M0-SPLIT-LABEL-CATNO: labels are recognised, never inferred
+
+**Decision:** Split against a gazetteer of the 98 distinct labels
+attested in this collection's own data — the 277 rows of `Classical
+Master` where Discogs already supplied a separate Label. A label is
+emitted only when an attested name matches and the remainder is a
+well-formed catalogue number. Everything else is refused with a named
+reason, and refusals route to capture. Three outcomes, not two:
+`split`, `bare-catno` (no label present, which is complete rather than
+failed) and `refused`.
+
+**Rationale:** The record's rule is that a wrong label is worse than an
+absent one, because a wrong label corroborates a wrong match — the
+exact failure that put 26 of 277 existing matches on the wrong record.
+A pattern-based splitter would have to decide whether `Harmony` in
+`CBS Harmony 30001` is a sub-label or part of the catalogue number, and
+it would be guessing. Deriving the vocabulary from the data replaces
+that guess with evidence, and makes the refusals principled: `Decca Ace
+of Diamonds SDD 538` is refused because this collection has never
+attested `Ace of Diamonds`, not because a regex failed.
+
+Two-character labels are excluded from the gazetteer. `PS` is an
+attested label and also the prefix of `PS 287` and `PS5032`; keeping it
+would split real catalogue numbers in half.
+
+**Result on the 141 backlog rows:** 31 split, 73 bare catalogue numbers
+with no label present, 37 refused — 18 unattested sub-labels, 11
+unattested label prefixes, 7 cells holding two pressings, 1 unrecognised
+parenthetical. All 31 splits were checked by eye and are correct,
+including `EMI Eminence` beating `EMI` on longest match. Label casing
+is normalised to the attested form, so `Vox` becomes `VOX`.
+
+Nothing is discarded: every result keeps `combinedRaw`, so a refusal
+loses no data and a later pass with a larger gazetteer can re-split it.
+
+**Alternatives:** Pattern-only splitting — rejected, it cannot tell a
+sub-label from a catalogue prefix, and would emit exactly the confident
+wrong labels this project exists to stop. Accepting a parent label when
+the sub-label is unattested — rejected for the same reason: `Decca` is
+a label that pressing does not carry. Compound matching of two adjacent
+attested labels — rejected, it would gain 2 rows and would also merge
+`Columbia/CBS`, which is genuinely two labels.
+
 ## 2026-08-30 — M0-REPAIR-ENCODING: two corruptions, one confirmed as MacRoman
 
 **Decision:** Repair in two separate passes. Byte-level: decode
