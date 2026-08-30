@@ -10,10 +10,6 @@
 
 <!-- Intent: M1 — schema, Worker skeleton and the offline capture screen, so a disc can be captured in a loft with no signal. Promoted 2026-08-30 once its three sign-off questions were answered: no sign-in, app database authoritative, token valid and not a seller. -->
 
-- [ ] **M1-CAPTURE-UI Photo-first offline capture screen** — The PWA
-  capture form that works with no signal in a loft — photo first, six
-  fields, queued in IndexedDB, surviving a hard refresh.
-
 ### Next milestone
 
 <!-- Intent: Empty — M2 is the next committed milestone but stays in the icebox until capture is real. Promoting it is the trigger to revisit auth, per OPEN-USERS-ACCESS. -->

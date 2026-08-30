@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test 'tools/test/*.test.mjs'",
     "worker:dev": "wrangler dev",
-    "gate": "npm run typecheck && npm test"
+    "gate": "npm run typecheck && npm test",
+    "api": "node tools/dev-api.mjs"
   },
   "dependencies": {
     "hono": "^4.13.5"

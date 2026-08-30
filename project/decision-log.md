@@ -2,6 +2,53 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — M1-CAPTURE-UI: the queue is the product, and it was verified in a browser
+
+**Decision:** A single-screen PWA. Every capture is written to
+IndexedDB before anything else happens, and the UI never awaits the
+network. Sync is a background drain with capped exponential backoff
+that never drops an entry. Label and catalogue number are separate
+inputs, with the reason printed under them.
+
+**Verified end to end in a real browser, not asserted.** A capture was
+entered with no backend running; it queued, was marked for retry
+rather than lost, survived a hard refresh with every field intact,
+retried four times under backoff, and then synced the moment the
+Worker appeared — arriving in the database as crate B4, position 12,
+`SXL 6113`, Decca, Solti, VG+, with `shelf` provenance, unconfirmed,
+and `decision_eligible` still zero. That sequence is the done-when:
+captured with no signal, appears in the collection afterwards.
+
+**Photo-first, so a photo-only capture is valid.** The requirement is
+a crate — a session card has to say where the disc is — plus either a
+photo or a catalogue number. Walking a crate photographing labels and
+typing nothing is the fast, delegable path, and the API and the client
+agree on it; a shared test feeds the client's request body to the
+Worker's validator.
+
+**Crate and captured-by are sticky.** You work through one crate at a
+time, so re-typing it per disc is the single largest avoidable cost.
+With no sign-in there is no identity to read, so `captured_by` is a
+remembered free-text field — a partial recovery of the "who captured
+this" the provenance model wants.
+
+**The app measures itself.** Each entry records milliseconds from
+starting the disc to queueing it, and the header shows a running
+median. The done-when asks for a measured median under 30 s; the
+instrument now exists and reports honestly, but the number will only
+mean anything once real discs are captured. Nothing here claims that
+threshold has been met.
+
+**Local development needs no Cloudflare account.** `tools/dev-api.mjs`
+serves the real Worker over the node:sqlite bindings, so the whole app
+runs on a machine with no wrangler login. Deployment does need one and
+is a maintainer step; README carries the runbook.
+
+**Alternatives:** Post directly and queue only on failure — rejected,
+it makes the offline path the exceptional one and therefore the broken
+one. A combined label/catalogue field — rejected, that is the defect
+M0 measured at 9%.
+
 ## 2026-08-30 — M1-WORKER: with no sign-in, the Worker's shape is the security
 
 **Decision:** Named operations only — health, capture write, photo

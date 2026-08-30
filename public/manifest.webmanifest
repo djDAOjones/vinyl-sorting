@@ -1,0 +1,12 @@
+{
+  "name": "Deep Groove — capture",
+  "short_name": "Deep Groove",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1418",
+  "theme_color": "#14191f",
+  "description": "Photograph a label, queue it, walk out of the loft.",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
