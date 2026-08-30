@@ -59,8 +59,21 @@ fi
 [ -n "$D1_ID" ] || { echo "Could not read the D1 id; check 'npx wrangler d1 list'"; exit 1; }
 echo "D1 id: $D1_ID"
 
-say "Creating R2 bucket (skipped if it exists)"
-w r2 bucket create deep-groove-photos 2>&1 | tail -2 || echo "already exists"
+say "Creating R2 bucket (skipped if R2 is not enabled)"
+# R2 must be switched on once in the dashboard; the API refuses until
+# then with code 10042 and there is no way around it from here. The
+# Worker treats PHOTOS as optional, so this is a warning, not a stop.
+if w r2 bucket list >/dev/null 2>&1; then
+  w r2 bucket create deep-groove-photos 2>&1 | tail -2 || echo "bucket already exists"
+  if grep -q '^# \[\[r2_buckets\]\]' wrangler.toml; then
+    echo "R2 is enabled — uncomment the [[r2_buckets]] block in wrangler.toml and re-run to attach it"
+  fi
+else
+  echo "R2 is not enabled on this account. Everything else will deploy;"
+  echo "label photos stay queued on the phone until you enable R2 at"
+  echo "  https://dash.cloudflare.com  ->  R2"
+  echo "then uncomment [[r2_buckets]] in wrangler.toml and re-run this script."
+fi
 
 say "Creating KV namespace (skipped if it exists)"
 KV_ID="$(kv_id)"
@@ -121,12 +134,11 @@ fi
 w d1 execute deep-groove --remote --yes --command \
   "SELECT (SELECT COUNT(*) FROM item) items, (SELECT COUNT(*) FROM match_run) runs, (SELECT COUNT(*) FROM v_decision_eligible_item) eligible;"
 
-say "Deploying the Worker"
-w deploy
-
-say "Building and deploying the client"
+say "Building the client"
 npm run build
-w pages deploy dist --project-name deep-groove --commit-dirty=true
+
+say "Deploying the Worker (which serves the client too)"
+w deploy
 
 cat <<'DONE'
 

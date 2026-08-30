@@ -52,6 +52,11 @@ export function createApp() {
 
   /** Store one label photo and return the key a capture will reference. */
   app.put('/api/photos/:key{[A-Za-z0-9._-]{1,120}}', async (c) => {
+    // 503 rather than 500: the client's queue retries on it, so a photo
+    // taken before R2 was enabled uploads itself once it is.
+    if (!c.env.PHOTOS) {
+      return c.json({ error: 'photo storage is not configured yet; the photo stays queued' }, 503);
+    }
     const type = c.req.header('content-type') ?? '';
     if (!PHOTO_TYPES.has(type)) return c.json({ error: `unsupported content-type: ${type}` }, 415);
 
@@ -130,15 +135,23 @@ export function createApp() {
         LIMIT ?`,
     ).bind(includeSkipped ? 1 : 0, limit).all();
 
+    // D1 allows at most 100 bound parameters per query, so the id list
+    // is chunked rather than the page size being capped. Local SQLite
+    // has no such limit, so a 200-row page worked in development and
+    // returned 500 in production.
     const runIds = results.map((r) => (r as { run_id: number }).run_id);
-    const candidates = runIds.length
-      ? (await c.env.DB.prepare(
+    const CHUNK = 90;
+    const candidates: unknown[] = [];
+    for (let i = 0; i < runIds.length; i += CHUNK) {
+      const slice = runIds.slice(i, i + CHUNK);
+      const page = await c.env.DB.prepare(
         `SELECT match_run_id, rank, discogs_id, score, signals_json
            FROM match_candidate
-          WHERE match_run_id IN (${runIds.map(() => '?').join(',')})
+          WHERE match_run_id IN (${slice.map(() => '?').join(',')})
           ORDER BY match_run_id, rank`,
-      ).bind(...runIds).all()).results
-      : [];
+      ).bind(...slice).all();
+      candidates.push(...page.results);
+    }
 
     const byRun = new Map<number, unknown[]>();
     for (const cand of candidates) {

@@ -278,3 +278,24 @@ test('remaining counts down and never goes negative', async () => {
   for (let i = 0; i < 60; i++) await limiter.take('discogs');
   assert.equal((await limiter.take('discogs')).remaining, 0);
 });
+
+test('the Worker serves without R2, and a photo upload stays retryable', async () => {
+  // R2 has to be enabled in the Cloudflare dashboard before the API
+  // will accept it, so the Worker must deploy without the binding.
+  const env = makeEnv();
+  delete env.PHOTOS;
+
+  assert.equal((await app.request('/api/health', {}, env)).status, 200, 'the rest of the Worker still works');
+
+  const res = await app.request('/api/photos/abc.jpg',
+    { method: 'PUT', headers: { 'content-type': 'image/jpeg' }, body: new Uint8Array([1]) }, env);
+  assert.equal(res.status, 503, '503 is retryable; the phone keeps the photo queued');
+  assert.match((await res.json()).error, /not configured/);
+
+  // A typed capture is unaffected.
+  const cap = await app.request('/api/captures', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ clientId: 'no-r2', crate: 'B4', catnoRaw: 'SXL 6113' }),
+  }, env);
+  assert.equal(cap.status, 201);
+});

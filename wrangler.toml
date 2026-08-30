@@ -10,14 +10,29 @@ name = "deep-groove"
 main = "worker/index.ts"
 compatibility_date = "2026-08-01"
 
+# The client is served BY the Worker, not from a separate Pages project.
+# One origin means the app's /api calls are same-origin, so there is no
+# CORS to configure and no second deploy to keep in step. Cloudflare now
+# recommends this over Pages, and its own error says so.
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "404-page"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "deep-groove"
 database_id = "59862adc-60d8-4207-98e3-c6e9ae55eefd"
 
-[[r2_buckets]]
-binding = "PHOTOS"
-bucket_name = "deep-groove-photos"
+# R2 must be enabled once in the Cloudflare dashboard before the API
+# will accept it — `wrangler r2 bucket create` answers "Please enable R2
+# through the Cloudflare Dashboard [code: 10042]" until then, and there
+# is no API route around it. The Worker treats PHOTOS as optional so it
+# can deploy without it; label photos queue on the phone until this is
+# uncommented and `bash tools/deploy.sh` is run again.
+# [[r2_buckets]]
+# binding = "PHOTOS"
+# bucket_name = "deep-groove-photos"
 
 # API response cache, keyed by normalised query. Unused until M2.
 [[kv_namespaces]]

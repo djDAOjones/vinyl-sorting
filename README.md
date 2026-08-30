@@ -4,6 +4,10 @@ Catalogue a classical vinyl collection, verify each record against
 Discogs and MusicBrainz, and turn overlapping copies into a finite
 queue of listening decisions.
 
+**Live:** <https://deep-groove.joe-2d2.workers.dev>
+— capture at `/`, the review queue at `/review`.
+The Worker serves both, so the API is same-origin.
+
 `project/brief.md` is the identity document; `AGENTS.md` is the working
 contract; `project/backlog.md` is generated — edit `project/records/`
 and run `node tools/gen-backlog.mjs`.
@@ -23,7 +27,8 @@ npm run dev     # the capture app on :5173, proxying /api
 npm run gate    # tsc --noEmit + the whole test suite
 ```
 
-Two screens: capture at `/`, the review queue at `/review.html`.
+Two screens: capture at `/`, the review queue at `/review` (Cloudflare
+drops the `.html`).
 `npm run api -- --demo` seeds a few review items so the queue has work
 in it.
 

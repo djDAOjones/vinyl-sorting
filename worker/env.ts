@@ -12,8 +12,16 @@
  */
 export interface Env {
   DB: D1Database;
-  PHOTOS: R2Bucket;
+  /**
+   * Absent until R2 is enabled in the Cloudflare dashboard, which the
+   * API cannot do for you. The Worker deploys and serves everything
+   * else without it; photo uploads answer 503 and the phone keeps them
+   * queued, so nothing is lost by turning R2 on later.
+   */
+  PHOTOS?: R2Bucket;
   CACHE: KVNamespace;
+  /** The built client. Static assets are matched before the Worker runs. */
+  ASSETS?: Fetcher;
   /** Set with `wrangler secret put DISCOGS_TOKEN`. Unused until M2. */
   DISCOGS_TOKEN?: string;
 }

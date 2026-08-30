@@ -140,3 +140,25 @@ test('match stats report progress without reading rows', async () => {
   assert.equal(stats.decisionEligible, 1);
   assert.deepEqual(stats.byState, [{ state: 'needs-review', n: 1 }]);
 });
+
+test('a page larger than D1 parameter limit still returns its candidates', async () => {
+  // D1 allows at most 100 bound parameters per query. The candidate
+  // lookup binds one id per run, so an uncapped page returned 500 in
+  // production while passing locally — SQLite has no such limit.
+  const env = makeEnv();
+  const db = env.DB.raw;
+  const RUNS = 150;
+  for (let i = 1; i <= RUNS; i++) {
+    db.exec(`INSERT INTO item (crate) VALUES ('B${i}')`);
+    db.exec(`INSERT INTO match_run (item_id, state, queries_json) VALUES (${i}, 'needs-review', '{"reason":"x"}')`);
+    db.exec(`INSERT INTO match_candidate (match_run_id, rank, discogs_id, score, signals_json)
+             VALUES (${i}, 1, ${1000 + i}, 70, '{"families":["identifier"]}')`);
+  }
+
+  const body = await (await app.request(`/api/review-queue?limit=${RUNS}`, {}, env)).json();
+  assert.equal(body.queue.length, RUNS);
+  assert.ok(body.queue.every((q) => q.candidates.length === 1),
+    'every run keeps its candidates across the chunk boundary');
+  assert.equal(body.queue[0].candidates[0].discogs_id, 1001);
+  assert.equal(body.queue[RUNS - 1].candidates[0].discogs_id, 1000 + RUNS);
+});
