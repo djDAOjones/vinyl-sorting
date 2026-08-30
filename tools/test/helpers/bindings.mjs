@@ -81,13 +81,25 @@ export function makeR2() {
   };
 }
 
-/** Minimal KVNamespace, sufficient for the rate limiter's CounterStore. */
+/**
+ * Minimal KVNamespace. It ENFORCES the real 60-second minimum TTL,
+ * because a version that silently accepted anything let a 8-second TTL
+ * ship and fail in production with "Expiration TTL must be at least
+ * 60". A double that is more permissive than the real thing is worse
+ * than no double at all.
+ */
 export function makeKv() {
   /** @type {Map<string, string>} */ const store = new Map();
   return {
     store,
     get: async (/** @type {string} */ k) => store.get(k) ?? null,
-    put: async (/** @type {string} */ k, /** @type {string} */ v) => { store.set(k, v); },
+    put: async (/** @type {string} */ k, /** @type {string} */ v, /** @type {any} */ opts) => {
+      const t = opts?.expirationTtl;
+      if (t !== undefined && (!Number.isFinite(t) || t < 60)) {
+        throw new Error(`KV PUT failed: 400 Invalid expiration_ttl of ${t}. Expiration TTL must be at least 60.`);
+      }
+      store.set(k, v);
+    },
     delete: async (/** @type {string} */ k) => { store.delete(k); },
   };
 }

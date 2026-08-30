@@ -326,9 +326,9 @@ test('the client waits for the shared budget instead of failing on it', async ()
   const { DiscogsClient } = await import('../../worker/discogs.ts');
   const { RateLimiter } = await import('../../worker/rate-limit.ts');
 
-  // A store that is already at the limit for this window, then rolls.
+  // A store already at the window limit, which then rolls over.
   let now = 1_000_000;
-  const counters = new Map([[`rl:discogs:${now - (now % 60_000)}`, '50']]);
+  const counters = new Map([[`rl:discogs:${now - (now % 60_000)}`, '30']]);
   const limiter = new RateLimiter(
     { get: async (k) => counters.get(k) ?? null, put: async (k, v) => { counters.set(k, v); } },
     () => now,
@@ -350,18 +350,22 @@ test('the client honours a Retry-After rather than hammering', async () => {
   const { RateLimiter } = await import('../../worker/rate-limit.ts');
 
   const counters = new Map();
+  let now = 1_000_000;
   const limiter = new RateLimiter({
     get: async (k) => counters.get(k) ?? null, put: async (k, v) => { counters.set(k, v); },
-  }, () => 1_000_000);
+  }, () => now);
 
   let calls = 0;
   const slept = [];
+  // The injected sleep advances the clock, as a real one would. Without
+  // that the limiter's 2 s spacing refuses every retry and the client
+  // correctly gives up — which would be the test lying, not the code.
   const client = new DiscogsClient('tok', limiter, async () => {
     calls++;
     return calls === 1
       ? new Response('', { status: 429, headers: { 'retry-after': '3' } })
       : new Response('{"results":[{"id":1}]}', { status: 200 });
-  }, async (ms) => { slept.push(ms); });
+  }, async (ms) => { slept.push(ms); now += ms; });
 
   const results = await client.search({ catno: 'X' });
   assert.equal(results.length, 1, 'it retried and succeeded');

@@ -37,7 +37,13 @@ Project boundaries, same force as the above:
   file present in the working tree is never committed, echoed or
   pasted into a prompt.
 - Rate limits are enforced centrally in the Worker, never per caller:
-  Discogs 50/min shared, MusicBrainz 1/sec with a real user-agent.
+  Discogs 30/min shared AND at least 2 s between consecutive requests,
+  MusicBrainz 1/sec with a real user-agent. The spacing is not
+  decoration: Discogs enforces a lower rate than it publishes and cares
+  how bursty the traffic is, so a per-minute budget alone is spent as
+  an instant burst and refused. Corrected from 50/min on 2026-08-30
+  after the deployed matcher was throttled while the same token from a
+  laptop had 59 requests remaining.
 
 ## Memory contract (exact — the two checks below FAIL deviations)
 

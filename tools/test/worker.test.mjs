@@ -239,8 +239,30 @@ test('the decision-eligible endpoint reads through the views', async () => {
 // ── central rate limiting ─────────────────────────────────────────
 
 test('the limiter enforces the shared budgets AGENTS.md fixes', () => {
-  assert.deepEqual(BUDGETS.discogs, { limit: 50, windowMs: 60_000 });
-  assert.deepEqual(BUDGETS.musicbrainz, { limit: 1, windowMs: 1_000 });
+  assert.deepEqual(BUDGETS.discogs, { limit: 30, windowMs: 60_000, minIntervalMs: 2_000 });
+  assert.deepEqual(BUDGETS.musicbrainz, { limit: 1, windowMs: 1_000, minIntervalMs: 1_000 });
+});
+
+test('requests are SPACED, not merely counted', async () => {
+  // A window budget alone is spent as an instantaneous burst. That is
+  // what a Worker does — twelve queries in a few hundred milliseconds —
+  // and it is refused however modest the per-minute total. A laptop
+  // hides the fault because the round-trip paces the calls.
+  const kv = makeKv();
+  let now = 1_000_000;
+  const limiter = new RateLimiter(kv, () => now);
+
+  assert.equal((await limiter.take('discogs')).allowed, true);
+
+  const immediate = await limiter.take('discogs');
+  assert.equal(immediate.allowed, false, 'a second request in the same instant must wait');
+  assert.ok(immediate.retryAfterMs > 0 && immediate.retryAfterMs <= 2_000);
+
+  now += 1_999;
+  assert.equal((await limiter.take('discogs')).allowed, false, 'still inside the gap');
+
+  now += 1;
+  assert.equal((await limiter.take('discogs')).allowed, true, 'allowed once the gap has passed');
 });
 
 test('the budget is shared, not per caller', async () => {
@@ -250,13 +272,23 @@ test('the budget is shared, not per caller', async () => {
   const a = new RateLimiter(kv, () => now);
   const b = new RateLimiter(kv, () => now);
 
-  for (let i = 0; i < 50; i++) {
-    const who = i % 2 === 0 ? a : b;
-    assert.equal((await who.take('discogs')).allowed, true, `request ${i}`);
-  }
-  const over = await a.take('discogs');
-  assert.equal(over.allowed, false, 'two people cataloguing at once must not double the limit');
-  assert.ok(over.retryAfterMs > 0 && over.retryAfterMs <= 60_000);
+  // Sharing shows in the SPACING: whichever isolate goes first, the
+  // other must wait, because both read the same last-request stamp.
+  // (At 2 s apart the per-minute budget is saturated by the spacing
+  // alone — 30 requests is exactly one minute — so the gap is the
+  // constraint that actually bites.)
+  assert.equal((await a.take('discogs')).allowed, true);
+  const other = await b.take('discogs');
+  assert.equal(other.allowed, false, 'two people cataloguing at once must not double the rate');
+  assert.ok(other.retryAfterMs > 0 && other.retryAfterMs <= 2_000);
+
+  now += 2_000;
+  assert.equal((await b.take('discogs')).allowed, true, 'and the other isolate proceeds after the gap');
+
+  // The window budget still bites if spacing were ever relaxed.
+  for (let i = 0; i < 28; i++) { now += 2_000; await a.take('discogs'); }
+  now += 1;  // inside the same window, past the gap
+  assert.equal((await a.take('discogs')).allowed, false, 'the per-minute budget is shared too');
 });
 
 test('a new window restores the budget', async () => {
@@ -270,13 +302,16 @@ test('a new window restores the budget', async () => {
   assert.equal((await limiter.take('musicbrainz')).allowed, true);
 });
 
-test('remaining counts down and never goes negative', async () => {
+test('remaining counts down across the window', async () => {
   const kv = makeKv();
-  const limiter = new RateLimiter(kv, () => 1_000_000);
-  assert.equal((await limiter.take('discogs')).remaining, 49);
-  assert.equal((await limiter.take('discogs')).remaining, 48);
-  for (let i = 0; i < 60; i++) await limiter.take('discogs');
-  assert.equal((await limiter.take('discogs')).remaining, 0);
+  let now = 1_000_000;
+  const limiter = new RateLimiter(kv, () => now);
+  assert.equal((await limiter.take('discogs')).remaining, 29);
+  now += 2_000;
+  assert.equal((await limiter.take('discogs')).remaining, 28);
+  for (let i = 0; i < 40; i++) { now += 2_000; await limiter.take('discogs'); }
+  const exhausted = await limiter.take('discogs');
+  assert.equal(exhausted.allowed, false);
 });
 
 test('the Worker serves without R2, and a photo upload stays retryable', async () => {

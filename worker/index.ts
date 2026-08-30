@@ -224,9 +224,15 @@ export function createApp() {
  * stranger's lever on the maintainer's rate limit and identity.
  *
  * A batch per tick rather than the whole backlog, so one invocation
- * stays inside its CPU budget and a failure costs one batch.
+ * stays inside its budget and a failure costs one batch.
+ *
+ * FOUR rows, not twenty-five: the limiter now spaces Discogs requests
+ * two seconds apart, and a row costs about five queries, so four rows
+ * is roughly forty seconds of a five-minute tick. Sizing this to the
+ * pacing rather than to a round number is what keeps an invocation
+ * from running past its limit.
  */
-export async function runMatchBatch(env: Env, batchSize = 25): Promise<{ processed: number }> {
+export async function runMatchBatch(env: Env, batchSize = 4): Promise<{ processed: number }> {
   if (!env.DISCOGS_TOKEN) {
     console.warn('match: DISCOGS_TOKEN is not set; nothing to do');
     return { processed: 0 };
