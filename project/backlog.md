@@ -39,11 +39,6 @@
   passage?** [sign-off] (2026-08-30) — Whether the app proposes the
   two-to-three-minute comparison passage from the track listing, or the
   listener always chooses it themselves.
-- [ ] **CAPTURE-BULK-PHOTOS Photograph a crate in one pass, one row per
-  photo** [detail](records/CAPTURE-BULK-PHOTOS.md) (2026-08-30) — Capture
-  takes one disc at a time, so walking a crate of twenty is twenty form
-  interactions — add a bulk mode that turns a multi-select or a run of
-  shots into one row each, with the crate sticky and nothing typed.
 - [ ] **PHOTOS-TO-DESKTOP Pull captured photos and their row ids out for
   a chat pack** [detail](records/PHOTOS-TO-DESKTOP.md) (2026-08-30) —
   Photos taken on the phone land in R2 and nothing can read them back —

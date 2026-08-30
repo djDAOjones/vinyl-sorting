@@ -32,6 +32,26 @@ drops the `.html`).
 `npm run api -- --demo` seeds a few review items so the queue has work
 in it.
 
+### Photographing a whole crate
+
+Capture has two modes. One disc at a time, with the label and catalogue
+number typed; or **Photograph a whole crate** — pick or shoot many, and
+each photo becomes its own row with nothing typed at all.
+
+A bulk row carries exactly three things: the crate, the position, and
+who is capturing. Every other box on the form is a claim about one
+disc, and copying a catalogue number across twenty rows would invent
+nineteen wrong ones — the 9% error M0 measured, manufactured rather
+than inherited. Position counts down the crate from a number you type
+and stays empty if you type nothing, because photographing in order
+makes positions sequential but choosing the start would be a guess.
+
+Photos are downscaled to 1568 px before they are queued, so a crate of
+twenty is ~16 MB in IndexedDB rather than ~80 MB. And a photo the
+server refuses no longer blocks the crate behind it: the drain stops
+for a shared failure (offline, 5xx) and moves on past one that is only
+about that row (4xx).
+
 ## Re-verify the existing matches
 
 Audits every row that already claims a Discogs release, asking whether

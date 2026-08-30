@@ -2,9 +2,22 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "api",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "tools/dev-api.mjs"
+      ],
+      "port": 8787
+    },
+    {
       "name": "capture",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["vite", "--port", "5173", "--strictPort"],
+      "runtimeArgs": [
+        "vite",
+        "--port",
+        "5173",
+        "--strictPort"
+      ],
       "port": 5173
     }
   ]

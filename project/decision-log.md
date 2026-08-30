@@ -2,6 +2,65 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — CAPTURE-BULK-PHOTOS: a bulk row carries the crate and nothing else
+
+**Decision:** Bulk capture writes one row per photo and carries exactly
+three fields to every row — crate, position and who is capturing.
+Everything else on the form is dropped. Position auto-increments only
+from a number the person typed; blank stays blank. Photos are
+downscaled to 1568 px on the long edge before they are queued. And the
+drain now continues past a row the server rejects, stopping only when
+the failure is shared.
+
+**Rationale:** Promoted out of the icebox ahead of its stated trigger,
+on maintainer instruction to bring the photo path forward. That was the
+right call on the evidence: M2's remaining work is a deploy and 286
+keyboard decisions, both maintainer work, so this was the buildable
+item — and the brief names "building the app instead of cataloguing the
+records" as the risk that actually matters.
+
+Three sub-decisions carried real weight.
+
+**What carries over is the whole design.** The obvious implementation
+copies the form to every row, and that would put one disc's catalogue
+number on twenty — nineteen invented values, indistinguishable from
+typed ones, which is precisely the M0 error manufactured wholesale
+rather than inherited. Crate is where you are standing, position is
+countable, and who is capturing does not change between shots. A
+catalogue number, a label, a condition grade are each a claim about one
+disc. `BULK_CARRIED` is three entries long and a test asserts the other
+eight are dropped.
+
+**Position auto-increments only from a typed start.** Photographing in
+shelf order genuinely does make positions sequential, so incrementing
+is not a guess — but choosing the starting point would be. Type 12
+before a crate of twenty and get 12–31; leave it blank and every row
+has no position at all. The record asked for a decision rather than a
+silent null, and this is one in both directions.
+
+**A bad row must not hold a crate hostage.** The drain used to `break`
+on any failure, which is right for one entry and wrong for twenty: a
+photo the server refuses would sit at the head of the queue for ever
+with the good ones stuck behind it. The split is now by cause — no
+status means the fetch never completed (offline, everything behind
+fails alike), 5xx is the server or a missing binding (equally shared),
+4xx is about that entry alone. Verified in a browser against the real
+Worker: a deliberately oversized photo in the middle of a batch of four
+came back 413 and stayed `failed` and retrying, while the other three
+synced, and the badge read "3 sent · 1 retrying" — a half-uploaded
+crate that looks half-uploaded.
+
+Downscaling was the cheap part but not optional: the queue stores raw
+Blobs, so a crate of twenty phone frames is ~80 MB in IndexedDB, on a
+phone, in a loft, where iOS evicts under storage pressure. 1568 px is
+what the chat pack sends anyway, so nothing downstream loses anything.
+If the browser lacks the canvas APIs the original is queued unchanged —
+losing a capture to a resize is not a trade this app should make.
+
+Nothing in the Worker or the schema changed; `parseCapture` already
+accepted a capture with a photo and no catalogue number, and a test
+already said so in those words.
+
 ## 2026-08-30 — SPIKE-PHOTO-TO-FIELDS: no API keys; the label reading goes through a chat window
 
 **Decision:** No API keys, anywhere in this project. Reading a label
@@ -558,234 +617,3 @@ are a usable starting point and the provenance rule is what makes
 keeping them safe. Leave the 28 as `legacy` — rejected, that labels AI
 prose as a human entry, which is the exact confusion this item exists
 to end.
-
-## 2026-08-30 — M0-MERGE-LOAD-FILES: the 83 rows were already merged, so 0 are new
-
-**Decision:** Merge 0 new rows and record 83 duplicate decisions. The
-83 usable rows in `1st load to add.xlsx` and `2nd load to add.xlsx` are
-already present in `Classical Remedial`. The reconciled dataset stays
-at 446 rows, not 529.
-
-**Rationale:** Two independent methods agree. Positionally, the 83 rows
-map in order onto Remedial rows 59-141 — all 83 catalogue strings and
-all 46 titles match exactly, with only the IDs differing because the
-Remedial sheet renumbered them to 1058+. Separately, the merge's own
-key-based de-duplication, which knows nothing about row order, matched
-all 83 and merged none. 2nd load occupies Remedial 59-104 and 1st load
-105-141.
-
-446 is also what the brief already says: "446 already catalogued". The
-~300 new records are the physical backlog that has never been entered,
-not these files.
-
-**De-duplication is by key with multiplicity.** Four rows read
-`RTL2075 MCPS`, and they are four physical copies rather than one row
-counted four times, so a key already present four times absorbs four
-incoming rows and no more. A test asserts each of the four matched a
-different existing copy. Key matches with disagreeing titles are
-treated as ambiguous and kept, per the record — carrying a duplicate a
-person can resolve while holding the disc beats merging on a guess.
-None occurred.
-
-The key folds case, spacing and the Unicode dashes so `TWO-269` and
-`TWO‑269` compare equal. That folding is for comparison only; stored
-values stay faithful, because normalising the data itself is M2's job.
-
-**Consequence for M2:** the re-verification run is 446 rows, and the
-load files need never be read again.
-
-**Alternatives:** Merge all 83 and de-duplicate later — rejected, it
-would put 83 known duplicates into the dataset that M2 would then
-re-verify against Discogs at real cost. Match on catalogue number
-alone — rejected, it cannot distinguish a genuine second copy from a
-re-import, which is exactly what multiplicity handles.
-
-## 2026-08-30 — M0-IMPORT-REMEDIAL: the placeholder rule is mechanical, and every drop is named
-
-**Decision:** A `Classical Remedial` row is a placeholder when it
-carries no value in any column other than ID. That rule partitions the
-sheet exactly 210 placeholders / 141 real records. The 141 import as
-`needs-capture`; the 210 are dropped, and every dropped ID is returned
-so the reconciliation report can list them.
-
-**Rationale:** The record allows dropping but not dropping silently.
-A rule that needs no judgement can be re-run and disputed later — if
-the numbers ever look wrong, the report names the rule and the 210 IDs
-it applied to, and anyone can check it against the frozen sheet. The
-rule was not chosen to fit a target: it was applied first and produced
-210/141, which is what the brief already claimed.
-
-**On provenance:** every value here is `legacy`. None of these rows was
-ever matched against Discogs, so no Discogs field exists to carry over,
-and a test asserts none appears. `Label` is empty on all 141 — the
-"label captured on 0% of the backlog" finding — so the combined string
-in `Catalogue #` goes through the splitter: 31 split, 73 bare catalogue
-numbers, 37 refused and left with their combined string intact.
-
-**On item ids:** allocation moved out of the importers into
-`build-dataset.mjs`, so numbering runs unbroken across batches. Ids are
-stable as long as the import order is, and that order is fixed by the
-M0 sequence. The composed dataset is DG-0001 to DG-0446 — 305 enriched
-plus 141 backlog, which is exactly the brief's "446 already
-catalogued".
-
-**Alternatives:** Drop rows lacking a title or catalogue number —
-rejected, it would have discarded the 58 rows that carry only a
-composer, which are real records. Keep the placeholders as empty rows
-to be filled later — rejected, they are 210 unallocated ID slots, not
-records; the physical backlog is counted by handling discs, not by
-counting blank spreadsheet rows.
-
-## 2026-08-30 — M0-IMPORT-ENRICHED: which columns Discogs wrote, established from the data
-
-**Decision:** Import all 305 rows with per-field `<field>_source`
-columns. `Label`, `Discogs ID`, `Discogs URL` and `Discogs ID Score`
-are `discogs`; `Musicians` and `Track listing` are `discogs` on the 277
-matched rows and `legacy` on the other 28; everything else is `legacy`.
-Confirmation is `no` on every row. The existing confidence labels ride
-along as `discogs_confidence_legacy` and `discogs_score_legacy` — data
-to audit, never provenance.
-
-**Rationale:** Which columns the enrichment actually wrote was measured
-rather than assumed. `Label`, `Discogs ID`, `Discogs URL` and
-`Discogs ID Score` are populated on exactly the 277 rows where
-`Discogs record found?` is Yes and on none of the other 28 — a perfect
-correlation, so they are Discogs output. `Musicians` and `Track
-listing` are filled on all 305, but 166 of the 277 matched rows carry
-Discogs credit-role markers such as "(Orchestra)" and artist
-disambiguation such as "(6)", and none of the 28 unmatched rows do, so
-that column was overwritten by the same pass. The remaining columns
-are filled uniformly across all 305 and therefore predate it.
-
-The legacy confidence labels are carried but never trusted: 236 rows
-say "Exact", and 16 of the known-wrong matches are among them. A test
-asserts that no confidence label can make a row decision-eligible.
-
-**On `decision_eligible`:** the provenance rule is emitted as a
-computed column rather than left to convention, so it can be tested.
-It reads `no` on all 305 rows, which is the correct end state for a
-pure import — nothing has been confirmed by a person and nothing was
-captured off the shelf.
-
-Per-field confirmation state is deliberately not emitted as thirty more
-columns all reading `no`. M0 confirms nothing, so one row-level
-`confirmed` column states the invariant; M1's D1 schema materialises
-real per-value `field_source` rows.
-
-**Alternatives:** Treat every column in the sheet as `discogs` —
-rejected, it would misattribute the composer and title a person typed
-years ago. Treat the whole sheet as `legacy` — rejected, it would lose
-the record of what to re-verify in M2. Trust the confidence labels —
-rejected, that is the defect the project exists to fix.
-
-## 2026-08-30 — M0-SPLIT-LABEL-CATNO: labels are recognised, never inferred
-
-**Decision:** Split against a gazetteer of the 98 distinct labels
-attested in this collection's own data — the 277 rows of `Classical
-Master` where Discogs already supplied a separate Label. A label is
-emitted only when an attested name matches and the remainder is a
-well-formed catalogue number. Everything else is refused with a named
-reason, and refusals route to capture. Three outcomes, not two:
-`split`, `bare-catno` (no label present, which is complete rather than
-failed) and `refused`.
-
-**Rationale:** The record's rule is that a wrong label is worse than an
-absent one, because a wrong label corroborates a wrong match — the
-exact failure that put 26 of 277 existing matches on the wrong record.
-A pattern-based splitter would have to decide whether `Harmony` in
-`CBS Harmony 30001` is a sub-label or part of the catalogue number, and
-it would be guessing. Deriving the vocabulary from the data replaces
-that guess with evidence, and makes the refusals principled: `Decca Ace
-of Diamonds SDD 538` is refused because this collection has never
-attested `Ace of Diamonds`, not because a regex failed.
-
-Two-character labels are excluded from the gazetteer. `PS` is an
-attested label and also the prefix of `PS 287` and `PS5032`; keeping it
-would split real catalogue numbers in half.
-
-**Result on the 141 backlog rows:** 31 split, 73 bare catalogue numbers
-with no label present, 37 refused — 18 unattested sub-labels, 11
-unattested label prefixes, 7 cells holding two pressings, 1 unrecognised
-parenthetical. All 31 splits were checked by eye and are correct,
-including `EMI Eminence` beating `EMI` on longest match. Label casing
-is normalised to the attested form, so `Vox` becomes `VOX`.
-
-Nothing is discarded: every result keeps `combinedRaw`, so a refusal
-loses no data and a later pass with a larger gazetteer can re-split it.
-
-**Alternatives:** Pattern-only splitting — rejected, it cannot tell a
-sub-label from a catalogue prefix, and would emit exactly the confident
-wrong labels this project exists to stop. Accepting a parent label when
-the sub-label is unattested — rejected for the same reason: `Decca` is
-a label that pressing does not carry. Compound matching of two adjacent
-attested labels — rejected, it would gain 2 rows and would also merge
-`Columbia/CBS`, which is genuinely two labels.
-
-## 2026-08-30 — M0-REPAIR-ENCODING: two corruptions, one confirmed as MacRoman
-
-**Decision:** Repair in two separate passes. Byte-level: decode
-`classical vinyl list in progress.csv` with MacRoman rather than
-UTF-8. String-level: undo "UTF-8 bytes decoded as MacRoman" inside the
-workbooks by re-encoding to MacRoman and decoding as strict UTF-8,
-accepting the result only when the whole string decodes cleanly.
-U+00A0 folds to a space rather than being deleted; zero-width
-characters are deleted; newlines survive.
-
-**Rationale:** The byte histogram settles the diagnosis rather than
-assuming it — 0xCA x68, 0xD0 x57, 0x8E x19 read as NBSP, en dash and
-e-acute under MacRoman, and as unassigned, Eth and E-circumflex under
-cp1252. The record predicted cp1252 would produce different wrong
-answers; it does, and there is now a test asserting it.
-
-Strictness is the safety property. A repair that accepts partial
-decodes would rewrite legitimate text: `Side A • Side B` and
-`√2 is irrational` contain the exact characters MacRoman mojibake
-produces. Requiring that the entire string decode as valid UTF-8, and
-that it contain a UTF-8 lead byte at all, leaves both untouched — both
-are negative controls in the suite.
-
-U+00A0 folds to a space because in `CBS Harmony 30001` it separates
-the label from the catalogue number. Deleting it welds two tokens
-together and defeats the exact match this whole item exists to enable.
-Newlines survive because track listings are multi-line and M3 reads
-them per track.
-
-**Scale:** 331 distinct strings repaired across the frozen inputs —
-324 invisible-character fixes and 7 mojibake fixes. All 7 are in the
-`Label (and Catalog #)` column of the load files, which is the field
-the corroboration gate depends on.
-
-**Alternatives:** cp1252 — rejected on the evidence above. A
-character-by-character substitution table — rejected, it cannot tell
-a real bullet from half a mojibake pair, which is precisely the
-distinction that matters. Normalising U+2011 to ASCII hyphen here —
-rejected as out of scope: M0 repairs faithfully, M2 normalises, and
-conflating the two hides the original bytes. Noted on M2-MATCHER
-instead.
-
-## 2026-08-30 — M0-ARCHIVE-FREEZE: freeze 87 sources, not 9,285 files
-
-**Decision:** The frozen manifest covers the 87 files that are
-actually source data. `.venv/`, `__pycache__/` and nested `.git/`
-are excluded by declared pattern, each with its reason recorded in
-the manifest itself. Digests are sha256 over bytes; mtime is
-deliberately not recorded. The archived Discogs token is listed by
-path and size with its digest written as `REDACTED-SECRET`.
-
-**Rationale:** `Pre August 2026/` holds 9,285 files, of which 9,106
-are a Python virtualenv belonging to the old Windsurf CLI. Hashing
-them exceeded two minutes and froze nothing of value — a venv is
-reproducible from `pyproject.toml` and is not an input to any
-import. Scoped to real sources the manifest builds in 0.5 s, which
-makes `--check` cheap enough to run as a gate rather than a ritual.
-mtime is omitted because this tree lives on OneDrive and sync
-rewrites timestamps, so recording them would make `--check` fail for
-reasons unrelated to the bytes. The token digest is redacted because
-the manifest is committed, and a hash of a live credential does not
-belong in git history.
-
-**Alternatives:** Hash everything — rejected, minutes of work to
-freeze artefacts that no import reads. Exclude silently — rejected,
-an undeclared exclusion is indistinguishable from a bug; the
-manifest carries `excluded` and `redacted` lists so what is absent
-is auditable.

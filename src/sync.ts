@@ -5,26 +5,50 @@
  */
 
 import { allEntries, deleteEntry, putEntry, pruneSynced } from './queue.ts';
-import { markFailed, selectDrainable, toRequestBody, type QueuedCapture } from './queue-logic.ts';
+import {
+  markFailed, selectDrainable, shouldStopDraining, toRequestBody, type QueuedCapture,
+} from './queue-logic.ts';
 
 const API = '/api';
 
+/**
+ * A send failure that knows whether it was about this entry or about
+ * the world. `status` is null when the fetch never completed at all,
+ * which is what being offline looks like from here.
+ */
+class SendError extends Error {
+  status: number | null;
+  constructor(message: string, status: number | null) {
+    super(message);
+    this.status = status;
+  }
+}
+
+/** Fetch that turns an offline TypeError into a statusless SendError. */
+async function send(url: string, init: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch (err) {
+    throw new SendError(err instanceof Error ? err.message : String(err), null);
+  }
+}
+
 async function uploadPhotos(entry: QueuedCapture): Promise<void> {
   for (const photo of entry.photos) {
-    const res = await fetch(`${API}/photos/${encodeURIComponent(photo.key)}`, {
+    const res = await send(`${API}/photos/${encodeURIComponent(photo.key)}`, {
       method: 'PUT',
       headers: { 'content-type': photo.blob.type || 'image/jpeg' },
       body: photo.blob,
     });
     // 201 on success. A 409-free design: the key is client-assigned, so
     // re-uploading the same photo overwrites itself harmlessly.
-    if (!res.ok) throw new Error(`photo ${photo.key}: HTTP ${res.status}`);
+    if (!res.ok) throw new SendError(`photo ${photo.key}: HTTP ${res.status}`, res.status);
   }
 }
 
 async function sendOne(entry: QueuedCapture): Promise<void> {
   await uploadPhotos(entry);
-  const res = await fetch(`${API}/captures`, {
+  const res = await send(`${API}/captures`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(toRequestBody(entry)),
@@ -33,7 +57,7 @@ async function sendOne(entry: QueuedCapture): Promise<void> {
   // 200 (already had it) mean the entry is safely stored.
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
-    throw new Error(`capture: HTTP ${res.status} ${detail.slice(0, 120)}`);
+    throw new SendError(`capture: HTTP ${res.status} ${detail.slice(0, 120)}`, res.status);
   }
 }
 
@@ -59,8 +83,12 @@ export async function drain(now = Date.now()): Promise<{ sent: number; failed: n
         // The entry is never dropped. A failure schedules a retry.
         await putEntry(markFailed(entry, err instanceof Error ? err.message : String(err), Date.now()));
         failed++;
-        // Almost certainly offline; stop rather than burning the queue.
-        break;
+        // Offline or a server fault stops the pass — everything behind
+        // this would fail identically, and burning the queue costs
+        // battery for nothing. A fault in THIS entry does not stop it:
+        // one photo the server refuses must not hold a crate of twenty
+        // hostage behind it for ever.
+        if (shouldStopDraining(err instanceof SendError ? err.status : null)) break;
       }
     }
     await pruneSynced();

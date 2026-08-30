@@ -9,7 +9,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  markFailed, medianMs, nextBackoffMs, selectDrainable, summarise, toRequestBody,
+  BULK_CARRIED, PHOTO_LONG_EDGE, bulkFields, markFailed, medianMs, nextBackoffMs,
+  scaleTo, selectDrainable, shouldStopDraining, summarise, toRequestBody,
 } from '../../src/queue-logic.ts';
 
 const entry = (over = {}) => ({
@@ -108,4 +109,70 @@ test('the queued body is accepted by the Worker that will receive it', async () 
 
   // Neither — the client refuses this too, but the contract is shared.
   assert.equal(parseCapture(toRequestBody(entry({ fields: { crate: 'B4' } }))).ok, false);
+});
+
+// ── CAPTURE-BULK-PHOTOS — a crate in one pass ─────────────────────
+
+test('a photo is downscaled to the long edge, and a small one is left alone', () => {
+  // 4 MB a frame times twenty is ~80 MB in IndexedDB, on a phone, in a
+  // loft, where iOS evicts under storage pressure.
+  assert.deepEqual(scaleTo(4032, 3024), { width: 1568, height: 1176 }, 'landscape keeps its ratio');
+  assert.deepEqual(scaleTo(3024, 4032), { width: 1176, height: 1568 }, 'and so does portrait');
+  assert.equal(scaleTo(1200, 900), null, 'already small enough — re-encoding would only lose quality');
+  assert.equal(scaleTo(PHOTO_LONG_EDGE, PHOTO_LONG_EDGE), null, 'exactly at the edge is small enough');
+  assert.equal(scaleTo(0, 0), null, 'a degenerate size is left to the caller, never divided by');
+});
+
+test('a bulk row carries the crate but never another disc\'s claims', () => {
+  // THE fault this mode could introduce: one catalogue number copied
+  // across twenty rows is nineteen invented values, indistinguishable
+  // from typed ones — the M0 error, manufactured wholesale.
+  const base = {
+    crate: 'B4', position: '', capturedBy: 'Joe',
+    catnoRaw: 'SXL 6529', labelRaw: 'Decca', nameRaw: 'Solti',
+    titleRaw: 'Serenade', matrixRunout: 'ZAL-13045', yearRaw: '1972',
+    mediaGrade: 'VG+', sleeveGrade: 'VG',
+  };
+  const row = bulkFields(base, 0);
+  assert.deepEqual(row, { crate: 'B4', capturedBy: 'Joe' });
+  for (const dropped of ['catnoRaw', 'labelRaw', 'nameRaw', 'titleRaw', 'matrixRunout', 'yearRaw',
+    'mediaGrade', 'sleeveGrade']) {
+    assert.equal(row[dropped], undefined, `${dropped} is a claim about one disc`);
+  }
+  assert.deepEqual([...BULK_CARRIED], ['crate', 'position', 'capturedBy']);
+});
+
+test('position counts down the crate from a typed start, and stays absent otherwise', () => {
+  // Photographing in shelf order does make positions sequential, but
+  // inventing the starting point would be a guess — and a wrong value
+  // costs more than an absent one.
+  assert.equal(bulkFields({ crate: 'B4', position: '12' }, 0).position, '12');
+  assert.equal(bulkFields({ crate: 'B4', position: '12' }, 7).position, '19');
+  assert.equal(bulkFields({ crate: 'B4', position: '' }, 3).position, undefined, 'blank stays blank');
+  assert.equal(bulkFields({ crate: 'B4' }, 3).position, undefined);
+  assert.equal(bulkFields({ crate: 'B4', position: 'front' }, 1).position, undefined,
+    'unparseable is absent, not NaN');
+});
+
+test('a bulk row still produces a body the Worker accepts', () => {
+  const body = toRequestBody({
+    clientId: 'c9', createdAt: 1, msToCapture: 900, fields: bulkFields({ crate: 'B4', position: '3' }, 2),
+    photos: [{ kind: 'label_a', blob: new Blob(), key: 'c9.jpg' }],
+    state: 'pending', attempts: 0, nextAttemptAt: 0,
+  });
+  assert.deepEqual(body, {
+    clientId: 'c9', crate: 'B4', position: '5',
+    photos: [{ kind: 'label_a', r2Key: 'labels/c9.jpg' }],
+  });
+});
+
+test('one bad row does not hold a crate hostage, but offline still stops the pass', () => {
+  // Stopping on every failure is right for one entry and wrong for
+  // twenty: a photo the server refuses would sit at the head of the
+  // queue for ever with nineteen good ones stuck behind it.
+  assert.equal(shouldStopDraining(null), true, 'the fetch never completed — offline');
+  assert.equal(shouldStopDraining(503), true, 'R2 not configured yet; everything behind fails alike');
+  assert.equal(shouldStopDraining(500), true);
+  assert.equal(shouldStopDraining(413), false, 'this photo is too large — the next one may not be');
+  assert.equal(shouldStopDraining(400), false, 'a malformed body is about this entry alone');
 });

@@ -20,3 +20,4 @@
 - M2-MATCHER (follow-up) — throttling fix measured: the same 60-row sample went from 53 false "nothing found" to 4 verified and 36 needing review, with 0 failed queries (2026-08-30) — see decision-log
 - OPEN-SELL-THRESHOLD — value never earns a keep; sell only above £10, keep only for musical reasons (2026-08-30) — see decision-log
 - OPS-SPEND-GUARD — Free plan confirmed, so D1's 100k/day refusal is the real wall; per-tick write budget and query accounting shipped as redundancy, and a cpu_ms limit that made the Worker undeployable was found and removed (2026-08-30) — see decision-log
+- CAPTURE-BULK-PHOTOS — a crate photographs in one pass, one row per photo, nothing typed; bulk rows carry only crate, position and capturer, so no disc's catalogue number can reach another's row, and a rejected photo no longer blocks the crate behind it (2026-08-30) — see decision-log

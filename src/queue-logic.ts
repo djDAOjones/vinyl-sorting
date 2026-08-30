@@ -68,6 +68,77 @@ export function summarise(entries: QueuedCapture[]): {
   };
 }
 
+/**
+ * The long edge a queued photo is downscaled to, and why it is this.
+ *
+ * A phone frame is around 4 MB, so a crate of twenty is ~80 MB sitting
+ * in IndexedDB — on a phone, in a loft, where iOS evicts under storage
+ * pressure. 1568 px lands near 800 KB and is what the chat pack sends
+ * anyway, so nothing downstream loses anything.
+ */
+export const PHOTO_LONG_EDGE = 1568;
+
+/**
+ * Target dimensions for a downscale, or null when the image is already
+ * small enough. Separated from the canvas work so the arithmetic is
+ * testable without a browser.
+ */
+export function scaleTo(width: number, height: number, longEdge = PHOTO_LONG_EDGE):
+{ width: number; height: number } | null {
+  const long = Math.max(width, height);
+  if (!Number.isFinite(long) || long <= 0 || long <= longEdge) return null;
+  const ratio = longEdge / long;
+  return { width: Math.max(1, Math.round(width * ratio)), height: Math.max(1, Math.round(height * ratio)) };
+}
+
+/**
+ * The only fields a bulk capture carries from the form to every row.
+ *
+ * Everything else on that form is a claim about ONE disc — its
+ * catalogue number, its label, its condition. Copying a catalogue
+ * number across twenty rows would manufacture nineteen false values of
+ * exactly the kind M0 measured, and they would be indistinguishable
+ * from typed ones. Crate is where you are standing, position is
+ * countable, and who is capturing does not change between shots.
+ */
+export const BULK_CARRIED = ['crate', 'position', 'capturedBy'] as const;
+
+/**
+ * The fields for the index-th photo of a bulk run.
+ *
+ * Position auto-increments ONLY from a number the person actually
+ * typed. Blank stays blank: photographing in shelf order does make
+ * positions sequential, but inventing the starting point would be a
+ * guess, and this project's whole rule is that a wrong value costs more
+ * than an absent one. Typing 1 before a crate of twenty gets 1–20.
+ */
+export function bulkFields(base: Record<string, string>, index: number): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const key of BULK_CARRIED) {
+    const v = (base[key] ?? '').trim();
+    if (v) out[key] = v;
+  }
+  const start = Number.parseInt(out.position ?? '', 10);
+  if (Number.isFinite(start)) out.position = String(start + index);
+  else delete out.position;
+  return out;
+}
+
+/**
+ * Whether a failed send should stop the drain or let it move on.
+ *
+ * Stopping on every failure is right for one entry and wrong for a
+ * crate: a single photo the server refuses would hold nineteen good
+ * ones hostage for ever, retrying behind it. So the split is by cause.
+ * No status means the fetch never completed — offline, and everything
+ * behind it fails identically. 5xx is the server or a missing binding,
+ * equally shared. 4xx is about THIS entry alone.
+ */
+export function shouldStopDraining(status: number | null): boolean {
+  if (status === null) return true;
+  return status >= 500;
+}
+
 /** Record a failed attempt without losing the entry. */
 export function markFailed(entry: QueuedCapture, error: string, now: number): QueuedCapture {
   const attempts = entry.attempts + 1;

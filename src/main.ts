@@ -5,13 +5,21 @@
  * labels, type nothing, transcribe later at a desk. It is faster per
  * disc and it is delegable.
  *
+ * TWO MODES. One disc at a time, with the label and catalogue number
+ * typed; or a whole crate in one pass, where the shots ARE the capture
+ * and nothing is typed at all. The second is what "walk a crate
+ * photographing labels" actually means — twenty form interactions is
+ * the thing that stops the cataloguing.
+ *
  * The one rule the interface exists to enforce: LABEL AND CATALOGUE
  * NUMBER ARE SEPARATE INPUTS. Merging them is what left label captured
  * on 0% of the backlog and caused the 9% match error rate M0 measured.
  */
 
 import { putEntry, allEntries } from './queue.ts';
-import { summarise, type QueuedCapture } from './queue-logic.ts';
+import {
+  PHOTO_LONG_EDGE, bulkFields, scaleTo, summarise, type QueuedCapture,
+} from './queue-logic.ts';
 import { startSync, drain } from './sync.ts';
 
 const app = document.getElementById('app')!;
@@ -43,6 +51,12 @@ function render(): void {
     </button>
     <input id="file" type="file" accept="image/*" capture="environment" hidden>
     <p class="note">The photo settles every later question without handling the disc again.</p>
+
+    <button class="bulk" id="bulkBtn" type="button">📚 Photograph a whole crate</button>
+    <input id="bulkFile" type="file" accept="image/*" multiple hidden>
+    <p class="note">One row per photo, nothing typed. Only crate, position and who is
+      capturing carry over — a catalogue number belongs to one disc, so copying one
+      across twenty rows would invent nineteen wrong ones.</p>
 
     <fieldset>
       <legend>Where it lives</legend>
@@ -106,6 +120,14 @@ function render(): void {
     shot.innerHTML = `<img src="${photoUrl}" alt="The label just photographed"><span class="retake">Retake</span>`;
   });
 
+  const bulkFile = $<HTMLInputElement>('bulkFile');
+  $('bulkBtn').addEventListener('click', () => bulkFile.click());
+  bulkFile.addEventListener('change', () => {
+    const files = [...(bulkFile.files ?? [])];
+    bulkFile.value = '';       // so the same selection can be made twice
+    void saveBulk(files);
+  });
+
   $('save').addEventListener('click', () => { void save(); });
   $('clear').addEventListener('click', () => { resetForm(); });
   void refreshStatus();
@@ -159,6 +181,84 @@ async function save(): Promise<void> {
   void drain().then(refreshStatus);   // opportunistic, never awaited by the form
 }
 
+/**
+ * Downscale before queueing.
+ *
+ * The queue stores raw Blobs, so a crate of twenty phone frames is
+ * ~80 MB in IndexedDB — on a phone, in a loft, where iOS evicts under
+ * storage pressure. If the browser lacks the canvas APIs, the original
+ * is queued unchanged: a large photo is worth having, and losing the
+ * capture to a resize is not a trade this app should ever make.
+ */
+async function downscale(file: File): Promise<Blob> {
+  try {
+    if (typeof createImageBitmap !== 'function' || typeof OffscreenCanvas !== 'function') return file;
+    const bitmap = await createImageBitmap(file);
+    const target = scaleTo(bitmap.width, bitmap.height, PHOTO_LONG_EDGE);
+    if (!target) { bitmap.close(); return file; }
+    const canvas = new OffscreenCanvas(target.width, target.height);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) { bitmap.close(); return file; }
+    ctx.drawImage(bitmap, 0, 0, target.width, target.height);
+    bitmap.close();
+    return await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.82 });
+  } catch {
+    return file;
+  }
+}
+
+/**
+ * A crate in one pass: one row per photo, nothing typed.
+ *
+ * Each photo keeps its own `clientId`, so the Worker's idempotency
+ * still holds and a retry cannot double-write. Entries land on disk
+ * before anything reaches the network, exactly as the single path does.
+ */
+async function saveBulk(files: File[]): Promise<void> {
+  if (!files.length) return;
+  const base = readFields();
+  if (!base.crate?.trim()) {
+    return flash('Crate is needed, so a session card can say where to find it.', 'err');
+  }
+
+  const started = Date.now();
+  flash(`Queueing ${files.length} photo${files.length > 1 ? 's' : ''}…`);
+
+  let queued = 0;
+  for (const [index, file] of files.entries()) {
+    const clientId = uid();
+    await putEntry({
+      clientId,
+      createdAt: Date.now(),
+      // One shared elapsed time divided across the batch: the median is
+      // "seconds per disc", and charging one row the whole crate's
+      // wall-clock would wreck the only measurement the app makes of
+      // itself.
+      msToCapture: Math.round((Date.now() - started) / files.length),
+      fields: bulkFields(base, index),
+      photos: [{ kind: 'label_a', blob: await downscale(file), key: `${clientId}.jpg` }],
+      state: 'pending',
+      attempts: 0,
+      nextAttemptAt: 0,
+    });
+    queued++;
+    if (queued % 5 === 0) void refreshStatus();
+  }
+
+  sticky.crate = base.crate ?? '';
+  sticky.who = base.capturedBy ?? '';
+
+  // Move the position box on, so the next crateful continues the count
+  // instead of silently restarting it.
+  const start = Number.parseInt((base.position ?? '').trim(), 10);
+  const pos = document.getElementById('position') as HTMLInputElement | null;
+  if (pos && Number.isFinite(start)) pos.value = String(start + files.length);
+
+  flash(`${queued} queued from this crate. They upload on their own.`);
+  void refreshStatus();
+  void drain().then(refreshStatus);
+}
+
 function resetForm(): void {
   for (const id of ['catnoRaw', 'labelRaw', 'nameRaw', 'titleRaw', 'matrixRunout', 'yearRaw', 'position']) {
     const el = document.getElementById(id) as HTMLInputElement | null;
@@ -183,6 +283,9 @@ async function refreshStatus(): Promise<void> {
   const failed = s.failed ? ` · <span class="bad">${s.failed} retrying</span>` : '';
   const el = document.getElementById('status');
   if (el) {
+    // A crate that half-uploads must LOOK half-uploaded — the drain
+    // now continues past a single bad row, so "3 retrying" beside a
+    // falling queue is the honest picture rather than a stalled one.
     el.innerHTML = `<b>${s.pending}</b> queued · ${s.synced} sent${failed}<br>median ${median}`;
   }
 }
