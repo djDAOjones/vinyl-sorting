@@ -10,43 +10,31 @@
 export type QueueState = 'pending' | 'syncing' | 'synced' | 'failed';
 
 export interface QueuedPhoto {
-  kind: 'label_a' | 'label_b' | 'front' | 'back' | 'runout';
+  kind: 'label_a' | 'label_b' | 'front' | 'back' | 'runout' | 'other';
   blob: Blob;
   /** Assigned client-side so an upload can be retried to the same key. */
   key: string;
 }
 
 /**
- * The photo kinds, in the order a person meets them, with the words the
- * interface uses for each.
+ * The kind every photograph taken in the app is stored as.
  *
- * One frame often cannot hold what a record needs to say: the
- * catalogue number is on the centre label and the title is on the
- * sleeve, and on a boxed set they may be three surfaces apart. The
- * schema always allowed many photos per item — `item_photo` is a table,
- * not a column — and the Worker always stored an array. Only the form
- * insisted on exactly one.
+ * Capture takes as many photographs of a record as it needs and does
+ * not ask which is which. The maintainer's reasoning, and it is the
+ * project's own rule pointed at the interface: "there will be no
+ * consistency, so any attempt to ascribe information is dishonest and a
+ * waste of time."
  *
- * Each kind is used at most once per item, which keeps the R2 keys
- * unique without inventing a counter, and keeps the labels honest: a
- * sleeve back photographed as `label_b` would assert something untrue,
- * which is the fault the location fields were just fixed for.
+ * The five specific kinds each make a claim — this is the side-A label,
+ * the sleeve front, the deadwax. With nobody asserting any of them,
+ * writing one would invent a fact, and nothing downstream could tell an
+ * assumed `label_a` from a confirmed one. `other` claims nothing, which
+ * is the only honest thing to say about a photograph nobody described.
+ *
+ * Order is kept in the R2 key instead, which is a fact about the
+ * sequence rather than a claim about the content.
  */
-export const PHOTO_KINDS = [
-  { kind: 'label_a', label: 'Label' },
-  { kind: 'label_b', label: 'Label B' },
-  { kind: 'front', label: 'Sleeve front' },
-  { kind: 'back', label: 'Sleeve back' },
-  { kind: 'runout', label: 'Runout' },
-] as const;
-
-/** The kind the big button always takes or retakes. */
-export const PRIMARY_KIND = 'label_a';
-
-/** Kinds not yet photographed, in order — what the add-buttons offer. */
-export function unusedKinds(taken: readonly string[]): { kind: string; label: string }[] {
-  return PHOTO_KINDS.filter((k) => k.kind !== PRIMARY_KIND && !taken.includes(k.kind));
-}
+export const CAPTURED_KIND = 'other';
 
 export interface QueuedCapture {
   clientId: string;

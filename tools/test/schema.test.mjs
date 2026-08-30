@@ -19,8 +19,35 @@ const count = (/** @type {any} */ db, /** @type {string} */ t) => Number(one(db,
 
 test('every migration applies clean, in order', () => {
   const db = fresh();
-  assert.equal(Number(one(db, 'SELECT MAX(version) v FROM schema_migration').v), 2);
-  assert.equal(Number(one(db, 'SELECT COUNT(*) n FROM schema_migration').n), 2);
+  assert.equal(Number(one(db, 'SELECT MAX(version) v FROM schema_migration').v), 3);
+  assert.equal(Number(one(db, 'SELECT COUNT(*) n FROM schema_migration').n), 3);
+});
+
+test('a photograph can be stored without claiming what it shows', () => {
+  // Capture takes as many photographs as a record needs and does not
+  // ask which is which, because there is no consistency to ask about.
+  // Every existing kind asserts something — side-A label, sleeve front,
+  // deadwax — so storing one unasked would invent a fact.
+  const db = fresh();
+  db.exec("INSERT INTO item (crate) VALUES ('B4')");
+  db.exec("INSERT INTO item_photo (item_id, kind, r2_key) VALUES (1,'other','labels/x-1.jpg')");
+  db.exec("INSERT INTO item_photo (item_id, kind, r2_key) VALUES (1,'other','labels/x-2.jpg')");
+  assert.equal(count(db, 'item_photo'), 2, 'many undescribed photos per item');
+  assert.throws(() => db.exec("INSERT INTO item_photo (item_id, kind, r2_key) VALUES (1,'guess','labels/x-3.jpg')"),
+    /CHECK constraint failed/, 'and still only the kinds the schema knows');
+});
+
+test('the rebuild keeps kinds that were actually asserted', () => {
+  // Rows captured while the interface asked which photo this was are
+  // evidence, not guesses, and the migration must not flatten them.
+  const db = fresh();
+  db.exec("INSERT INTO item (crate) VALUES ('B4')");
+  for (const k of ['label_a', 'label_b', 'front', 'back', 'runout']) {
+    db.exec(`INSERT INTO item_photo (item_id, kind, r2_key) VALUES (1,'${k}','labels/${k}.jpg')`);
+  }
+  assert.equal(count(db, 'item_photo'), 5);
+  assert.throws(() => db.exec("INSERT INTO item_photo (item_id, kind, r2_key) VALUES (1,'other','labels/label_a.jpg')"),
+    /UNIQUE constraint failed/, 'the key is still what stops a double-write');
 });
 
 test('re-verification is a normal operation: items record when and by whom', () => {

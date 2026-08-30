@@ -60,7 +60,12 @@ the run on a single occurrence.
 node tools/photo-pack.mjs
 ```
 
-Packs of 10. Each pack is written **twice** — as a directory
+Packs of 10 **records**, not images. A record may have been
+photographed once or five times; its shots are never split across two
+packs, they are named `<row_id>-<n>.jpg`, and the prompt tells the
+reader that several images may be one record and asks for one object
+per record. Without that a disc photographed three times comes back as
+three records. Each pack is written **twice** — as a directory
 `data/photo-packs/pack-NN/` and as `pack-NN.zip` beside it — because
 there are two ways to get the reading done and they want different
 things. Both hold the images named after their row ids, a `PROMPT.txt`,

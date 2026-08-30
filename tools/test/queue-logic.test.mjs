@@ -9,9 +9,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  BULK_CARRIED, PHOTO_KINDS, PHOTO_LONG_EDGE, PRIMARY_KIND, bulkFields, markFailed,
+  BULK_CARRIED, CAPTURED_KIND, PHOTO_LONG_EDGE, bulkFields, markFailed,
   medianMs, nextBackoffMs, scaleTo, selectDrainable, shouldStopDraining, summarise,
-  toRequestBody, unusedKinds,
+  toRequestBody,
 } from '../../src/queue-logic.ts';
 
 const entry = (over = {}) => ({
@@ -180,40 +180,33 @@ test('one bad row does not hold a crate hostage, but offline still stops the pas
 
 // ── several photos for one disc ───────────────────────────────────
 
-test('the offered kinds are the ones not already taken', () => {
-  // A sleeve back filed as `label_b` would assert something untrue —
-  // the same fault the location fields were just fixed for. Offering
-  // only free kinds makes the wrong answer unreachable rather than
-  // merely discouraged.
-  assert.deepEqual(unusedKinds([]).map((k) => k.kind), ['label_b', 'front', 'back', 'runout'],
-    'the primary label is the big button, never an add-button');
-  assert.deepEqual(unusedKinds(['label_a', 'front']).map((k) => k.kind), ['label_b', 'back', 'runout']);
-  assert.deepEqual(unusedKinds(PHOTO_KINDS.map((k) => k.kind)), [], 'nothing left to offer');
+test('a captured photograph claims nothing about what it shows', () => {
+  // "There will be no consistency, so any attempt to ascribe
+  // information is dishonest and a waste of time" — maintainer,
+  // 2026-08-30. Every specific kind asserts something (side-A label,
+  // sleeve front, deadwax); with nobody asserting it, storing one would
+  // invent a fact that nothing downstream could tell from a real one.
+  assert.equal(CAPTURED_KIND, 'other');
+  assert.ok(!['label_a', 'label_b', 'front', 'back', 'runout'].includes(CAPTURED_KIND),
+    'the app must not claim a kind nobody chose');
 });
 
-test('every kind the form offers is one the Worker accepts', () => {
-  // The Worker rejects an unknown kind outright, so a typo here would
-  // queue photos that can never sync — and the queue never drops an
-  // entry, so they would retry for ever.
-  const accepted = ['label_a', 'label_b', 'front', 'back', 'runout'];
-  for (const k of PHOTO_KINDS) assert.ok(accepted.includes(k.kind), `${k.kind} is not a schema kind`);
-  assert.ok(accepted.includes(PRIMARY_KIND));
-  assert.equal(new Set(PHOTO_KINDS.map((k) => k.kind)).size, PHOTO_KINDS.length, 'no duplicates');
-});
-
-test('several photos on one capture keep distinct keys', () => {
-  // One capture now carries several photos, so the key cannot be the
-  // clientId alone or the second upload would overwrite the first.
+test('several photos on one capture keep distinct keys, numbered by order', () => {
+  // The key cannot be the clientId alone or the second upload would
+  // overwrite the first. The index is the only thing asserted, and it
+  // is a fact about sequence rather than a claim about content.
   const body = toRequestBody({
     clientId: 'c1', createdAt: 1, msToCapture: 100, fields: { catnoRaw: 'SXL 6113' },
     photos: [
-      { kind: 'label_a', blob: new Blob(), key: 'c1-label_a.jpg' },
-      { kind: 'front', blob: new Blob(), key: 'c1-front.jpg' },
+      { kind: 'other', blob: new Blob(), key: 'c1-1.jpg' },
+      { kind: 'other', blob: new Blob(), key: 'c1-2.jpg' },
+      { kind: 'other', blob: new Blob(), key: 'c1-3.jpg' },
     ],
     state: 'pending', attempts: 0, nextAttemptAt: 0,
   });
   assert.deepEqual(body.photos, [
-    { kind: 'label_a', r2Key: 'labels/c1-label_a.jpg' },
-    { kind: 'front', r2Key: 'labels/c1-front.jpg' },
+    { kind: 'other', r2Key: 'labels/c1-1.jpg' },
+    { kind: 'other', r2Key: 'labels/c1-2.jpg' },
+    { kind: 'other', r2Key: 'labels/c1-3.jpg' },
   ]);
 });

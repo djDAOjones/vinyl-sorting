@@ -55,7 +55,7 @@ const CATNO_FIELDS = new Set(['catno_raw']);
  * validates what comes back, so the two cannot drift apart.
  */
 export const FIELD_SPEC = [
-  ['row_id', 'the id printed in the filename of the image this row describes'],
+  ['row_id', 'the id at the start of the filename of this record\'s image(s)'],
   ['catno_raw', 'the catalogue number as printed — null unless you can point at it'],
   ['label_raw', 'the record label or company as printed, e.g. Deutsche Grammophon'],
   ['name_raw', 'composer and performers as printed, in the order printed, separated by semicolons'],
@@ -75,11 +75,11 @@ export const FIELD_SPEC = [
  * the whole guard.
  */
 export const NO_INFERENCE = [
-  'Report ONLY what is printed on the label in front of you.',
+  'Report ONLY what is printed in the photographs in front of you.',
   '',
   'Never infer a value from your knowledge of the recording, the',
   'performers, the repertoire or the pressing. If you recognise the',
-  'record, that is not evidence about what this label says. A value you',
+  'record, that is not evidence about what is printed on it. A value you',
   'supplied from memory rather than from the image is worse than no',
   'value at all, because nothing downstream can tell the two apart.',
 ].join('\n');
@@ -95,36 +95,58 @@ export const NO_INFERENCE = [
  * and a prompt that silently depends on one would fail in a way that
  * looks like bad extraction rather than a plumbing fault.
  */
-export function chatPrompt(rowIds) {
+export function chatPrompt(rows) {
+  // Accepts either a list of ids or a list of {rowId, photos} — a
+  // record is one row however many photographs it took.
+  const recs = rows.map((r) => (typeof r === 'string' ? { rowId: r, photos: 1 } : r));
+  const images = recs.reduce((n, r) => n + r.photos, 0);
+  const many = recs.some((r) => r.photos > 1);
+
   return [
-    rowIds.length === 1
-      ? 'Here is a photograph of a vinyl record centre label.'
-      : `Here are ${rowIds.length} photographs of vinyl record centre labels.`,
-    'Read it and return the printed information as JSON.',
+    images === 1
+      ? 'Here is a photograph of a vinyl record.'
+      : `Here are ${images} photographs of `
+        + `${recs.length === 1 ? 'one vinyl record' : `${recs.length} vinyl records`}.`,
+    'Read them and return the printed information as JSON.',
     '',
+    ...(many ? [
+      // Without this the model returns one object per image, and a
+      // record photographed three times becomes three records — the
+      // same misattribution the row ids exist to prevent, arriving from
+      // the other direction.
+      'SEVERAL PHOTOGRAPHS MAY SHOW THE SAME RECORD. Each filename',
+      'begins with the record\'s row id: `448-1.jpg` and `448-2.jpg` are',
+      'two photographs of record 448 — perhaps its label and its sleeve.',
+      '',
+      'Return ONE object per RECORD, not one per photograph, combining',
+      'what you can read across all of that record\'s photographs. A',
+      'value readable on any one of them is readable for that record.',
+      '',
+    ] : []),
     NO_INFERENCE,
     '',
-    'Use null for anything you cannot read directly off the image, and',
+    'Use null for anything you cannot read directly off the images, and',
     'name that field in `unreadable` if the reason was legibility rather',
-    'than the label simply not carrying it.',
+    'than the record simply not carrying it.',
     '',
-    'A record label carries many numbers — matrix and stamper codes, side',
+    'A record carries many numbers — matrix and stamper codes, side',
     'numbers, opus and K. numbers, timings, (P) and (C) years. Assign one',
     'to `catno_raw` ONLY if it is presented as the catalogue number. Every',
     'other number goes in `other_numbers`, unassigned. Leaving a number',
     'unassigned is a correct answer; guessing which field it belongs to is',
     'not.',
     '',
-    'Return a JSON array with one object per image, each having exactly',
-    'these keys:',
+    `Return a JSON array with one object per record — ${recs.length} in total —`,
+    'each having exactly these keys:',
     '',
     ...FIELD_SPEC.map(([k, d]) => `  ${k} — ${d}`),
     '',
-    'Each image is named after its row id. Report that id in `row_id`, so',
-    'a row can never be attributed to the wrong record. The ids in this',
-    'batch, in order, are:',
+    'Report the row id in `row_id`, so a reading can never be attributed',
+    'to the wrong record. The records in this batch are:',
     '',
-    ...rowIds.map((id) => `  ${id}`),
+    ...recs.map((r) => (many
+      ? `  ${r.rowId} — ${r.photos} photograph${r.photos === 1 ? '' : 's'}`
+      : `  ${r.rowId}`)),
     '',
     'Return the JSON array and nothing else.',
   ].join('\n');
@@ -132,25 +154,21 @@ export function chatPrompt(rowIds) {
 
 /**
  * The clause that keeps the measurement honest when the reading happens
- * in an agent session on this machine rather than in a browser chat.
+ * on this machine rather than in a browser chat.
  *
- * The no-upload path is cheaper in every way except one: a session
- * reading photographs off this disk can also read the answer sheet off
- * the same disk. `data/label-photos/ground-truth.csv` is what a person
- * typed off these very labels, and a reading produced with it in
- * context measures nothing at all — the same fault as verifying Discogs
- * with Discogs, which this project has now made twice and caught twice.
- *
- * Its own constant because a test asserts it survives editing, and
- * because in an agent session these words are the whole guard: nothing
- * mechanical can prove a context never saw a file.
+ * A reader with access to this repository can open the answer sheet
+ * whatever this says, so these words are a request and the pipeline
+ * does not rely on them: `photo-import` records whether an answer
+ * already existed for each row, and `photo-score` holds those rows out
+ * of the bar. Its own constant because a test asserts it survives
+ * editing, and because it must keep saying that it is only asking.
  */
 export const BLIND_READ = [
   'DO NOT LOOK UP THE ANSWER.',
   '',
   'If you can read this repository, you can also read',
   '`data/label-photos/ground-truth.csv`. That file is what a person',
-  'typed off these same labels — it is the answer sheet, and a reading',
+  'typed off these same records — it is the answer sheet, and a reading',
   'produced with it in context measures nothing at all.',
   '',
   'Do not open it. Do not grep for a catalogue number. Do not read',
@@ -174,14 +192,16 @@ export const BLIND_READ = [
  * statements of one contract drift, and the one that drifts is always
  * the copy nobody tests.
  */
-export function packInstructions(rowIds, packName, replyPath) {
+export function packInstructions(rows, packName, replyPath) {
+  const recs = rows.map((r) => (typeof r === 'string' ? { rowId: r, photos: 1 } : r));
   return [
-    rowIds.length === 1
-      ? `# ${packName} — read this record label`
-      : `# ${packName} — read these ${rowIds.length} record labels`,
+    recs.length === 1
+      ? `# ${packName} — read this record`
+      : `# ${packName} — read these ${recs.length} records`,
     '',
-    'You are looking at photographs of vinyl record centre labels. Each',
-    'image in this directory is named after its row id.',
+    'You are looking at photographs of vinyl records — labels, sleeves,',
+    'runouts, whatever was to hand. Each filename begins with the row id',
+    'of the record it shows.',
     '',
     BLIND_READ,
     '',
@@ -197,7 +217,7 @@ export function packInstructions(rowIds, packName, replyPath) {
     '',
     '## The task',
     '',
-    chatPrompt(rowIds),
+    chatPrompt(recs),
   ].join('\n');
 }
 

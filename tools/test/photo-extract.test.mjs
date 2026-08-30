@@ -87,9 +87,28 @@ test('the prompt carries the ids in its text, not only in the filenames', () => 
   const p = chatPrompt(['DG-0001', 'DG-0002']);
   assert.match(p, /DG-0001/);
   assert.match(p, /DG-0002/);
-  assert.match(p, /Here are 2 photographs/);
+  assert.match(p, /Here are 2 photographs of 2 vinyl records\./);
   assert.match(chatPrompt(['A']), /Here is a photograph/, 'and it reads correctly for one');
-  assert.match(p, /Report that id in `row_id`/);
+  assert.match(p, /Report the row id in `row_id`/);
+});
+
+test('several photographs of one record are asked for as one object', () => {
+  // A record photographed three times must come back as one reading,
+  // not three records. That is the same misattribution the row ids
+  // exist to prevent, arriving from the other direction.
+  const p = chatPrompt([{ rowId: '448', photos: 2 }, { rowId: '449', photos: 3 }]);
+  assert.match(p, /Here are 5 photographs of 2 vinyl records\./);
+  assert.match(p, /SEVERAL PHOTOGRAPHS MAY SHOW THE SAME RECORD/);
+  assert.match(p, /ONE object per RECORD, not one per photograph/);
+  assert.match(p, /one object per record — 2 in total/);
+  assert.match(p, /^  448 — 2 photographs$/m);
+  assert.match(p, /^  449 — 3 photographs$/m);
+
+  // And a batch where every record has one photograph says none of it,
+  // because there is nothing to disambiguate.
+  const single = chatPrompt([{ rowId: 'A', photos: 1 }, { rowId: 'B', photos: 1 }]);
+  assert.ok(!single.includes('SEVERAL PHOTOGRAPHS'), 'no instruction nobody needs');
+  assert.match(single, /^  A$/m);
 });
 
 // ── the reply, which is where a hand-run trip goes wrong ──────────
@@ -290,7 +309,7 @@ test('a pack is a directory as well as a zip, and carries its own instructions',
   assert.ok(existsSync(join(dir, 'packs', 'pack-01.zip')));
 
   const instructions = readFileSync(join(pack, 'READ-THIS-FIRST.md'), 'utf8');
-  assert.match(instructions, /^# pack-01 — read these 2 record labels$/m);
+  assert.match(instructions, /^# pack-01 — read these 2 records$/m);
   assert.ok(instructions.includes(chatPrompt(['a', 'b'])),
     'the task travels verbatim, so the two statements of it cannot drift');
   assert.match(instructions, /reply-01\.txt/, 'and it says where the answer goes');

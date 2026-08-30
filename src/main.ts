@@ -18,7 +18,7 @@
 
 import { putEntry, allEntries } from './queue.ts';
 import {
-  PHOTO_KINDS, PHOTO_LONG_EDGE, PRIMARY_KIND, bulkFields, scaleTo, summarise, unusedKinds,
+  CAPTURED_KIND, PHOTO_LONG_EDGE, bulkFields, scaleTo, summarise,
   type QueuedCapture, type QueuedPhoto,
 } from './queue-logic.ts';
 import { startSync, drain } from './sync.ts';
@@ -43,16 +43,16 @@ const sticky = {
 };
 
 /**
- * The photos taken for the disc in hand, at most one per kind.
+ * The photos taken for the disc in hand, in the order they were taken.
  *
- * One frame often cannot hold what a record needs to say — the
- * catalogue number is on the centre label and the title is on the
- * sleeve. The schema and the Worker always allowed several; only this
- * form insisted on one.
+ * No kind, no categories, nothing to choose. Another photograph is more
+ * often wanted than not, so the interface's job is to make the next one
+ * one tap away and then get out of the way. Order is kept because it is
+ * a fact; nothing else about a photograph is asserted, because nothing
+ * else is known.
  */
-type Shot = { kind: string; blob: Blob; url: string };
+type Shot = { blob: Blob; url: string };
 let photos: Shot[] = [];
-let pendingKind = PRIMARY_KIND;
 let startedAt = Date.now();
 
 const GRADES = ['', 'M', 'NM', 'VG+', 'VG', 'G', 'P'];
@@ -65,14 +65,13 @@ function render(): void {
       <div class="status" id="status">queue…</div>
     </div>
 
-    <button class="shot" id="shot" type="button" aria-label="Photograph the label">
-      <span class="hint">📷 Photograph the label</span>
+    <button class="shot" id="shot" type="button" aria-label="Photograph this record">
+      <span class="hint">📷 Photograph</span>
     </button>
-    <input id="file" type="file" accept="image/*" capture="environment" hidden>
-    <div class="adds" id="adds"></div>
+    <input id="file" type="file" accept="image/*" capture="environment" multiple hidden>
     <div class="strip" id="strip"></div>
-    <p class="note">Add as many as the record needs — the catalogue number and the
-      title are often not in the same frame.</p>
+    <p class="note">Keep going — label, sleeve, runout, whatever the record needs.
+      Nothing to label or choose. Queue it when you are done with this disc.</p>
 
     <button class="bulk" id="bulkBtn" type="button">📚 Photograph a whole crate</button>
     <input id="bulkFile" type="file" accept="image/*" multiple hidden>
@@ -131,19 +130,13 @@ function render(): void {
   localStorage.removeItem('dg.crate');
 
   const file = $<HTMLInputElement>('file');
-  // The big button is always the label shot; the add-buttons set
-  // `pendingKind` before opening the same picker.
-  $('shot').addEventListener('click', () => { pendingKind = PRIMARY_KIND; file.click(); });
+  $('shot').addEventListener('click', () => file.click());
   file.addEventListener('change', () => {
-    const f = file.files?.[0];
-    file.value = '';                 // so the same frame can be retaken
-    if (!f) return;
-    // A retake replaces that kind rather than adding a second of it,
-    // which keeps one photo per kind and the R2 keys unique.
-    const existing = photos.find((p) => p.kind === pendingKind);
-    if (existing) URL.revokeObjectURL(existing.url);
-    photos = photos.filter((p) => p.kind !== pendingKind);
-    photos.push({ kind: pendingKind, blob: f, url: URL.createObjectURL(f) });
+    // `multiple` as well, so a phone that offers the camera roll can
+    // hand over a run of shots in one go.
+    const picked = [...(file.files ?? [])];
+    file.value = '';                 // so the same frame can be picked twice
+    for (const f of picked) photos.push({ blob: f, url: URL.createObjectURL(f) });
     renderPhotos();
   });
 
@@ -162,49 +155,34 @@ function render(): void {
 }
 
 /**
- * Paint the shot button, the add-buttons and the thumbnail strip from
- * `photos`. One function so the three cannot disagree about what has
- * been taken.
+ * Paint the shot button and the strip from `photos`.
+ *
+ * The button never changes into a "done" state: another photograph is
+ * more often wanted than not, so it stays one tap away and `Queue it`
+ * is what says you have finished with this disc.
  */
 function renderPhotos(): void {
   const shot = document.getElementById('shot');
-  const adds = document.getElementById('adds');
   const strip = document.getElementById('strip');
-  if (!shot || !adds || !strip) return;
+  if (!shot || !strip) return;
 
-  const primary = photos.find((p) => p.kind === PRIMARY_KIND);
-  shot.classList.toggle('has-photo', Boolean(primary));
-  shot.innerHTML = primary
-    ? `<img src="${primary.url}" alt="The label just photographed"><span class="retake">Retake the label</span>`
-    : '<span class="hint">📷 Photograph the label</span>';
+  const n = photos.length;
+  shot.classList.toggle('has-photo', n > 0);
+  shot.innerHTML = n === 0
+    ? '<span class="hint">📷 Photograph</span>'
+    : `<img src="${photos[n - 1]!.url}" alt="The photograph just taken">
+       <span class="retake">📷 Another — ${n} so far</span>`;
 
-  // Offer only kinds not yet taken, so a photo can never be filed as
-  // something the record already has.
-  adds.innerHTML = photos.length
-    ? unusedKinds(photos.map((p) => p.kind))
-      .map((k) => `<button type="button" class="add" data-kind="${k.kind}">＋ ${k.label}</button>`).join('')
-    : '';
-  for (const btn of adds.querySelectorAll<HTMLButtonElement>('button.add')) {
-    btn.addEventListener('click', () => {
-      pendingKind = btn.dataset.kind ?? PRIMARY_KIND;
-      (document.getElementById('file') as HTMLInputElement).click();
-    });
-  }
-
-  // The label shot is shown by the big button above, so the strip
-  // carries the extras — the ones you would otherwise lose track of.
-  const extras = photos.filter((p) => p.kind !== PRIMARY_KIND);
-  strip.innerHTML = extras.map((p) => {
-    const name = PHOTO_KINDS.find((k) => k.kind === p.kind)?.label ?? p.kind;
-    return `<figure class="thumb"><img src="${p.url}" alt="${name}">
-      <figcaption>${name}</figcaption>
-      <button type="button" class="drop" data-kind="${p.kind}" aria-label="Remove ${name}">×</button></figure>`;
-  }).join('');
+  strip.innerHTML = photos.map((p, i) =>
+    `<figure class="thumb"><img src="${p.url}" alt="Photograph ${i + 1}">
+      <figcaption>${i + 1}</figcaption>
+      <button type="button" class="drop" data-i="${i}" aria-label="Remove photograph ${i + 1}">×</button></figure>`).join('');
   for (const btn of strip.querySelectorAll<HTMLButtonElement>('button.drop')) {
     btn.addEventListener('click', () => {
-      const gone = photos.find((p) => p.kind === btn.dataset.kind);
+      const i = Number(btn.dataset.i);
+      const gone = photos[i];
       if (gone) URL.revokeObjectURL(gone.url);
-      photos = photos.filter((p) => p.kind !== btn.dataset.kind);
+      photos = photos.filter((_, j) => j !== i);
       renderPhotos();
     });
   }
@@ -238,12 +216,14 @@ async function save(): Promise<void> {
     createdAt: Date.now(),
     msToCapture: Date.now() - startedAt,
     fields,
-    photos: await Promise.all(photos.map(async (p) => ({
-      kind: p.kind as QueuedPhoto['kind'],
+    photos: await Promise.all(photos.map(async (p, i) => ({
+      kind: CAPTURED_KIND as QueuedPhoto['kind'],
       blob: await downscale(p.blob),
-      // Keyed by kind as well as clientId: several photos now share one
-      // capture, and a retried upload must still land on the same key.
-      key: `${clientId}-${p.kind}.jpg`,
+      // The index is the only thing asserted about a photograph, and it
+      // is a fact about the order rather than a claim about the content.
+      // It also keeps the key stable, so a retried upload lands twice on
+      // the same object instead of making a second one.
+      key: `${clientId}-${i + 1}.jpg`,
     }))),
     state: 'pending',
     attempts: 0,
@@ -313,7 +293,7 @@ async function saveBulk(files: File[]): Promise<void> {
       // itself.
       msToCapture: Math.round((Date.now() - started) / files.length),
       fields: bulkFields(base, index),
-      photos: [{ kind: 'label_a', blob: await downscale(file), key: `${clientId}.jpg` }],
+      photos: [{ kind: CAPTURED_KIND as QueuedPhoto['kind'], blob: await downscale(file), key: `${clientId}-1.jpg` }],
       state: 'pending',
       attempts: 0,
       nextAttemptAt: 0,
@@ -347,7 +327,6 @@ function resetForm(): void {
   }
   for (const p of photos) URL.revokeObjectURL(p.url);
   photos = [];
-  pendingKind = PRIMARY_KIND;
   renderPhotos();
   startedAt = Date.now();
   (document.getElementById('catnoRaw') as HTMLInputElement | null)?.focus();

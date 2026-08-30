@@ -8,7 +8,11 @@ import type { Env } from './env.ts';
 
 /** Goldmine grades, the only values `item` accepts. */
 const GRADES = ['M', 'NM', 'VG+', 'VG', 'G', 'P'] as const;
-const PHOTO_KINDS = ['label_a', 'label_b', 'front', 'back', 'runout'] as const;
+// `other` means "a photograph of this item, not described" — what the
+// app stores, because it does not ask which photo is which and would
+// otherwise be inventing the answer. The five specific kinds stay for
+// anything that can honestly claim one.
+const PHOTO_KINDS = ['label_a', 'label_b', 'front', 'back', 'runout', 'other'] as const;
 
 export type Grade = (typeof GRADES)[number];
 export type PhotoKind = (typeof PHOTO_KINDS)[number];

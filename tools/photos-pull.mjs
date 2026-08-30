@@ -28,7 +28,7 @@
  * to it even by accident.
  *
  * Usage:
- *   node tools/photos-pull.mjs [--out data/label-photos] [--kind label_a|all]
+ *   node tools/photos-pull.mjs [--out data/label-photos] [--kind all|label_a|…]
  *                              [--limit 20] [--local] [--dry-run]
  */
 
@@ -40,7 +40,10 @@ const args = process.argv.slice(2);
 const argOf = (n, d) => { const i = args.indexOf(n); return i >= 0 && args[i + 1] ? args[i + 1] : d; };
 
 const outDir = argOf('--out', 'data/label-photos');
-const kind = argOf('--kind', 'label_a');
+// Everything, by default. The app no longer describes its photographs
+// — they are all `other` — so filtering by kind would now mean pulling
+// nothing, and a record's title may be on any one of its shots.
+const kind = argOf('--kind', 'all');
 const limit = Number(argOf('--limit', '0'));
 const remote = args.includes('--local') ? '--local' : '--remote';
 const dryRun = args.includes('--dry-run');
@@ -128,13 +131,18 @@ mkdirSync(outDir, { recursive: true });
 
 const pulled = [];
 const failed = [];
+/** How many photographs of each item have been named so far. */
+const seen = new Map();
 for (const row of rows) {
-  // Named by kind only when more than one kind is being pulled, so the
-  // one-photo case keeps the plain `<item_id>.jpg` that photo-pack
-  // expects as a row id.
-  const dest = join(outDir, kind === 'all' ? `${row.item_id}-${row.kind}.jpg` : `${row.item_id}.jpg`);
+  // `<item_id>-<n>.jpg`. The number is the order the photographs were
+  // taken, which is a fact; the filename asserts nothing else, because
+  // nothing else is known about them. photo-pack reads the item id back
+  // off the stem and groups a record's photographs together.
+  seen.set(row.item_id, (seen.get(row.item_id) ?? 0) + 1);
+  const dest = join(outDir, `${row.item_id}-${seen.get(row.item_id)}.jpg`);
   // Already on disk is a skip, not a re-download: a second run after
   // adding ten more discs should cost ten fetches, not two hundred.
+  row.file = dest.slice(dest.lastIndexOf('/') + 1);
   if (existsSync(dest)) { pulled.push(row); continue; }
   try {
     wrangler(['r2', 'object', 'get', `${BUCKET}/${row.r2_key}`, '--file', dest, remote]);
@@ -148,8 +156,10 @@ for (const row of rows) {
   }
 }
 
+// Several files may map to one row id, and that is the point: a record
+// is one row however many photographs it took.
 writeFileSync(join(outDir, 'row-ids.csv'),
-  `file,row_id\n${pulled.map((r) => `${r.item_id}.jpg,${r.item_id}`).join('\n')}\n`);
+  `file,row_id\n${pulled.map((r) => `${r.file},${r.item_id}`).join('\n')}\n`);
 
 /**
  * The ground truth, pre-filled from what a person typed into capture.
@@ -170,7 +180,9 @@ const q = (v) => {
   const s = (v ?? '').toString();
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
-const body = pulled.map((r) =>
+const byItem = new Map();
+for (const r of pulled) if (!byItem.has(r.item_id)) byItem.set(r.item_id, r);
+const body = [...byItem.values()].map((r) =>
   [r.item_id, r.catno_raw, r.label_raw, r.name_raw, r.title_raw, r.year_raw, ''].map(q).join(','));
 
 if (existsSync(truthPath) && readFileSync(truthPath, 'utf8').trim() !== header) {
@@ -182,12 +194,12 @@ if (existsSync(truthPath) && readFileSync(truthPath, 'utf8').trim() !== header) 
   console.log(`\nWrote ${truthPath} from the values you typed into capture.`);
 }
 
-console.log(`\n${pulled.length} photo(s) in ${outDir}.`);
+console.log(`\n${pulled.length} photo(s) of ${byItem.size} record(s) in ${outDir}.`);
 if (failed.length) {
   console.log(`\n${failed.length} had no object in R2 (captured before it was enabled?):`);
   for (const f of failed) console.log(`  item ${f.item_id} — ${f.r2_key}`);
 }
-const skipped = byKind.filter((k) => k.kind !== kind).reduce((n, k) => n + k.n, 0);
+const skipped = kind === 'all' ? 0 : byKind.filter((k) => k.kind !== kind).reduce((n, k) => n + k.n, 0);
 if (kind !== 'all' && skipped) {
   console.log(`\nNOT pulled: ${skipped} photo(s) of other kinds. A record whose title is`);
   console.log('on the sleeve cannot be read from its label alone — use --kind all to');

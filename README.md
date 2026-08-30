@@ -38,6 +38,13 @@ Capture has two modes. One disc at a time, with the label and catalogue
 number typed; or **Photograph a whole crate** — pick or shoot many, and
 each photo becomes its own row with nothing typed at all.
 
+Capture asks nothing about a photograph. Tap, tap, tap — the button
+says how many you have so far, and `Queue it` ends the record. Every
+one is stored as kind `other`, meaning "a photograph of this item, not
+described", because there is no consistency to describe and any other
+value would be an invented fact. Order is kept in the key, since order
+is the one thing actually known.
+
 A bulk row carries exactly three things: the crate, the position, and
 who is capturing. Every other box on the form is a claim about one
 disc, and copying a catalogue number across twenty rows would invent

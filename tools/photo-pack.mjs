@@ -36,7 +36,7 @@
  *
  * Usage:
  *   node tools/photo-pack.mjs [--photos data/label-photos]
- *                             [--out data/photo-packs] [--batch 10]
+ *                             [--out data/photo-packs] [--batch 10]   (records, not images)
  *                             [--ids data/label-photos/row-ids.csv]
  *                             [--long-edge 1568]
  */
@@ -81,22 +81,35 @@ const mapped = existsSync(idsPath)
   : new Map();
 
 const safe = (s) => s.replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+
+/**
+ * A record is one row however many photographs it took.
+ *
+ * With a mapping file, several files sharing a row id is the point —
+ * `448-1.jpg` and `448-2.jpg` are the label and the sleeve of record
+ * 448. Without one, the id falls back to the filename stem and a
+ * collision is still a fault: two unrelated photographs silently
+ * merged into one record is exactly the misattribution the ids exist
+ * to prevent.
+ */
 const rows = photos.map((file) => ({
   file,
   rowId: safe(mapped.get(file) || basename(file, extname(file))),
 }));
 
-// A duplicate id would attribute two records to one row, silently.
 const byId = new Map();
 for (const r of rows) {
   if (!r.rowId) { console.error(`${r.file} has no usable row id.`); process.exit(2); }
-  if (byId.has(r.rowId)) {
-    console.error(`Row id "${r.rowId}" is used by both ${byId.get(r.rowId)} and ${r.file}.`);
+  if (!mapped.size && byId.has(r.rowId)) {
+    console.error(`Row id "${r.rowId}" is used by both ${byId.get(r.rowId)[0]} and ${r.file}.`);
     console.error(`Give them distinct ids in ${idsPath} (columns: file,row_id).`);
     process.exit(2);
   }
-  byId.set(r.rowId, r.file);
+  byId.set(r.rowId, [...(byId.get(r.rowId) ?? []), r.file]);
 }
+
+/** Records, in id order, each with the files that show it. */
+const records = [...byId.entries()].map(([rowId, files]) => ({ rowId, files }));
 
 /**
  * Clear the packs, KEEP the replies.
@@ -115,8 +128,11 @@ for (const entry of readdirSync(outDir)) {
   }
 }
 
+// Batched by record rather than by image: splitting a record's
+// photographs across two packs would ask the reader to describe half a
+// disc and call it whole.
 const batches = [];
-for (let i = 0; i < rows.length; i += batchSize) batches.push(rows.slice(i, i + batchSize));
+for (let i = 0; i < records.length; i += batchSize) batches.push(records.slice(i, i + batchSize));
 
 const pad = (n) => String(n).padStart(2, '0');
 for (const [i, batch] of batches.entries()) {
@@ -124,14 +140,19 @@ for (const [i, batch] of batches.entries()) {
   const stage = join(outDir, name);
   mkdirSync(stage, { recursive: true });
 
-  for (const { file, rowId } of batch) {
-    // Downscale on the way in: a 4 MB phone frame uploads slowly and
-    // buys nothing, since every chat resizes before the model sees it.
-    execFileSync('sips', ['-Z', String(longEdge), join(photoDir, file), '--out', join(stage, `${rowId}.jpg`)],
-      { stdio: 'ignore' });
+  for (const { rowId, files } of batch) {
+    for (const [n, file] of files.entries()) {
+      // Downscale on the way in: a 4 MB phone frame uploads slowly and
+      // buys nothing, since every chat resizes before the model sees it.
+      // Named `<rowId>-<n>` so the reader can see which shots belong
+      // together without being told twice.
+      const name = files.length > 1 ? `${rowId}-${n + 1}.jpg` : `${rowId}.jpg`;
+      execFileSync('sips', ['-Z', String(longEdge), join(photoDir, file), '--out', join(stage, name)],
+        { stdio: 'ignore' });
+    }
   }
 
-  const ids = batch.map((b) => b.rowId);
+  const ids = batch.map((b) => ({ rowId: b.rowId, photos: b.files.length }));
   const replyPath = join(outDir, `reply-${pad(i + 1)}.txt`);
 
   // Two files, one contract. PROMPT.txt is what you paste into a
@@ -142,18 +163,21 @@ for (const [i, batch] of batches.entries()) {
   writeFileSync(join(stage, 'PROMPT.txt'), `${chatPrompt(ids)}\n`);
   writeFileSync(join(stage, 'READ-THIS-FIRST.md'), `${packInstructions(ids, name, replyPath)}\n`);
   writeFileSync(join(stage, 'manifest.csv'),
-    `row_id,original_file\n${batch.map((b) => `${b.rowId},${b.file}`).join('\n')}\n`);
+    `row_id,original_file\n${batch.flatMap((b) => b.files.map((f) => `${b.rowId},${f}`)).join('\n')}\n`);
 
   execFileSync('zip', ['-q', '-r', `${name}.zip`, name], { cwd: outDir });
   // The directory STAYS. It is the no-upload path, and deleting it
   // would leave the zip as the only way in — which is the expensive way.
-  console.log(`${name}/ and ${name}.zip — ${batch.length} image(s): ${ids.join(', ')}`);
+  const shots = batch.reduce((n, b) => n + b.files.length, 0);
+  console.log(`${name}/ and ${name}.zip — ${batch.length} record(s), ${shots} image(s): `
+    + `${batch.map((b) => b.rowId).join(', ')}`);
 }
 
 writeFileSync(join(outDir, 'row-ids.csv'),
   `row_id,original_file\n${rows.map((r) => `${r.rowId},${r.file}`).join('\n')}\n`);
 
-console.log(`\n${batches.length} pack(s) in ${outDir}, ${rows.length} photo(s) total.`);
+console.log(`\n${batches.length} pack(s) in ${outDir}: ${records.length} record(s), `
+  + `${rows.length} photograph(s).`);
 console.log('\nCheapest path — no upload. In a session that has NOT seen');
 console.log(`${truthPath}, say:`);
 console.log(`\n  Read ${join(outDir, 'pack-01')}/READ-THIS-FIRST.md and do what it says.`);

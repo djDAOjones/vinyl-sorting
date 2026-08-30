@@ -2,6 +2,52 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — CAPTURE-UNDESCRIBED: the app stops asking what a photograph shows
+
+**Decision:** Capture takes as many photographs of a record as you tap
+for, and asks nothing about any of them. Every app-captured photograph
+is stored as a new kind, `other`, meaning "a photograph of this item,
+not described". Migration 003 rebuilds `item_photo` to allow it. The
+five specific kinds stay valid for anything that can honestly claim
+one; nothing captured in the app claims one, including the first shot.
+
+**Rationale:** Maintainer, rejecting the kind-picker shipped hours
+earlier: *"there will be no consistency, so any attempt to ascribe
+information is dishonest and a waste of time."* That is this project's
+own rule aimed at its own interface, and it is correct. `label_a`,
+`front` and `runout` each assert something. With nobody asserting it,
+writing one would invent a fact — and nothing downstream could
+distinguish an assumed `label_a` from a confirmed one, which is the
+failure the provenance rule exists to prevent.
+
+The two cheaper options were both rejected on that reasoning.
+Positional assignment (photo 3 is the sleeve front) asserts something
+specific and wrong. Reusing `label_b` for extras asserts something the
+schema does not mean. Only a new value ascribes nothing.
+
+**A schema change, so it was a stop-and-ask**, per AGENTS.md. Taken now
+rather than later because production held exactly one photo row: the
+`item_photo` rebuild is as cheap as it will ever be, and the same
+change in six months would carry hundreds of rows across a DROP TABLE.
+Existing rows keep the kinds they were given — those were asserted by
+an interface that asked, so they are evidence rather than guesses.
+
+**Order is kept, because order is a fact.** The R2 key is
+`clientId-<n>.jpg`. The index says when the photograph was taken and
+nothing about what is in it, and it keeps the key stable so a retried
+upload lands on the same object instead of making a second one.
+
+**This forced the grouping work that was deferred this morning**, and
+the deferral turned out to be right for the wrong reason: it was
+waiting on a measurement, and what actually settled it was a product
+decision. `photos-pull` now takes every photograph and names them
+`<item_id>-<n>.jpg`; `photo-pack` batches by RECORD rather than by
+image, so a record's shots can never be split across two packs; and the
+prompt tells the reader that several images may be one record and asks
+for one object per record. Without that last part a record photographed
+three times comes back as three records — the same misattribution the
+row ids exist to prevent, arriving from the other direction.
+
 ## 2026-08-30 — CAPTURE-MANY-PHOTOS: one frame is not one record
 
 **Decision:** A capture carries several photographs, at most one of
