@@ -10,10 +10,6 @@
 
 <!-- Intent: M0 — reconcile the existing spreadsheets into one clean, provenance-tagged dataset. No app required; can start now. -->
 
-- [ ] **M0-IMPORT-ENRICHED Import the 305 enriched rows as unverified**
-  — Import the 305 enriched records from Vinyl Records Record 2 Jen.xlsx
-  with every Discogs-derived field marked unverified, so none of them can
-  feed a decision before re-verification.
 - [ ] **M0-IMPORT-REMEDIAL Import 141 remedial rows, drop 210
   placeholders** — Import the 141 real Remedial rows as needing capture
   and drop the 210 empty placeholder rows, counting both in the

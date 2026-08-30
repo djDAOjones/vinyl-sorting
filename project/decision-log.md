@@ -2,6 +2,48 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — M0-IMPORT-ENRICHED: which columns Discogs wrote, established from the data
+
+**Decision:** Import all 305 rows with per-field `<field>_source`
+columns. `Label`, `Discogs ID`, `Discogs URL` and `Discogs ID Score`
+are `discogs`; `Musicians` and `Track listing` are `discogs` on the 277
+matched rows and `legacy` on the other 28; everything else is `legacy`.
+Confirmation is `no` on every row. The existing confidence labels ride
+along as `discogs_confidence_legacy` and `discogs_score_legacy` — data
+to audit, never provenance.
+
+**Rationale:** Which columns the enrichment actually wrote was measured
+rather than assumed. `Label`, `Discogs ID`, `Discogs URL` and
+`Discogs ID Score` are populated on exactly the 277 rows where
+`Discogs record found?` is Yes and on none of the other 28 — a perfect
+correlation, so they are Discogs output. `Musicians` and `Track
+listing` are filled on all 305, but 166 of the 277 matched rows carry
+Discogs credit-role markers such as "(Orchestra)" and artist
+disambiguation such as "(6)", and none of the 28 unmatched rows do, so
+that column was overwritten by the same pass. The remaining columns
+are filled uniformly across all 305 and therefore predate it.
+
+The legacy confidence labels are carried but never trusted: 236 rows
+say "Exact", and 16 of the known-wrong matches are among them. A test
+asserts that no confidence label can make a row decision-eligible.
+
+**On `decision_eligible`:** the provenance rule is emitted as a
+computed column rather than left to convention, so it can be tested.
+It reads `no` on all 305 rows, which is the correct end state for a
+pure import — nothing has been confirmed by a person and nothing was
+captured off the shelf.
+
+Per-field confirmation state is deliberately not emitted as thirty more
+columns all reading `no`. M0 confirms nothing, so one row-level
+`confirmed` column states the invariant; M1's D1 schema materialises
+real per-value `field_source` rows.
+
+**Alternatives:** Treat every column in the sheet as `discogs` —
+rejected, it would misattribute the composer and title a person typed
+years ago. Treat the whole sheet as `legacy` — rejected, it would lose
+the record of what to re-verify in M2. Trust the confidence labels —
+rejected, that is the defect the project exists to fix.
+
 ## 2026-08-30 — M0-SPLIT-LABEL-CATNO: labels are recognised, never inferred
 
 **Decision:** Split against a gazetteer of the 98 distinct labels
