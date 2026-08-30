@@ -1,0 +1,853 @@
+{
+  "ranAt": "2026-08-30T13:38:42.212Z",
+  "attempted": 60,
+  "verified": 4,
+  "needsReview": 36,
+  "noMatch": 20,
+  "rejectedBeforeAnyCall": 0,
+  "errored": 0,
+  "apiCalls": 284,
+  "queryErrors": 0,
+  "outcomes": [
+    {
+      "itemId": 59,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "CBS77506",
+        "title": "The Nine Symphonies – Volume One: Symphonies Nos. 1, 2, 3",
+        "name": "Leonard Bernstein"
+      }
+    },
+    {
+      "itemId": 60,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "CBS77507",
+        "title": "The Nine Symphonies – Volume Two: Symphonies Nos. 4, 7, 8",
+        "name": "Leonard Bernstein"
+      }
+    },
+    {
+      "itemId": 76,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "CBS30020",
+        "title": "Rachmaninoff's Greatest Hits (compilation)",
+        "name": "Various (Bernstein / Ormandy)"
+      }
+    },
+    {
+      "itemId": 88,
+      "verdict": "needs_review",
+      "reason": "score 50 < 80; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 27,
+      "capture": {
+        "catno": "MALS607",
+        "title": "Strauss Waltzes",
+        "name": "Hans Jürgen Walther"
+      }
+    },
+    {
+      "itemId": 91,
+      "verdict": "needs_review",
+      "reason": "score 50 < 80; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 24,
+      "capture": {
+        "catno": "RB-16109",
+        "title": "Die Fledermaus (Highlights)",
+        "name": "Fritz Reiner / Robert Shaw"
+      }
+    },
+    {
+      "itemId": 110,
+      "verdict": "needs_review",
+      "reason": "score 25 < 80; only 1 signal family (title) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "CBS00327",
+        "title": "Greatest Hits Volume 2",
+        "name": "Bernstein and Ormandy"
+      }
+    },
+    {
+      "itemId": 120,
+      "verdict": "needs_review",
+      "reason": "score 5 < 80; only 0 signal family (none) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 2,
+      "queryErrors": 0,
+      "candidates": 19,
+      "capture": {
+        "catno": "CBS0003",
+        "title": "Greatest Hits Volume 1",
+        "name": "Bernstein and Ormandy"
+      }
+    },
+    {
+      "itemId": 148,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "STXIS5277",
+        "title": "Janet Baker singss Schumann, Schubert and Brahmms",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 180,
+      "verdict": "needs_review",
+      "reason": "score 35 < 80; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 15,
+      "capture": {
+        "catno": "RDS9860",
+        "title": "Eric Robinson's World of Music",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 185,
+      "verdict": "needs_review",
+      "reason": "score 35 < 80; margin 10 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 4,
+      "queryErrors": 0,
+      "candidates": 3,
+      "capture": {
+        "catno": "6866030",
+        "title": "An Evening with the English Chamber Orchestra",
+        "name": "Leppard, De Waart, Mackarras"
+      }
+    },
+    {
+      "itemId": 188,
+      "verdict": "needs_review",
+      "reason": "score 25 < 80; only 1 signal family (title) — a catalogue number alone is a lead, not a verdict",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 3,
+      "capture": {
+        "catno": "RDS9452",
+        "title": "Classical Piano Music 2",
+        "name": "Earl Wild"
+      }
+    },
+    {
+      "itemId": 189,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 3,
+      "capture": {
+        "catno": "RDS9451",
+        "title": "Classical Piano Music 1",
+        "name": "Earl Wild"
+      }
+    },
+    {
+      "itemId": 195,
+      "verdict": "needs_review",
+      "reason": "score 15 < 80; only 1 signal family (format) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 3,
+      "capture": {
+        "catno": "RDS6688",
+        "title": "The Romantic Music of Russia",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 198,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 1,
+      "capture": {
+        "catno": "RDS9453",
+        "title": "Earl Wild Classical Piano Magic 3",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 199,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "RDS9454",
+        "title": "Earl Wild Classical Piano Magic 4",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 200,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "RDS9455",
+        "title": "Earl Wild Classical Piano Magic 5",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 202,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 17,
+      "capture": {
+        "catno": "ONE1146",
+        "title": "Hooked on Classics",
+        "name": "Louis Clark"
+      }
+    },
+    {
+      "itemId": 226,
+      "verdict": "needs_review",
+      "reason": "score 25 < 80; only 1 signal family (title) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "RDS6677",
+        "title": "Dances from the Opera",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 228,
+      "verdict": "needs_review",
+      "reason": "score 25 < 80; only 1 signal family (title) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 22,
+      "capture": {
+        "catno": "RDS9865",
+        "title": "Hungarian Rhapsody",
+        "name": "Eric Robinson / Charles Gerhardt / Douglas Gamley"
+      }
+    },
+    {
+      "itemId": 229,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "RDS9866",
+        "title": "Rustle of Spring - A Scandinavian Rhapsody",
+        "name": "Eric Robinson / Charles Gerhardt / Douglas Gamley"
+      }
+    },
+    {
+      "itemId": 230,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "RDS9867",
+        "title": "The Romantic Music of Russia",
+        "name": "Eric Robinson / Charles Gerhardt / Douglas Gamley"
+      }
+    },
+    {
+      "itemId": 231,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "RDS9868",
+        "title": "Bolero! A Spanish Serenade",
+        "name": "Eric Robinson / Charles Gerhardt / Douglas Gamley"
+      }
+    },
+    {
+      "itemId": 232,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 1,
+      "capture": {
+        "catno": "RDS9861",
+        "title": "Austria Land of Music and Laughter",
+        "name": "Eric Robinson / Charles Gerhardt / Douglas Gamley"
+      }
+    },
+    {
+      "itemId": 233,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 2,
+      "capture": {
+        "catno": "RDS9864",
+        "title": "The Magic and Gaity of France",
+        "name": "Eric Robinson / Charles Gerhardt / Douglas Gamley"
+      }
+    },
+    {
+      "itemId": 234,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "RDS9863",
+        "title": "German Land of Mystery and Melody",
+        "name": "Eric Robinson / Charles Gerhardt / Douglas Gamley"
+      }
+    },
+    {
+      "itemId": 242,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "RDS9869",
+        "title": "The World of Merry England",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 243,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "RDS9869",
+        "title": "From Bohemians Fields and Forests",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 275,
+      "verdict": "needs_review",
+      "reason": "score 25 < 80; only 1 signal family (title) — a catalogue number alone is a lead, not a verdict",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 1,
+      "capture": {
+        "catno": "Elementry1176",
+        "title": "Ballet Class vol 8",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 306,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 8,
+      "queryErrors": 0,
+      "candidates": 14,
+      "capture": {
+        "catno": "6308 177",
+        "title": "Play Bach – 6 Masterpieces",
+        "name": "J.S. Bach"
+      }
+    },
+    {
+      "itemId": 307,
+      "verdict": "needs_review",
+      "reason": "score 68 < 80; margin 8 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "CBS Harmony 30001",
+        "title": "Bach’s Greatest Hits, Vol. 1",
+        "name": "J.S. Bach"
+      }
+    },
+    {
+      "itemId": 308,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "Decca (London) LL 3287",
+        "title": "Play Bach No. 1",
+        "name": "J.S. Bach"
+      }
+    },
+    {
+      "itemId": 309,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 7,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "London (UK) PS 287 / Mono: LL 3287",
+        "title": "Original Jazz Interpretations of Bach – Play Bach, Vol. 1",
+        "name": "J.S. Bach"
+      }
+    },
+    {
+      "itemId": 310,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "HMV (EMI) HQS 1145",
+        "title": "Bach – Recital",
+        "name": "J.S. Bach"
+      }
+    },
+    {
+      "itemId": 311,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "XID 5248",
+        "title": "Segovia & Rosalyn Tureck Play Bach",
+        "name": "J.S. Bach"
+      }
+    },
+    {
+      "itemId": 312,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "DGG 2530 597",
+        "title": "Berlioz – Symphonie fantastique, Op. 14",
+        "name": "Herbert von Karajan"
+      }
+    },
+    {
+      "itemId": 313,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "HMV Concert Classics SXLP 30295",
+        "title": "Berlioz – Symphonie fantastique, Op. 14",
+        "name": "Sir Thomas Beecham"
+      }
+    },
+    {
+      "itemId": 314,
+      "verdict": "needs_review",
+      "reason": "score 23 < 80; only 0 signal family (none) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "CBS (UK) SPR 21",
+        "title": "Berlioz – Symphonie fantastique, Op. 14",
+        "name": "Leonard Bernstein"
+      }
+    },
+    {
+      "itemId": 315,
+      "verdict": "needs_review",
+      "reason": "score 25 < 80; only 1 signal family (title) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 7,
+      "queryErrors": 0,
+      "candidates": 2,
+      "capture": {
+        "catno": "Columbia/EMI (set) 33CX/ANG [Cat. 051103]",
+        "title": "Brahms – The Four Symphonies",
+        "name": "Otto Klemperer"
+      }
+    },
+    {
+      "itemId": 316,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "DG Resonance 2535 102",
+        "title": "Brahms – Symphony No. 1 in C minor, Op. 68",
+        "name": "Karl Böhm"
+      }
+    },
+    {
+      "itemId": 317,
+      "verdict": "verified",
+      "reason": "score 135, families identifier+label+title+people, margin 45",
+      "chosenDiscogsId": 3241345,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 14,
+      "capture": {
+        "catno": "CFP 40096",
+        "title": "Brahms – Symphony No. 1 in C minor, Op. 68",
+        "name": "James Loughran"
+      }
+    },
+    {
+      "itemId": 318,
+      "verdict": "needs_review",
+      "reason": "score 53 < 80; only 1 signal family (label) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "CFP 40219",
+        "title": "Brahms – Symphony No. 2 in D major, Op. 73",
+        "name": "James Loughran"
+      }
+    },
+    {
+      "itemId": 319,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+label, margin 37",
+      "chosenDiscogsId": 7820396,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 12,
+      "capture": {
+        "catno": "CFP 40237",
+        "title": "Brahms – Symphony No. 3 in F major, Op. 90",
+        "name": "James Loughran"
+      }
+    },
+    {
+      "itemId": 320,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "Mercury Wing WL 1003",
+        "title": "Brahms – Symphony No. 4 in E minor, Op. 98",
+        "name": "Paul Paray"
+      }
+    },
+    {
+      "itemId": 321,
+      "verdict": "needs_review",
+      "reason": "score 53 < 80; only 1 signal family (label) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "T 30",
+        "title": "Brahms – Violin Concerto in D major, Op. 77",
+        "name": "Anthony Collins"
+      }
+    },
+    {
+      "itemId": 322,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "Philips Fontana SFL 14033",
+        "title": "Brahms – Violin Concerto in D major, Op. 77",
+        "name": "Hein Jordans"
+      }
+    },
+    {
+      "itemId": 323,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 2,
+      "queryErrors": 0,
+      "candidates": 1,
+      "capture": {
+        "catno": "Columbia/ CBS (M 30517); France: Pathé (Cat. 6990 55)",
+        "title": "Tchaikovsky – Violin Concerto in D major, Op. 35 / Mendelssohn – Violin Concerto in E minor, Op. 64",
+        "name": "Eugene Ormandy"
+      }
+    },
+    {
+      "itemId": 324,
+      "verdict": "needs_review",
+      "reason": "margin 20 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 7,
+      "queryErrors": 0,
+      "candidates": 31,
+      "capture": {
+        "catno": "SUA 10474",
+        "title": "Brahms – Violin Sonatas Nos. 2 & 3",
+        "name": "Johannes Brahms"
+      }
+    },
+    {
+      "itemId": 325,
+      "verdict": "needs_review",
+      "reason": "score 23 < 80; only 0 signal family (none) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "Decca Ace of Diamonds SDD 538",
+        "title": "Brahms – Piano Works Vol. 7: Variations on a Theme by Handel, Op. 24; Variations on a Theme by Paganini, Op. 35",
+        "name": "Johannes Brahms"
+      }
+    },
+    {
+      "itemId": 326,
+      "verdict": "verified",
+      "reason": "score 135, families identifier+label+title+people, margin 37",
+      "chosenDiscogsId": 3076864,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 27,
+      "capture": {
+        "catno": "T 213",
+        "title": "Brahms – Piano Concerto No. 2 in B-flat major, Op. 83",
+        "name": "Dean Dixon"
+      }
+    },
+    {
+      "itemId": 327,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 7,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "RCA Red Seal LSC-7054 (US); later RL 42057 (2×LP)",
+        "title": "Brahms – Ein deutsches Requiem, Op. 45 / Vier ernste Gesänge, Op. 121",
+        "name": "Erich Leinsdorf"
+      }
+    },
+    {
+      "itemId": 328,
+      "verdict": "verified",
+      "reason": "score 105, families identifier+title+people, margin 45",
+      "chosenDiscogsId": 5760263,
+      "queriesRun": 7,
+      "queryErrors": 0,
+      "candidates": 30,
+      "capture": {
+        "catno": "CFP 40288",
+        "title": "Brahms – String Sextet No. 1 in B-flat major, Op. 18",
+        "name": "Johannes Brahms"
+      }
+    },
+    {
+      "itemId": 329,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 23,
+      "capture": {
+        "catno": "SPA 315",
+        "title": "The World of Brahms",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 330,
+      "verdict": "needs_review",
+      "reason": "score 5 < 80; only 0 signal family (none) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 12,
+      "capture": {
+        "catno": "410 640-1",
+        "title": "Brahms – Symphony No. 1 in C minor, Op. 68",
+        "name": "Riccardo Chailly"
+      }
+    },
+    {
+      "itemId": 331,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "EMI Columbia SAX 5294",
+        "title": "Bruckner – Symphony No. 3 in D minor, WAB 103",
+        "name": "George Szell"
+      }
+    },
+    {
+      "itemId": 332,
+      "verdict": "needs_review",
+      "reason": "score 23 < 80; only 0 signal family (none) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "Urania URLP 899",
+        "title": "Bruckner – Mass No. 3 in F minor, WAB 28",
+        "name": "Karl Forster"
+      }
+    },
+    {
+      "itemId": 333,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 12,
+      "capture": {
+        "catno": "DG 2530 336",
+        "title": "Bruckner – Symphony No. 4 in E-flat major “Romantic”, WAB 104",
+        "name": "Daniel Barenboim"
+      }
+    },
+    {
+      "itemId": 334,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 10,
+      "queryErrors": 0,
+      "candidates": 4,
+      "capture": {
+        "catno": "LSC-3177",
+        "title": "Bruckner – Symphony No. 6 in A major, WAB 106",
+        "name": "William Steinberg"
+      }
+    },
+    {
+      "itemId": 335,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 8,
+      "queryErrors": 0,
+      "candidates": 23,
+      "capture": {
+        "catno": "PL 10.750",
+        "title": "Bruckner – Symphony No. 7 in E major, WAB 107",
+        "name": "Hans Rosbaud"
+      }
+    },
+    {
+      "itemId": 336,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "CBS (2×LP) M2 35238",
+        "title": "Bruckner – Symphony No. 9 in D minor, WAB 109 / Te Deum",
+        "name": "Bruno Walter"
+      }
+    },
+    {
+      "itemId": 337,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 16,
+      "capture": {
+        "catno": "Westminster (2LP) WST 233/234",
+        "title": "Bruckner – Symphony No. 8 in C minor, WAB 108",
+        "name": "Hans Knappertsbusch"
+      }
+    }
+  ]
+}

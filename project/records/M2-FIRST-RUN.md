@@ -27,5 +27,14 @@ is the honest reading of the 9% error rate.
 Watch for `state = 'error'` rows: they were never successfully
 searched, and must be re-queued rather than read as negatives.
 
+**Measured on a 60-row live sample (2026-08-30), after the throttling
+fix:** 4 auto-verified, 36 needing review, 20 nothing found, 0 errors,
+284 queries — 4.7 per row. The same sample before the fix reported 53
+"nothing found", every one of them a swallowed rate-limit error, so
+treat any large no-match count as a bug until proven otherwise.
+
+Extrapolating: ~2,100 queries for the remaining 446, roughly 45 minutes
+at the shared limit, and expect a review queue of around 250 items.
+
 **Done when** every one of the 446 has a `match_run`, and the review
 queue has been cleared once by a person.

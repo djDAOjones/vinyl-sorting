@@ -17,3 +17,4 @@
 - M1-CAPTURE-UI — photo-first offline capture PWA; verified in-browser that a capture survives a hard refresh and syncs when the Worker appears, with the app measuring its own median entry time (2026-08-30) — see decision-log
 - M2-MATCHER — corroboration gate ported and live-tested; 277 existing matches re-verified, 12 unsupported including 4 labelled "Exact" and several pointing at a different record entirely (2026-08-30) — see decision-log
 - M2-REVIEW-QUEUE — keyboard-driven queue built and verified in-browser; a type-ahead race that silently mis-filed decisions found and fixed, and a cache-first service worker that would have blocked every future deploy (2026-08-30) — see decision-log
+- M2-MATCHER (follow-up) — throttling fix measured: the same 60-row sample went from 53 false "nothing found" to 4 verified and 36 needing review, with 0 failed queries (2026-08-30) — see decision-log
