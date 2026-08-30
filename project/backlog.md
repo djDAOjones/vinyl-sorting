@@ -10,10 +10,6 @@
 
 <!-- Intent: M0 — reconcile the existing spreadsheets into one clean, provenance-tagged dataset. No app required; can start now. -->
 
-- [ ] **M0-REPAIR-ENCODING Repair MacRoman mojibake and invisible
-  whitespace** — Text corruption in the source data is MacRoman
-  mis-decoding, not cp1252; repair it and strip U+00A0 and zero-width
-  characters before any field is parsed.
 - [ ] **M0-SPLIT-LABEL-CATNO Split combined label and catalogue
   strings** — Label is captured on 0% of the backlog because it was mashed
   into one free-text field with the catalogue number; split them into

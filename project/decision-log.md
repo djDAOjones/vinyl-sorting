@@ -2,6 +2,48 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — M0-REPAIR-ENCODING: two corruptions, one confirmed as MacRoman
+
+**Decision:** Repair in two separate passes. Byte-level: decode
+`classical vinyl list in progress.csv` with MacRoman rather than
+UTF-8. String-level: undo "UTF-8 bytes decoded as MacRoman" inside the
+workbooks by re-encoding to MacRoman and decoding as strict UTF-8,
+accepting the result only when the whole string decodes cleanly.
+U+00A0 folds to a space rather than being deleted; zero-width
+characters are deleted; newlines survive.
+
+**Rationale:** The byte histogram settles the diagnosis rather than
+assuming it — 0xCA x68, 0xD0 x57, 0x8E x19 read as NBSP, en dash and
+e-acute under MacRoman, and as unassigned, Eth and E-circumflex under
+cp1252. The record predicted cp1252 would produce different wrong
+answers; it does, and there is now a test asserting it.
+
+Strictness is the safety property. A repair that accepts partial
+decodes would rewrite legitimate text: `Side A • Side B` and
+`√2 is irrational` contain the exact characters MacRoman mojibake
+produces. Requiring that the entire string decode as valid UTF-8, and
+that it contain a UTF-8 lead byte at all, leaves both untouched — both
+are negative controls in the suite.
+
+U+00A0 folds to a space because in `CBS Harmony 30001` it separates
+the label from the catalogue number. Deleting it welds two tokens
+together and defeats the exact match this whole item exists to enable.
+Newlines survive because track listings are multi-line and M3 reads
+them per track.
+
+**Scale:** 331 distinct strings repaired across the frozen inputs —
+324 invisible-character fixes and 7 mojibake fixes. All 7 are in the
+`Label (and Catalog #)` column of the load files, which is the field
+the corroboration gate depends on.
+
+**Alternatives:** cp1252 — rejected on the evidence above. A
+character-by-character substitution table — rejected, it cannot tell
+a real bullet from half a mojibake pair, which is precisely the
+distinction that matters. Normalising U+2011 to ASCII hyphen here —
+rejected as out of scope: M0 repairs faithfully, M2 normalises, and
+conflating the two hides the original bytes. Noted on M2-MATCHER
+instead.
+
 ## 2026-08-30 — M0-ARCHIVE-FREEZE: freeze 87 sources, not 9,285 files
 
 **Decision:** The frozen manifest covers the 87 files that are

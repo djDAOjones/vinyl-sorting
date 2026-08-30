@@ -29,3 +29,9 @@ MacRoman instead of cp1252, the input sanity check, the corroboration
 gate.
 
 **Done when** the 26 known-bad matches are caught. ~4 days.
+
+**From M0-REPAIR-ENCODING:** repaired catalogue numbers can contain
+U+2011 non-breaking hyphen (`TWO‑269`, `CFP‑160`) — the repair is
+faithful, not normalising. The normalisation ladder must fold U+2011
+and U+2013 to ASCII hyphen before any exact-match step, or these seven
+rows will silently fail to match.
