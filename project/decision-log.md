@@ -2,6 +2,52 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — M0-IMPORT-AI-WORKS: the ratings do not exist, and the track listings had already leaked
+
+**Decision:** Attach the AI columns to the 305 enriched rows tagged
+`source: guess` — track listing, track-listing confidence, remarks and
+sources. Keep the rating columns in the schema and let them arrive
+empty. Reclassify the 28 enriched-sheet track listings that are
+byte-identical to the AI output from `legacy` to `guess`.
+
+**Finding 1 — there are no AI ratings.** `Critical Rating` is empty in
+all six AI Works files that carry the column, including
+`AI_Vinyl_Works_Stage_7 Rating Qualifiers etc.xlsx`. The
+AI-invented ratings the brief warns about were never written. This
+narrows the item rather than blocking it: what does exist is 305 AI
+track listings, their confidence (High/Medium/Low), remarks and
+sources. The rating columns stay in the schema and arrive blank, which
+is the honest result and leaves M5's valuation pass somewhere to land.
+
+**Finding 2 — the AI track listings had already leaked into the
+sourced data.** On all 28 rows where Discogs found nothing, `Track
+listing` in `Classical Master` is byte-identical to the AI file's
+value; on none of the 277 matched rows is it. That is precisely the
+"AI-invented data sits indistinguishably beside sourced data" problem
+the brief describes, and it is now measured rather than feared. Those
+28 values are reclassified to `guess` — identity with the AI output is
+evidence, not inference. Their tell-tale is visible in the prose:
+"exact symphony numbers not verified from accessible sources", sitting
+in a data column.
+
+**On the v2 override:** v2 `classical Track listings 01.xlsx` was
+chosen to win over v1 Stage 8 for track listings. It agrees with Stage
+8 on all 305 rows, so the override changed nothing. Recorded because
+"we checked and they agree" is a different fact from "we did not
+check", and `ai_track_listing_origin` says so per row.
+
+**Rationale for the guess tag:** enforcement is by computation, not
+convention. `decision_eligible` is recomputed after the AI pass so a
+guessed value cannot make a row eligible by arriving late, and a test
+asserts that a guessed value stays ineligible even when the row is
+marked confirmed.
+
+**Alternatives:** Discard the AI columns — rejected, the track listings
+are a usable starting point and the provenance rule is what makes
+keeping them safe. Leave the 28 as `legacy` — rejected, that labels AI
+prose as a human entry, which is the exact confusion this item exists
+to end.
+
 ## 2026-08-30 — M0-MERGE-LOAD-FILES: the 83 rows were already merged, so 0 are new
 
 **Decision:** Merge 0 new rows and record 83 duplicate decisions. The

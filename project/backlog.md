@@ -10,10 +10,6 @@
 
 <!-- Intent: M0 — reconcile the existing spreadsheets into one clean, provenance-tagged dataset. No app required; can start now. -->
 
-- [ ] **M0-IMPORT-AI-WORKS Import AI Works columns as guess provenance
-  only** — Import the AI-generated ratings and track listings tagged
-  source=guess so they can be displayed but can never feed a cluster,
-  coverage check, sell list or shortlist.
 - [ ] **M0-RECONCILIATION-REPORT One clean CSV plus a reconciliation
   report** — Produce the single reconciled CSV and a report stating what
   came from where and what was dropped — the M0 done-when, and the gate on

@@ -45,6 +45,7 @@ export const COLUMNS = [
   'source_file', 'source_sheet', 'source_row_id',
   ...SOURCED_FIELDS.flatMap((f) => [f, `${f}_source`]),
   'qualifier_raw', 'combined_raw', 'split_outcome', 'split_reason',
+  'ai_source_file', 'ai_track_listing_origin',
   'discogs_url', 'discogs_found', 'discogs_confidence_legacy', 'discogs_score_legacy',
   'confirmed', 'decision_eligible',
 ];

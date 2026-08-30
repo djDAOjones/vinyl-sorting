@@ -17,10 +17,11 @@
 
 import { writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { toCsv } from './lib/dataset.mjs';
+import { rowIsDecisionEligible, toCsv } from './lib/dataset.mjs';
 import { importEnriched } from './lib/import/enriched.mjs';
 import { importRemedial } from './lib/import/remedial.mjs';
 import { importLoadFiles } from './lib/import/load-files.mjs';
+import { importAiWorks } from './lib/import/ai-works.mjs';
 
 const args = process.argv.slice(2);
 const argOf = (/** @type {string} */ n, /** @type {string} */ d) => {
@@ -61,6 +62,14 @@ export function buildDataset(archiveDir = archive) {
 
   rows.push(...loadFiles.rows);
   rows.forEach((r, i) => { r.item_id = `DG-${String(i + 1).padStart(4, '0')}`; });
+
+  // Attaches guessed values to rows that already exist; adds no rows.
+  const ai = importAiWorks(archiveDir, rows);
+  stats['M0-IMPORT-AI-WORKS'] = ai.stats;
+
+  // decision_eligible is recomputed after the AI pass, so a guessed
+  // value can never make a row eligible by arriving late.
+  for (const r of rows) r.decision_eligible = rowIsDecisionEligible(r) ? 'yes' : 'no';
   return { rows, stats, droppedIds, mergeDecisions };
 }
 
