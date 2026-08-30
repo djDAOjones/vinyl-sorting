@@ -18,11 +18,6 @@
   schema per the brief section 03, Hono Worker with Access sign-in and the
   Discogs token as a secret, and the photo-first offline capture form;
   then import M0's dataset.
-- [ ] **OPEN-DISCOGS-TOKEN Is the existing Discogs token live, and is
-  the account a seller?** [sign-off] [security] (2026-08-30) — The token
-  in Pre August 2026/Windsurf Projects/ has not been opened; seller status
-  affects which price data is reachable and therefore what the sell list
-  and shortlist ranking can use.
 - [ ] **OPEN-USERS-ACCESS Who else is capturing — Access or a shared
   passphrase?** [sign-off] (2026-08-30) — Determines whether Cloudflare
   Access is worth configuring or a shared passphrase suffices, which

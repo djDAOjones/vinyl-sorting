@@ -2,6 +2,43 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — OPEN-DISCOGS-TOKEN: valid, not a seller, and that costs less than assumed
+
+**Decision:** Keep the existing token. The account will not be made a
+seller. Valuation uses lowest asking price, number for sale and the
+have/want ratio; condition-graded price suggestions are out of scope.
+
+**Verified, not assumed.** The token authenticates — HTTP 200 on
+`/oauth/identity`, account `walter_odington` (id 1149676), 40-char key.
+`num_for_sale` is 0 and `/marketplace/price_suggestions` returns 404
+"You must fill out your seller settings first", so the account is
+definitively not a seller.
+
+**What that actually costs.** Tested against release 7387168, the first
+row of the M0 dataset:
+
+- `/marketplace/stats` — HTTP 200. `num_for_sale: 21`,
+  `lowest_price: GBP 1.59`.
+- `/releases/{id}` — HTTP 200. `community.have: 70`, `community.want:
+  13`, `lowest_price: 2.15`.
+- `/marketplace/price_suggestions` — 404, seller-only.
+
+So the only loss is "what should a VG+ copy fetch". Lowest current
+price, supply and the have/want ratio are all reachable, and have/want
+is a better scarcity signal than a price suggestion anyway. An earlier
+note in this session claimed a non-seller account could not value a
+record at all; that was wrong, and it changes OPEN-SELL-THRESHOLD from
+a question about whether valuation is possible into a question about
+what to do with the number.
+
+**Handling:** the token was read inside a script and never echoed. It
+stays out of the repo, enters the Worker via `wrangler secret`, and the
+archived copy remains listed in the manifest without a digest.
+
+**Alternatives:** Fill out seller settings to unlock price suggestions
+— rejected by the maintainer, who has never sold and does not intend
+to. Mint a fresh token — unnecessary, this one works.
+
 ## 2026-08-30 — M0-RECONCILIATION-REPORT: the report is generated from the build it describes
 
 **Decision:** `tools/build-report.mjs` writes both artefacts —
