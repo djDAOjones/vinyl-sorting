@@ -19,6 +19,7 @@ import { writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { toCsv } from './lib/dataset.mjs';
 import { importEnriched } from './lib/import/enriched.mjs';
+import { importRemedial } from './lib/import/remedial.mjs';
 
 const args = process.argv.slice(2);
 const argOf = (/** @type {string} */ n, /** @type {string} */ d) => {
@@ -28,12 +29,28 @@ const argOf = (/** @type {string} */ n, /** @type {string} */ d) => {
 const archive = argOf('--archive', 'Pre August 2026');
 const out = argOf('--out', 'data/deep-groove-v1.csv');
 
-/** @returns {{rows: Record<string,string>[], stats: Record<string, any>}} */
+/**
+ * Import order is fixed, and item_id is allocated here rather than by
+ * each importer, so numbering runs unbroken across batches and stays
+ * stable as long as the order does.
+ * @returns {{rows: Record<string,string>[], stats: Record<string, any>, droppedIds: Record<string, string[]>}}
+ */
 export function buildDataset(archiveDir = archive) {
   /** @type {Record<string, any>} */ const stats = {};
+  /** @type {Record<string, string[]>} */ const droppedIds = {};
+
   const enriched = importEnriched(archiveDir);
   stats['M0-IMPORT-ENRICHED'] = enriched.stats;
-  return { rows: enriched.rows, stats };
+
+  // The label vocabulary comes from the enriched rows, so every later
+  // import splits against labels this collection has actually attested.
+  const remedial = importRemedial(archiveDir, enriched.gazetteer);
+  stats['M0-IMPORT-REMEDIAL'] = remedial.stats;
+  droppedIds['M0-IMPORT-REMEDIAL'] = remedial.droppedIds;
+
+  const rows = [...enriched.rows, ...remedial.rows];
+  rows.forEach((r, i) => { r.item_id = `DG-${String(i + 1).padStart(4, '0')}`; });
+  return { rows, stats, droppedIds };
 }
 
 // pathToFileURL, not string concatenation: this project's path
@@ -43,7 +60,9 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   writeFileSync(out, toCsv(rows));
   console.log(`build-dataset: wrote ${out} — ${rows.length} rows`);
   for (const [batch, s] of Object.entries(stats)) {
-    console.log(`  ${batch}: ${Object.entries(s).map(([k, v]) => `${k}=${v}`).join(', ')}`);
+    const flat = Object.entries(s)
+      .map(([k, v]) => `${k}=${typeof v === 'object' ? JSON.stringify(v) : v}`).join(', ');
+    console.log(`  ${batch}: ${flat}`);
   }
   const eligible = rows.filter((r) => r.decision_eligible === 'yes').length;
   console.log(`  decision-eligible rows: ${eligible} (expected 0 until a person confirms values)`);

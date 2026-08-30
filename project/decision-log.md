@@ -2,6 +2,42 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — M0-IMPORT-REMEDIAL: the placeholder rule is mechanical, and every drop is named
+
+**Decision:** A `Classical Remedial` row is a placeholder when it
+carries no value in any column other than ID. That rule partitions the
+sheet exactly 210 placeholders / 141 real records. The 141 import as
+`needs-capture`; the 210 are dropped, and every dropped ID is returned
+so the reconciliation report can list them.
+
+**Rationale:** The record allows dropping but not dropping silently.
+A rule that needs no judgement can be re-run and disputed later — if
+the numbers ever look wrong, the report names the rule and the 210 IDs
+it applied to, and anyone can check it against the frozen sheet. The
+rule was not chosen to fit a target: it was applied first and produced
+210/141, which is what the brief already claimed.
+
+**On provenance:** every value here is `legacy`. None of these rows was
+ever matched against Discogs, so no Discogs field exists to carry over,
+and a test asserts none appears. `Label` is empty on all 141 — the
+"label captured on 0% of the backlog" finding — so the combined string
+in `Catalogue #` goes through the splitter: 31 split, 73 bare catalogue
+numbers, 37 refused and left with their combined string intact.
+
+**On item ids:** allocation moved out of the importers into
+`build-dataset.mjs`, so numbering runs unbroken across batches. Ids are
+stable as long as the import order is, and that order is fixed by the
+M0 sequence. The composed dataset is DG-0001 to DG-0446 — 305 enriched
+plus 141 backlog, which is exactly the brief's "446 already
+catalogued".
+
+**Alternatives:** Drop rows lacking a title or catalogue number —
+rejected, it would have discarded the 58 rows that carry only a
+composer, which are real records. Keep the placeholders as empty rows
+to be filled later — rejected, they are 210 unallocated ID slots, not
+records; the physical backlog is counted by handling discs, not by
+counting blank spreadsheet rows.
+
 ## 2026-08-30 — M0-IMPORT-ENRICHED: which columns Discogs wrote, established from the data
 
 **Decision:** Import all 305 rows with per-field `<field>_source`

@@ -10,10 +10,6 @@
 
 <!-- Intent: M0 — reconcile the existing spreadsheets into one clean, provenance-tagged dataset. No app required; can start now. -->
 
-- [ ] **M0-IMPORT-REMEDIAL Import 141 remedial rows, drop 210
-  placeholders** — Import the 141 real Remedial rows as needing capture
-  and drop the 210 empty placeholder rows, counting both in the
-  reconciliation report rather than deleting silently.
 - [ ] **M0-MERGE-LOAD-FILES Merge 83 usable rows from the load-to-add
   files** — Merge the 83 usable rows out of 1st and 2nd load to add.xlsx
   into the single dataset, de-duplicating against rows already imported.

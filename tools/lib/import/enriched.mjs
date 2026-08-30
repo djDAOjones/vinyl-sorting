@@ -43,7 +43,7 @@ export function importEnriched(archive) {
   const gazetteer = buildGazetteer(records.map((r) => R(r, 'Label')).filter(Boolean));
 
   /** @type {Record<string, number>} */ const stats = { rows: 0, discogsFound: 0, discogsNotFound: 0 };
-  const rows = records.map((r, i) => {
+  const rows = records.map((r) => {
     const found = R(r, 'Discogs record found?') === 'Yes';
     stats.rows++;
     if (found) stats.discogsFound++; else stats.discogsNotFound++;
@@ -55,7 +55,6 @@ export function importEnriched(archive) {
     const catno = R(r, 'Catalogue #');
 
     return makeRow({
-      item_id: `DG-${String(i + 1).padStart(4, '0')}`,
       capture_state: 'enriched',
       import_batch: 'M0-IMPORT-ENRICHED',
       source_file: SOURCE_FILE,
