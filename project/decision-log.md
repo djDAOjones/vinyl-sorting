@@ -2,6 +2,33 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — M0-ARCHIVE-FREEZE: freeze 87 sources, not 9,285 files
+
+**Decision:** The frozen manifest covers the 87 files that are
+actually source data. `.venv/`, `__pycache__/` and nested `.git/`
+are excluded by declared pattern, each with its reason recorded in
+the manifest itself. Digests are sha256 over bytes; mtime is
+deliberately not recorded. The archived Discogs token is listed by
+path and size with its digest written as `REDACTED-SECRET`.
+
+**Rationale:** `Pre August 2026/` holds 9,285 files, of which 9,106
+are a Python virtualenv belonging to the old Windsurf CLI. Hashing
+them exceeded two minutes and froze nothing of value — a venv is
+reproducible from `pyproject.toml` and is not an input to any
+import. Scoped to real sources the manifest builds in 0.5 s, which
+makes `--check` cheap enough to run as a gate rather than a ritual.
+mtime is omitted because this tree lives on OneDrive and sync
+rewrites timestamps, so recording them would make `--check` fail for
+reasons unrelated to the bytes. The token digest is redacted because
+the manifest is committed, and a hash of a live credential does not
+belong in git history.
+
+**Alternatives:** Hash everything — rejected, minutes of work to
+freeze artefacts that no import reads. Exclude silently — rejected,
+an undeclared exclusion is indistinguishable from a bug; the
+manifest carries `excluded` and `redacted` lists so what is absent
+is auditable.
+
 ## 2026-08-28 — DATA-MODEL: four linked records, not a flat row
 
 **Decision:** Model `item` (a disc you own), `release` (a Discogs

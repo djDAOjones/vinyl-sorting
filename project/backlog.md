@@ -10,9 +10,6 @@
 
 <!-- Intent: M0 — reconcile the existing spreadsheets into one clean, provenance-tagged dataset. No app required; can start now. -->
 
-- [ ] **M0-ARCHIVE-FREEZE Archive and freeze the source spreadsheets** —
-  Copy everything in Pre August 2026/ to a read-only archive and record
-  checksums, so every later import has a fixed, provable starting point.
 - [ ] **M0-REPAIR-ENCODING Repair MacRoman mojibake and invisible
   whitespace** — Text corruption in the source data is MacRoman
   mis-decoding, not cp1252; repair it and strip U+00A0 and zero-width
