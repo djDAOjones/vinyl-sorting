@@ -1,0 +1,52 @@
+/* The queue has hundreds of items in it. Mouse travel is the difference
+   between clearing it and abandoning it, so everything is reachable by
+   keyboard and the keys are always on screen. */
+main#review { max-width: 62rem; padding-bottom: 5rem; }
+
+.qhead { display: flex; align-items: baseline; justify-content: space-between;
+  gap: 1rem; border-bottom: 1px solid var(--rule); padding-bottom: .7rem; margin-bottom: 1.1rem; }
+.qhead h1 { font-size: 1rem; }
+.progress { font: 500 .8rem var(--mono); color: var(--muted); }
+.progress b { color: var(--accent); }
+
+.split { display: grid; grid-template-columns: minmax(15rem, 22rem) 1fr; gap: 1.4rem; align-items: start; }
+@media (max-width: 44rem) { .split { grid-template-columns: 1fr; } }
+
+.capture { background: var(--card); border: 1px solid var(--rule); border-radius: 12px; padding: .9rem 1rem; }
+.capture h2 { font: 600 .7rem var(--mono); letter-spacing: .09em; text-transform: uppercase;
+  color: var(--muted); margin: 0 0 .7rem; }
+.capture dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: .35rem .8rem; }
+.capture dt { font-size: .76rem; color: var(--muted); }
+.capture dd { margin: 0; font-size: .93rem; color: var(--ink); word-break: break-word; }
+.capture dd.empty { color: #55636a; font-style: italic; }
+
+.cands { display: flex; flex-direction: column; gap: .55rem; }
+.cand { display: grid; grid-template-columns: 2.1rem 1fr auto; gap: .8rem; align-items: start;
+  background: var(--card); border: 1px solid var(--rule); border-left-width: 3px;
+  border-radius: 10px; padding: .7rem .85rem; cursor: pointer; text-align: left; width: 100%;
+  color: inherit; font: inherit; }
+.cand:hover, .cand:focus-visible { border-color: var(--accent); outline: none; }
+.cand.top { border-left-color: var(--accent); }
+.cand .key { font: 700 1rem var(--mono); color: var(--accent-ink); background: var(--accent);
+  border-radius: 6px; text-align: center; padding: .15rem 0; }
+.cand .title { color: var(--ink); font-size: .95rem; }
+.cand .why { margin-top: .3rem; display: flex; flex-wrap: wrap; gap: .3rem; }
+.fam { font: 600 .68rem var(--mono); letter-spacing: .04em; text-transform: uppercase;
+  background: var(--accent-soft, #16323b); color: var(--accent); border-radius: 4px; padding: .12rem .4rem; }
+.sig { font: .72rem var(--mono); color: var(--muted); }
+.cand .score { font: 700 1.05rem var(--mono); color: var(--ink); text-align: right; }
+.cand .score small { display: block; font: 500 .66rem var(--mono); color: var(--muted); }
+
+.why-refused { background: #332714; border: 1px solid #4d3a1c; color: var(--warn);
+  border-radius: 8px; padding: .55rem .75rem; font-size: .84rem; margin-bottom: .8rem; }
+
+.keys { position: fixed; left: 0; right: 0; bottom: 0; background: var(--sunk);
+  border-top: 1px solid var(--rule); padding: .6rem 1rem; }
+.keys .inner { max-width: 62rem; margin: 0 auto; display: flex; flex-wrap: wrap;
+  gap: 1rem; font: .78rem var(--mono); color: var(--muted); }
+kbd { font: 600 .78rem var(--mono); background: var(--card); border: 1px solid var(--rule);
+  border-bottom-width: 2px; border-radius: 4px; padding: .1rem .35rem; color: var(--ink); }
+.manual { margin-top: 1rem; display: flex; gap: .5rem; }
+.manual input { flex: 1; }
+.done { text-align: center; padding: 4rem 1rem; color: var(--muted); }
+.done strong { display: block; font-size: 1.3rem; color: var(--accent); margin-bottom: .5rem; }

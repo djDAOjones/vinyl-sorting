@@ -9,17 +9,37 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { loadDataset } from '../load-dataset.mjs';
 
-const SCHEMA = readFileSync('schema/001-init.sql', 'utf8');
-const fresh = () => { const db = new DatabaseSync(':memory:'); db.exec(SCHEMA); return db; };
+import { applySchema } from './helpers/bindings.mjs';
+const fresh = () => { const db = new DatabaseSync(':memory:'); applySchema(db); return db; };
 const one = (/** @type {any} */ db, /** @type {string} */ sql) => db.prepare(sql).get();
 const count = (/** @type {any} */ db, /** @type {string} */ t) => Number(one(db, `SELECT COUNT(*) n FROM ${t}`).n);
 
-test('the schema applies clean and records its version', () => {
+test('every migration applies clean, in order', () => {
   const db = fresh();
-  assert.equal(Number(one(db, 'SELECT MAX(version) v FROM schema_migration').v), 1);
+  assert.equal(Number(one(db, 'SELECT MAX(version) v FROM schema_migration').v), 2);
+  assert.equal(Number(one(db, 'SELECT COUNT(*) n FROM schema_migration').n), 2);
+});
+
+test('re-verification is a normal operation: items record when and by whom', () => {
+  const db = fresh();
+  db.exec('INSERT INTO item (crate) VALUES (\'B4\')');
+  assert.equal(one(db, 'SELECT last_verified_at FROM item').last_verified_at, null);
+  db.exec("UPDATE item SET last_verified_at = '2026-08-30', last_verified_by = 'joe'");
+  assert.equal(one(db, 'SELECT last_verified_by FROM item').last_verified_by, 'joe');
+});
+
+test('a review decision naming a release must say which one', () => {
+  const db = fresh();
+  db.exec("INSERT INTO item (crate) VALUES ('B4')");
+  db.exec("INSERT INTO match_run (item_id, state) VALUES (1, 'needs-review')");
+  assert.throws(
+    () => db.exec("INSERT INTO review_decision (match_run_id, item_id, choice, decided_by) VALUES (1,1,'candidate','joe')"),
+    /CHECK constraint failed/, 'choosing a candidate without naming it is not a decision');
+  db.exec("INSERT INTO review_decision (match_run_id, item_id, choice, decided_by) VALUES (1,1,'none','joe')");
+  assert.equal(Number(one(db, 'SELECT COUNT(*) n FROM review_decision').n), 1);
 });
 
 test('genre-neutrality: an item may have a release and no work at all', () => {

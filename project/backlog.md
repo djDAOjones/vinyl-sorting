@@ -8,11 +8,21 @@
 
 ### Current milestone
 
-<!-- Intent: Empty — M1 shipped 2026-08-30: D1 schema with provenance enforced by views, a Worker exposing named operations only, and a photo-first offline capture app verified in a browser. Deploying needs a Cloudflare login, which is a maintainer step; see README. -->
+<!-- Intent: M2 — the matcher and the review queue. Re-verify all 446 under a corroboration gate that treats a catalogue number as a lead, then clear the queue by keyboard. Promoted 2026-08-30 after M1 shipped. -->
+
+- [ ] **M2-MATCHER Normalisation, sanity check, query ladder, scoring
+  and the corroboration gate** — The matcher that treats a catalogue
+  number as a lead rather than a verdict — two independent signal families
+  must agree with a clear margin over the runner-up before anything is
+  auto-accepted.
+- [ ] **M2-REVIEW-QUEUE Keyboard-driven review queue, and re-verify all
+  446** — The screen that decides the project — one item at a time,
+  capture on the left, top five scored candidates on the right, cleared
+  entirely by keyboard; first job is re-verifying all 446 existing rows.
 
 ### Next milestone
 
-<!-- Intent: M2 — the matcher and the review queue. Promoting it is the trigger to revisit auth, per OPEN-USERS-ACCESS: it is the first milestone where a caller could drive a Discogs query against the live token. -->
+<!-- Intent: Empty — M3 (works, performances, per-track completeness) is next but stays in the icebox until the review queue has been cleared once. -->
 
 ### Icebox
 
@@ -26,15 +36,6 @@
   passage?** [sign-off] (2026-08-30) — Whether the app proposes the
   two-to-three-minute comparison passage from the track listing, or the
   listener always chooses it themselves.
-- [ ] **M2-MATCHER Normalisation, sanity check, query ladder, scoring
-  and the corroboration gate** — The matcher that treats a catalogue
-  number as a lead rather than a verdict — two independent signal families
-  must agree with a clear margin over the runner-up before anything is
-  auto-accepted.
-- [ ] **M2-REVIEW-QUEUE Keyboard-driven review queue, and re-verify all
-  446** — The screen that decides the project — one item at a time,
-  capture on the left, top five scored candidates on the right, cleared
-  entirely by keyboard; first job is re-verifying all 446 existing rows.
 - [ ] **M3-WORKS-PERFORMANCES MusicBrainz works, performances and
   per-track completeness** — Resolve work and recording identity from
   MusicBrainz, resolve composers for the 131 Various/Unknown rows, and

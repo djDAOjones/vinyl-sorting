@@ -24,5 +24,11 @@ bucket_name = "deep-groove-photos"
 binding = "CACHE"
 id = "REPLACE_WITH_ID_FROM_wrangler_kv_namespace_create"
 
+# The matcher runs from cron, never from a route. With no sign-in, an
+# HTTP trigger would be a stranger's lever on the Discogs rate limit;
+# a schedule has no caller at all (M2-MATCHER, OPEN-USERS-ACCESS).
+[triggers]
+crons = ["*/5 * * * *"]
+
 [observability]
 enabled = true

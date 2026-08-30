@@ -34,11 +34,11 @@
  */
 
 import { DatabaseSync } from 'node:sqlite';
-import { readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { readCsv } from './lib/csv.mjs';
 
-const SCHEMA = 'schema/001-init.sql';
+const SCHEMA_DIR = 'schema';
 const CSV = 'data/deep-groove-v1.csv';
 
 /** Legacy columns with no home in the four-entity model yet. */
@@ -56,7 +56,10 @@ const RAW_AI = [
 export function loadDataset(dbPath, csvPath = CSV) {
   if (dbPath !== ':memory:') rmSync(dbPath, { force: true });
   const db = new DatabaseSync(dbPath);
-  db.exec(readFileSync(SCHEMA, 'utf8'));
+  // Every migration in order: the schema is no longer one file.
+  for (const f of readdirSync(SCHEMA_DIR).filter((n) => n.endsWith('.sql')).sort()) {
+    db.exec(readFileSync(`${SCHEMA_DIR}/${f}`, 'utf8'));
+  }
 
   const rows = readCsv(readFileSync(csvPath, 'utf8'));
 

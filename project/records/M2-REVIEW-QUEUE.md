@@ -3,7 +3,7 @@ id: M2-REVIEW-QUEUE
 name: Keyboard-driven review queue, and re-verify all 446
 summary: The screen that decides the project — one item at a time, capture on the left, top five scored candidates on the right, cleared entirely by keyboard; first job is re-verifying all 446 existing rows.
 status: todo
-milestone: icebox
+milestone: current
 order: 4
 ---
 # Review queue, and the first re-verification run

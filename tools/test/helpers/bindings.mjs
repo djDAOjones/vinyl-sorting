@@ -9,15 +9,22 @@
  */
 
 import { DatabaseSync } from 'node:sqlite';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
+
+/** Every migration in order — the schema is no longer one file. */
+export const applySchema = (db, dir = 'schema') => {
+  for (const f of readdirSync(dir).filter((n) => n.endsWith('.sql')).sort()) {
+    db.exec(readFileSync(`${dir}/${f}`, 'utf8'));
+  }
+};
 
 /** @param {any} db @param {string} sql @param {any[]} args */
 const rows = (db, sql, args) => db.prepare(sql).all(...args);
 
 /** Minimal D1Database over node:sqlite. */
-export function makeD1(schemaPath = 'schema/001-init.sql') {
+export function makeD1(schemaDir = 'schema') {
   const db = new DatabaseSync(':memory:');
-  db.exec(readFileSync(schemaPath, 'utf8'));
+  applySchema(db, schemaDir);
 
   /** @param {string} sql @param {any[]} args */
   const statement = (sql, args = []) => ({

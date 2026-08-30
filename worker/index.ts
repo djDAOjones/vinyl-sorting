@@ -1,6 +1,10 @@
 import { Hono } from 'hono';
 import type { Env } from './env.ts';
 import { insertCapture, parseCapture } from './capture.ts';
+import { DiscogsClient } from './discogs.ts';
+import { RateLimiter } from './rate-limit.ts';
+import { matchRow, pendingRows, persistRun } from './match/run.ts';
+import { parseResolve, resolveRun } from './review.ts';
 
 /**
  * Deep Groove Worker.
@@ -12,10 +16,11 @@ import { insertCapture, parseCapture } from './capture.ts';
  * person typing what is printed on a label, so M1 needs no Discogs
  * path at all — which is what makes "no sign-in" cost nothing yet.
  *
- * When M2 adds matching, that changes: a caller could then drive
- * queries against the maintainer's live token. M2-MATCHER records the
- * gate — add Access then, or keep matching strictly server-side as a
- * queued job with no caller-controlled query.
+ * M2 ADDS MATCHING WITHOUT REOPENING THAT. The matcher is driven by a
+ * CRON TRIGGER, not by a route: there is no HTTP entry point to it, so
+ * no caller can aim a Discogs query even though the site is open. The
+ * query set is a pure function of stored capture values. That is the
+ * option OPEN-USERS-ACCESS left open, and it keeps "no sign-in" true.
  */
 
 const MAX_PHOTO_BYTES = 12 * 1024 * 1024;
@@ -102,6 +107,81 @@ export function createApp() {
   });
 
   /**
+   * The review queue: what the matcher could not settle, with the
+   * candidates it weighed. Read-only — a caller may look at what the
+   * cron job decided, and cannot make it run.
+   */
+  app.get('/api/review-queue', async (c) => {
+    const limit = Math.min(Number(c.req.query('limit') ?? 50) || 50, 200);
+    // Skipped items leave the default queue but are re-queueable:
+    // re-verification is a normal operation, not a migration.
+    const includeSkipped = c.req.query('include') === 'skipped';
+    const { results } = await c.env.DB.prepare(
+      `SELECT m.id AS run_id, m.item_id, m.state, m.ran_at, m.queries_json,
+              c.catno_raw, c.label_raw, c.title_raw, c.name_raw,
+              i.crate, i.position, i.last_verified_at
+         FROM match_run m
+         JOIN item i ON i.id = m.item_id
+         LEFT JOIN capture c ON c.item_id = i.id
+         LEFT JOIN review_decision d ON d.match_run_id = m.id
+        WHERE m.state = 'needs-review'
+          AND (d.id IS NULL OR (? = 1 AND d.choice = 'skip'))
+        ORDER BY m.item_id
+        LIMIT ?`,
+    ).bind(includeSkipped ? 1 : 0, limit).all();
+
+    const runIds = results.map((r) => (r as { run_id: number }).run_id);
+    const candidates = runIds.length
+      ? (await c.env.DB.prepare(
+        `SELECT match_run_id, rank, discogs_id, score, signals_json
+           FROM match_candidate
+          WHERE match_run_id IN (${runIds.map(() => '?').join(',')})
+          ORDER BY match_run_id, rank`,
+      ).bind(...runIds).all()).results
+      : [];
+
+    const byRun = new Map<number, unknown[]>();
+    for (const cand of candidates) {
+      const key = (cand as { match_run_id: number }).match_run_id;
+      if (!byRun.has(key)) byRun.set(key, []);
+      byRun.get(key)?.push(cand);
+    }
+    return c.json({
+      queue: results.map((r) => ({ ...r, candidates: byRun.get((r as { run_id: number }).run_id) ?? [] })),
+    });
+  });
+
+  /** A person's verdict on one queued item. The only route to eligibility. */
+  app.post('/api/review/:runId{[0-9]+}/resolve', async (c) => {
+    let body: unknown;
+    try { body = await c.req.json(); } catch { return c.json({ error: 'body must be JSON' }, 400); }
+
+    const parsed = parseResolve(body);
+    if (!parsed.ok) return c.json({ error: parsed.error }, 400);
+
+    const result = await resolveRun(c.env, Number(c.req.param('runId')), parsed.value);
+    if (!result) return c.json({ error: 'no such review run' }, 404);
+    return c.json(result);
+  });
+
+  /** Match statistics, so a run can be judged without reading rows. */
+  app.get('/api/match-stats', async (c) => {
+    const { results } = await c.env.DB.prepare(
+      'SELECT state, COUNT(*) AS n FROM match_run GROUP BY state').all();
+    const pending = await c.env.DB.prepare(
+      'SELECT COUNT(*) AS n FROM item i WHERE NOT EXISTS (SELECT 1 FROM match_run m WHERE m.item_id = i.id)',
+    ).first<{ n: number }>();
+    const reviewed = await c.env.DB.prepare(
+      'SELECT COUNT(*) AS n FROM review_decision').first<{ n: number }>();
+    const eligible = await c.env.DB.prepare(
+      'SELECT COUNT(*) AS n FROM v_decision_eligible_item').first<{ n: number }>();
+    return c.json({
+      byState: results, unmatched: pending?.n ?? 0,
+      reviewed: reviewed?.n ?? 0, decisionEligible: eligible?.n ?? 0,
+    });
+  });
+
+  /**
    * Anything feeding a decision reads through the views, never the
    * base tables. At M1 this is empty by construction — nothing has
    * been confirmed by a person — and that is the point: the endpoint
@@ -125,4 +205,38 @@ export function createApp() {
   return app;
 }
 
-export default { fetch: (req: Request, env: Env, ctx: ExecutionContext) => createApp().fetch(req, env, ctx) };
+/**
+ * The matcher, driven by cron. Deliberately NOT reachable over HTTP:
+ * with no sign-in, a route that triggered Discogs work would be a
+ * stranger's lever on the maintainer's rate limit and identity.
+ *
+ * A batch per tick rather than the whole backlog, so one invocation
+ * stays inside its CPU budget and a failure costs one batch.
+ */
+export async function runMatchBatch(env: Env, batchSize = 25): Promise<{ processed: number }> {
+  if (!env.DISCOGS_TOKEN) {
+    console.warn('match: DISCOGS_TOKEN is not set; nothing to do');
+    return { processed: 0 };
+  }
+  const limiter = new RateLimiter({
+    get: (k) => env.CACHE.get(k),
+    put: (k, v, o) => env.CACHE.put(k, v, o),
+  });
+  const client = new DiscogsClient(env.DISCOGS_TOKEN, limiter);
+
+  const rows = await pendingRows(env, batchSize);
+  for (const row of rows) {
+    const result = await matchRow(row, client);
+    await persistRun(env, row, result);
+  }
+  return { processed: rows.length };
+}
+
+export default {
+  fetch: (req: Request, env: Env, ctx: ExecutionContext) => createApp().fetch(req, env, ctx),
+  scheduled: async (_event: ScheduledController, env: Env, ctx: ExecutionContext) => {
+    ctx.waitUntil(runMatchBatch(env).then(({ processed }) => {
+      console.log(`match: processed ${processed} row(s)`);
+    }));
+  },
+};

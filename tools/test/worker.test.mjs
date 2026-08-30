@@ -20,35 +20,60 @@ const post = (env, body, path = '/api/captures') => app.request(path,
 
 // ── the security posture of a Worker with no sign-in ───────────────
 
-test('no route reads DISCOGS_TOKEN — the token is unreachable, not merely unused', () => {
+/** Everything served over HTTP lives inside createApp(). */
+function httpSurface() {
+  const src = readFileSync('worker/index.ts', 'utf8');
+  const start = src.indexOf('export function createApp()');
+  const end = src.indexOf('\n  return app;', start);
+  assert.ok(start >= 0 && end > start, 'could not locate the app factory');
+  return src.slice(start, end).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+}
+
+test('nothing served over HTTP can reach Discogs or the token', () => {
+  // M2 gives the Worker a token and an upstream, so the M1 invariant
+  // "no outbound call exists" no longer holds. The one that replaces
+  // it is stricter about what matters: the HTTP surface cannot reach
+  // either. Matching runs from cron, which has no caller.
+  const http = httpSurface();
+  for (const forbidden of ['DISCOGS_TOKEN', 'DiscogsClient', 'runMatchBatch', 'RateLimiter']) {
+    assert.ok(!http.includes(forbidden),
+      `a route can reach ${forbidden} — with no sign-in that is a stranger's lever on the rate limit`);
+  }
+});
+
+test('the token is read on exactly one path, and it is the cron path', () => {
   const files = readdirSync('worker').filter((f) => f.endsWith('.ts'));
-  assert.ok(files.length >= 3);
   for (const f of files) {
     const src = readFileSync(`worker/${f}`, 'utf8');
-    // Strip comments: the reasoning discusses the token by name.
     const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
-    const reads = code.match(/\benv\s*\.\s*DISCOGS_TOKEN\b/g) ?? [];
-    if (f === 'env.ts') {
-      assert.equal(reads.length, 0, 'env.ts declares the binding; it must not read it');
+    const reads = (code.match(/\benv\s*\.\s*DISCOGS_TOKEN\b/g) ?? []).length;
+    if (f === 'index.ts') {
+      assert.ok(reads > 0, 'runMatchBatch reads the token');
+      assert.ok(!httpSurface().includes('DISCOGS_TOKEN'), 'but no route does');
+    } else if (f === 'env.ts') {
+      assert.equal(reads, 0, 'env.ts declares the binding; it must not read it');
       assert.ok(src.includes('DISCOGS_TOKEN'), 'the binding is still declared');
     } else {
-      assert.equal(reads.length, 0, `${f} reads DISCOGS_TOKEN — no route may, until M2 revisits auth`);
+      assert.equal(reads, 0, `${f} must not read the token directly`);
     }
   }
 });
 
-test('the Worker makes no outbound request at all', () => {
-  // The strongest form of "no proxy": not that the upstream URL is
-  // hard-coded, but that there is no outbound call to hard-code one
-  // into. A bare `fetch(` is an outbound request; `something.fetch(`
-  // is Hono dispatching an inbound one, which is the entry point.
+test('outbound requests exist in exactly one file, and it is the rate-limited client', () => {
+  const withOutbound = [];
   for (const f of readdirSync('worker').filter((n) => n.endsWith('.ts'))) {
     const code = readFileSync(`worker/${f}`, 'utf8')
       .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
-    const outbound = code.match(/(?<![.\w$])fetch\s*\(/g) ?? [];
-    assert.equal(outbound.length, 0, `${f} makes an outbound request`);
-    assert.doesNotMatch(code, /api\.discogs\.com|musicbrainz\.org/, `${f} names an upstream`);
+    // A bare `fetch(` is outbound; `something.fetch(` is Hono
+    // dispatching an inbound request, which is the entry point.
+    if ((code.match(/(?<![.\w$])fetch\s*\(/g) ?? []).length) withOutbound.push(f);
   }
+  assert.deepEqual(withOutbound, ['discogs.ts'],
+    'every upstream call must go through the one client that rate-limits');
+
+  const client = readFileSync('worker/discogs.ts', 'utf8');
+  assert.match(client, /limiter\W+take\('discogs'\)|#limiter\.take\('discogs'\)/,
+    'the client takes from the shared budget before every request');
 });
 
 test('an unnamed route is refused rather than falling through', async () => {

@@ -12,7 +12,8 @@
  * here is byte-for-byte the code that ships.
  *
  * Usage: node tools/dev-api.mjs [--port 8787] [--load]
- *   --load  seed the database from data/deep-groove-v1.csv
+ *   --load  check the M0 dataset still loads cleanly
+ *   --demo  seed a few review-queue items so the screen has work in it
  */
 
 import { createServer } from 'node:http';
@@ -30,6 +31,29 @@ if (args.includes('--load')) {
   const { stats } = loadDataset(':memory:');
   console.log(`dev-api: (dataset shape check) ${JSON.stringify(stats.items)} rows load cleanly`);
 }
+if (args.includes('--demo')) {
+  // A handful of realistic review items: one refused for a single
+  // signal family, one for a near-tie, one with nothing found.
+  const db = env.DB.raw;
+  db.exec(`
+    INSERT INTO item (crate, position) VALUES ('B4','12'),('B4','13'),('C1','4');
+    INSERT INTO capture (item_id, catno_raw, label_raw, title_raw, name_raw) VALUES
+      (1, 'SXL 6113', 'Decca', 'Symphony No. 5', 'Solti'),
+      (2, 'CFP 40001', NULL, 'Beethoven Symphony No. 4', 'Cluytens'),
+      (3, 'RD ?', NULL, 'Unknown', NULL);
+    INSERT INTO match_run (item_id, state, queries_json) VALUES
+      (1, 'needs-review', '{"reason":"only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict"}'),
+      (2, 'needs-review', '{"reason":"margin 4 < 25 over the runner-up"}'),
+      (3, 'needs-review', '{"reason":"not searchable: contains a question mark — uncertain input"}');
+    INSERT INTO match_candidate (match_run_id, rank, discogs_id, score, signals_json) VALUES
+      (1, 1, 1451234, 73, '{"families":["identifier"],"signals":{"identifier":"exact catno SXL 6113"}}'),
+      (1, 2, 2298871, 23, '{"families":["label"],"signals":{"label":"decca"}}'),
+      (2, 1, 3310022, 88, '{"families":["identifier","title"],"signals":{"identifier":"exact catno CFP 40001","title":"3/4 title words"}}'),
+      (2, 2, 3310099, 84, '{"families":["identifier","title"],"signals":{"identifier":"exact catno CFP 40001","title":"3/4 title words"}}');
+  `);
+  console.log('dev-api: seeded 3 review-queue items');
+}
+
 const app = createApp();
 
 createServer(async (req, res) => {

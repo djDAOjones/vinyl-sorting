@@ -3,7 +3,7 @@ id: M2-MATCHER
 name: Normalisation, sanity check, query ladder, scoring and the corroboration gate
 summary: The matcher that treats a catalogue number as a lead rather than a verdict — two independent signal families must agree with a clear margin over the runner-up before anything is auto-accepted.
 status: todo
-milestone: icebox
+milestone: current
 order: 3
 ---
 # The matcher and its corroboration gate

@@ -1,15 +1,29 @@
 /**
- * Offline shell. The app must open in a loft with no signal, so the
- * shell is cached on install and served cache-first.
+ * Offline shell.
  *
- * /api is never cached: a stale capture list would be misleading, and
- * writes are queued in IndexedDB by the page rather than retried here.
+ * The app must open in a loft with no signal, so the shell is cached.
+ * But the strategy differs by what is being fetched, and getting that
+ * wrong ships an app that can never be updated:
+ *
+ *  - NAVIGATIONS AND HTML: network-first, cache as fallback. Cache-first
+ *    here means a deployed change never reaches anyone — the stale HTML
+ *    keeps pointing at the old hashed assets for ever. Verified the hard
+ *    way: a cache-first shell served a fixed module's old copy back.
+ *  - HASHED ASSETS (/assets/*): cache-first. Vite fingerprints them, so
+ *    a given URL's content never changes and the network is pure cost.
+ *  - EVERYTHING ELSE same-origin: network-first, falling back to cache,
+ *    which keeps development honest and costs one request when online.
+ *  - /api: never cached. A stale capture list is misleading, and writes
+ *    are queued in IndexedDB by the page rather than retried here.
  */
-const CACHE = 'deep-groove-shell-v1';
-const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg'];
+const CACHE = 'deep-groove-shell-v2';
+const SHELL = ['/', '/index.html', '/review.html', '/manifest.webmanifest', '/icon.svg'];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE)
+    // Individually, so one 404 does not abandon the whole install.
+    .then((c) => Promise.all(SHELL.map((url) => c.add(url).catch(() => {}))))
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
@@ -18,20 +32,44 @@ self.addEventListener('activate', (e) => {
     .then(() => self.clients.claim()));
 });
 
+/** Immutable because Vite puts a content hash in the filename. */
+const isHashedAsset = (url) => url.pathname.startsWith('/assets/');
+
+async function networkFirst(request, url) {
+  try {
+    const res = await fetch(request);
+    if (res.ok && url.origin === location.origin) {
+      const copy = res.clone();
+      caches.open(CACHE).then((c) => c.put(request, copy)).catch(() => {});
+    }
+    return res;
+  } catch {
+    const hit = await caches.match(request);
+    if (hit) return hit;
+    // A navigation with no cache entry and no network still opens.
+    if (request.mode === 'navigate') {
+      const shell = await caches.match('/index.html');
+      if (shell) return shell;
+    }
+    return Response.error();
+  }
+}
+
+async function cacheFirst(request) {
+  const hit = await caches.match(request);
+  if (hit) return hit;
+  const res = await fetch(request);
+  if (res.ok) {
+    const copy = res.clone();
+    caches.open(CACHE).then((c) => c.put(request, copy)).catch(() => {});
+  }
+  return res;
+}
+
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.pathname.startsWith('/api/')) return;
+  if (url.origin !== location.origin) return;
 
-  e.respondWith(
-    caches.match(e.request).then((hit) => hit ?? fetch(e.request)
-      .then((res) => {
-        if (res.ok && url.origin === location.origin) {
-          const copy = res.clone();
-          void caches.open(CACHE).then((c) => c.put(e.request, copy));
-        }
-        return res;
-      })
-      // A navigation with no cache entry and no network still opens.
-      .catch(() => caches.match('/index.html').then((shell) => shell ?? Response.error()))),
-  );
+  e.respondWith(isHashedAsset(url) ? cacheFirst(e.request) : networkFirst(e.request, url));
 });
