@@ -15,7 +15,10 @@ import { writeFileSync } from 'node:fs';
 
 const args = process.argv.slice(2);
 const i = args.indexOf('--db');
-const db = new DatabaseSync(i >= 0 && args[i + 1] ? args[i + 1] : 'data/deep-groove.sqlite');
+// READ-ONLY, deliberately. Opening this read-write while a run holds
+// the database killed a 45-minute job with "database is locked".
+const db = new DatabaseSync(i >= 0 && args[i + 1] ? args[i + 1] : 'data/deep-groove.sqlite',
+  { readOnly: true });
 
 const one = (sql) => db.prepare(sql).get();
 const all = (sql) => db.prepare(sql).all();

@@ -51,6 +51,11 @@ const client = new DiscogsClient(token, limiter);
 // A FILE, not memory: 45 minutes of API time must survive the process.
 const fresh = !existsSync(dbPath);
 const db = new DatabaseSync(dbPath);
+// WAL so a reader — a progress report, say — cannot block the writer
+// or be blocked by it. The default rollback journal takes an exclusive
+// lock and a mid-run read aborts the job.
+db.exec('PRAGMA journal_mode = WAL;');
+db.exec('PRAGMA busy_timeout = 10000;');
 if (fresh) {
   applySchema(db);
   db.exec(readFileSync('data/seed.sql', 'utf8'));
