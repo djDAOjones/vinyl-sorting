@@ -2,6 +2,59 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — M1-WORKER: with no sign-in, the Worker's shape is the security
+
+**Decision:** Named operations only — health, capture write, photo
+upload, item reads, and a decision-eligible count that reads through
+the views. Everything else returns 404 "no such operation". No route
+takes a caller-supplied upstream query, and **M1 contains no outbound
+request at all**.
+
+**Rationale:** v1 has no sign-in, so nothing at the perimeter
+distinguishes the maintainer from a stranger who finds the URL. What
+does the work instead is the absence of anything worth aiming. The
+strongest available form of "no proxy" is not a hard-coded upstream
+but no outbound call to hard-code one into, and a test asserts exactly
+that: zero bare `fetch(` in the Worker sources. A second test asserts
+no route reads `DISCOGS_TOKEN` — the binding is declared so the types
+know it exists, and dereferenced nowhere. The token is unreachable,
+not merely unused.
+
+This is what makes the no-sign-in decision cost nothing in M1: capture
+is a person typing what is printed on a label, so there is no Discogs
+path to protect yet. M2 changes that, and M2-MATCHER carries the gate.
+
+**Capture writes are idempotent on a client-generated id.** The
+offline queue retries, and a retry must not create a second physical
+disc. A replay returns 200 rather than 201 so the client can drop the
+queued entry either way without treating success as an error.
+
+**Captured values are `shelf` and unconfirmed.** Reading a label is
+not verifying a pressing — M2 confirms. So a freshly captured disc is
+decision-ineligible exactly like an imported one, and a test asserts
+it.
+
+**A photo-only capture is valid.** Photo-first means walking a crate
+photographing labels and typing nothing, so the API requires a crate
+(a session card has to say where the disc is) plus either a photo or a
+catalogue number — not a catalogue number.
+
+**The rate limiter is built although nothing calls it**, so M2 cannot
+skip it, with the shared budgets AGENTS.md fixes: Discogs 50/min,
+MusicBrainz 1/sec. A test drives two limiter instances standing in for
+two isolates and proves 50 total, not 50 each. The counter store is an
+interface because KV is eventually consistent; when M2 needs
+exactness, a Durable Object satisfies the same three methods.
+
+**Testable with no Cloudflare account.** D1 is SQLite, so the bindings
+are stubbed over `node:sqlite` and the Worker is exercised through
+real HTTP requests against the real schema — no wrangler, no emulator.
+
+**Alternatives:** A general `/api/discogs/*` proxy — rejected; with no
+sign-in it hands a stranger the maintainer's rate limit and identity.
+Per-caller rate limiting — rejected by AGENTS.md, and it cannot work
+when callers are anonymous.
+
 ## 2026-08-30 — M1-SCHEMA: provenance decides where a value lands, and views decide what may read it
 
 **Decision:** The four-entity schema from brief section 03, with two

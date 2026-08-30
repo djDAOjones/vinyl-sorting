@@ -10,10 +10,6 @@
 
 <!-- Intent: M1 — schema, Worker skeleton and the offline capture screen, so a disc can be captured in a loft with no signal. Promoted 2026-08-30 once its three sign-off questions were answered: no sign-in, app database authoritative, token valid and not a seller. -->
 
-- [ ] **M1-WORKER Hono Worker with named operations and the token as a
-  secret** — A Hono Worker exposing only the operations capture needs,
-  holding DISCOGS_TOKEN as a secret it never proxies openly, with central
-  rate limiting ready for M2.
 - [ ] **M1-CAPTURE-UI Photo-first offline capture screen** — The PWA
   capture form that works with no signal in a loft — photo first, six
   fields, queued in IndexedDB, surviving a hard refresh.

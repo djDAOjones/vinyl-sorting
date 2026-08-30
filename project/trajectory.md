@@ -13,3 +13,4 @@
 - OPEN-SYSTEM-OF-RECORD — app database is authoritative; import is one-way and the OneDrive CSV export is a backup, not a round-trip (2026-08-30) — see decision-log
 - OPEN-USERS-ACCESS — no sign-in for v1 by maintainer decision; Worker exposes named operations only and capture never calls Discogs, so auth is revisited at M2 (2026-08-30) — see decision-log
 - M1-SCHEMA — four-entity D1 schema with the provenance rule enforced by views; 446 rows loaded with 4,681 provenance records and nothing decision-eligible (2026-08-30) — see decision-log
+- M1-WORKER — Hono Worker with named operations only; no outbound request exists in M1, so the Discogs token is unreachable rather than merely unused; central rate limiter built and tested ahead of M2 (2026-08-30) — see decision-log
