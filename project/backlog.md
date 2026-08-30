@@ -51,6 +51,12 @@
   MusicBrainz, resolve composers for the 131 Various/Unknown rows, and
   attach real per-track completeness so clustering stops relying on the
   track-count heuristic.
+- [ ] **NAMES-CANONICAL One canonical form per composer and performer,
+  resolved after capture** (2026-08-31) — A label prints TSCHAIKOWSKY,
+  Tchaikovsky, P.I. Tschaikowsky and Pyotr Ilyich Tchaikovsky for one man,
+  and clustering cannot group performances of a work until those resolve
+  to one composer — so the raw string stays untouched and a resolution
+  layer sits between it and every decision view.
 - [ ] **M4-CLUSTERS-CONTRAST Cluster building, contrast scoring and
   shortlisting** — Build clusters from complete performances, score how
   far apart two readings are before any listening happens, and shortlist
