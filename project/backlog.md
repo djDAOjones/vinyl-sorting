@@ -10,10 +10,9 @@
 
 <!-- Intent: M2 — the matcher and the review queue. Re-verify all 446 under a corroboration gate that treats a catalogue number as a lead, then clear the queue by keyboard. Promoted 2026-08-30 after M1 shipped. -->
 
-- [ ] **M2-REVIEW-QUEUE Keyboard-driven review queue, and re-verify all
-  446** — The screen that decides the project — one item at a time,
-  capture on the left, top five scored candidates on the right, cleared
-  entirely by keyboard; first job is re-verifying all 446 existing rows.
+- [ ] **M2-FIRST-RUN Run the matcher over all 446 and clear the queue
+  once** — The operation, not the code — deploy, let the cron matcher work
+  through all 446 rows, then clear the review queue by keyboard.
 
 ### Next milestone
 

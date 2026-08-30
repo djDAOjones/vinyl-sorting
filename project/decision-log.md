@@ -2,6 +2,43 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — M2-REVIEW-QUEUE: two bugs that only a real browser was going to find
+
+**Decision:** Ship the keyboard-driven queue — 1–5 choose, N none, S
+skip, B back, M manual id — with each candidate showing which families
+of evidence agreed rather than only a score. Resolving is the ONLY
+route to decision-eligibility: the matcher writes `discogs` unconfirmed,
+and a person's answer is what adds `confirmed_by`.
+
+**A type-ahead race was mis-filing decisions.** `resolve()` read
+`queue[cursor]` and advanced the cursor only after awaiting the write,
+so a second keypress during the in-flight request answered the SAME
+item twice — and because the write upserts on run id, the second answer
+silently overwrote the first while the next item was skipped entirely.
+Driving it in a browser produced `POST /review/1`, `/review/2`,
+`/review/2`: three keystrokes, two items, one wrong answer recorded and
+one item never seen. Someone clearing hundreds of items types ahead, so
+this was the normal case. Fixed by capturing the run id before the
+await and advancing optimistically, with a rollback that puts the item
+back rather than losing it.
+
+**The service worker would have blocked every future deployment.** It
+was cache-first for everything same-origin, so once `index.html` was
+cached a new build never reached anyone — the stale HTML kept pointing
+at the old hashed assets. It was caught because the browser kept
+serving a fixed module's old copy back during testing. Now navigations
+and HTML are network-first with cache as the offline fallback, and only
+content-hashed `/assets/*` are cache-first.
+
+Neither bug was reachable from the test suite as written: one needed
+real event timing, the other a real cache. That is the argument for
+driving the thing rather than only asserting about it.
+
+**On the done-when.** "The queue can be cleared by keyboard" is met and
+was demonstrated. "The 446 have been through it" is not — that is an
+operation needing a deployment and about an hour of API time, split out
+as M2-FIRST-RUN rather than quietly counted as done.
+
 ## 2026-08-30 — M2-MATCHER: the gate works, and the audit nearly marked its own homework
 
 **Decision:** Ship the ported ladder with the three intended changes —
