@@ -2,6 +2,42 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — CAPTURE-VIEWFINDER: the camera takes the whole screen
+
+**Decision:** While the camera is open it is fullscreen — fixed to the
+viewport, page scroll locked, controls floating over the preview. In
+landscape on a short screen they move to the right-hand edge. The torch
+button is now always offered and tried, rather than gated on a
+capability report, and explains itself when the browser refuses.
+
+**Rationale:** Maintainer, on an iPhone SE mk2: landscape was unusable
+because Safari's chrome took the room and the preview was capped at
+`60vh` of what was left. On that device landscape is 375 px tall before
+the browser takes its share — a preview too small to frame a label in.
+
+Competing with the page for space was the mistake. Nothing else on that
+screen matters while you are shooting, so nothing else is shown.
+Measured at 667×375: the preview is now the full viewport in both
+orientations, where it was a strip.
+
+**Landscape moves the controls sideways.** At the bottom they cost the
+height that is already scarce; on the right they cost width, which on a
+667 px-wide viewport there is plenty of. 104 px of it, against 375 px of
+height saved.
+
+**The torch is offered, then tried.** It was gated on
+`getCapabilities().torch`, which under-reports on some browsers and does
+not exist on others — so the control was hidden from devices where it
+would have worked. Now it is always shown, the first tap tries it, and
+a refusal hides the button and says what does work: the system torch,
+from Control Centre, stays lit while the camera runs. That is a real
+answer for iOS rather than an apology. One wasted tap on a device that
+cannot do it, against a feature that is not silently withheld from one
+that can.
+
+`100dvh` rather than `100vh`, so a collapsing URL bar cannot crop the
+preview mid-shoot.
+
 ## 2026-08-30 — CAPTURE-LIVE-CAMERA: a viewfinder that stays open
 
 **Decision:** Capture opens a live camera in the page. One tap per

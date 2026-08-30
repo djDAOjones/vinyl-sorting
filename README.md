@@ -45,12 +45,15 @@ Capture has two modes. One disc at a time, with the label and catalogue
 number typed; or **Photograph a whole crate** — pick or shoot many, and
 each photo becomes its own row with nothing typed at all.
 
-Capture opens a live camera in the page: one tap per photograph, no
-"Use Photo" to confirm, and the viewfinder never closes. **Done** ends
-the viewfinder, **Queue it** uploads the lot. A torch toggle appears
-only where the device exposes one — Chrome on Android does, Safari on
-iOS does not, so on an iPhone there is no flash and no button
-pretending there is.
+Capture opens a live camera that takes the whole screen: one tap per
+photograph, no "Use Photo" to confirm, and the viewfinder never closes.
+In landscape the controls sit on the right-hand edge, where they cost
+width rather than the height a phone has little of. **Done** ends
+the viewfinder, **Queue it** uploads the lot. The torch button is always offered and tried on the first tap, rather
+than gated on a capability report that under-reports on some browsers.
+Where the browser refuses — Safari on iOS does — it hides itself and
+says what does work: the system torch from Control Centre stays lit
+while the camera runs.
 
 The phone's own camera is still one tap away underneath, because a
 video frame has no HDR or multi-frame stacking and a catalogue number

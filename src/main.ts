@@ -214,30 +214,46 @@ async function startCamera(): Promise<void> {
   await video.play().catch(() => {});
   cam.hidden = false;
   shot.hidden = true;
+  document.body.classList.add('shooting');
   if (note) note.textContent = 'Tap the shutter for each photograph — no confirming, '
     + 'no closing. Done when this disc is finished, then Queue it.';
+  renderPhotos();
 
   const track = stream.getVideoTracks()[0];
-  const caps = track?.getCapabilities?.();
-  if (track && torch && torchSupported(caps)) {
-    torch.hidden = false;
-    torch.onclick = async () => {
-      const on = torch.getAttribute('aria-pressed') === 'true';
-      try {
-        // `torch` is not in the DOM typings — it is a real constraint
-        // that Chrome implements and the spec lists, so the cast is the
-        // typings being behind rather than a guess about the platform.
-        await track.applyConstraints(
-          { advanced: [{ torch: !on }] } as unknown as MediaTrackConstraints);
-        torch.setAttribute('aria-pressed', String(!on));
-        torch.classList.toggle('on', !on);
-      } catch { torch.hidden = true; }
-    };
-  } else if (torch) {
-    // iOS Safari exposes no torch at all. A dead button is worse than
-    // no button, so it stays hidden rather than pretending.
-    torch.hidden = true;
-  }
+  if (!track || !torch) return;
+
+  /**
+   * The torch is OFFERED, then tried, rather than decided in advance.
+   *
+   * `getCapabilities` under-reports on some browsers and does not exist
+   * on others, so gating purely on it hides the control from devices
+   * that would in fact have worked. Offering it and failing honestly on
+   * the first tap costs one tap and tells the truth; hiding it costs
+   * the feature everywhere the report is wrong.
+   */
+  const known = torchSupported(track.getCapabilities?.());
+  torch.hidden = false;
+  torch.onclick = async () => {
+    const on = torch.getAttribute('aria-pressed') === 'true';
+    try {
+      // `torch` is not in the DOM typings — it is a real constraint
+      // that Chrome implements and the spec lists, so the cast is the
+      // typings being behind rather than a guess about the platform.
+      await track.applyConstraints(
+        { advanced: [{ torch: !on }] } as unknown as MediaTrackConstraints);
+      torch.setAttribute('aria-pressed', String(!on));
+      torch.classList.toggle('on', !on);
+    } catch {
+      // Safari on iOS refuses this outright. Say why, and say what does
+      // work — the system torch stays lit while the camera is running,
+      // so the lamp is available even though the page cannot reach it.
+      torch.hidden = true;
+      flash(known
+        ? 'The camera refused the torch. Use Control Centre instead — it stays on while you shoot.'
+        : 'This browser will not let a page control the torch. Swipe into Control Centre and '
+          + 'turn it on there — it stays on while you shoot.', 'err');
+    }
+  };
 }
 
 function stopCamera(): void {
@@ -247,6 +263,7 @@ function stopCamera(): void {
   if (video) video.srcObject = null;
   if (cam) cam.hidden = true;
   if (shot) shot.hidden = false;
+  document.body.classList.remove('shooting');
   if (note) note.textContent = 'Keep going — label, sleeve, runout, whatever the record needs. '
     + 'Nothing to label or choose. Queue it when you are done with this disc.';
 }
@@ -306,6 +323,9 @@ function renderPhotos(): void {
     ? '<span class="hint">📷 Photograph</span>'
     : `<img src="${photos[n - 1]!.url}" alt="The photograph just taken">
        <span class="retake">📷 Another — ${n} so far</span>`;
+
+  const done = document.getElementById('camOff');
+  if (done) done.textContent = photos.length ? `Done · ${photos.length}` : 'Done';
 
   strip.innerHTML = photos.map((p, i) =>
     `<figure class="thumb"><img src="${p.url}" alt="Photograph ${i + 1}">
