@@ -136,12 +136,22 @@ test('the budget is a runaway backstop, not a throttle a healthy tick meets', ()
   );
 });
 
-test('the Worker declares a CPU ceiling below the 30s default', () => {
-  // Cloudflare's default is 30s per invocation. Unset, a spinning tick
-  // gets all of it, 288 times a day.
+test('the Worker stays deployable: no CPU limit while on the Free plan', () => {
+  // Learned by breaking it. A [limits] cpu_ms block looks like pure
+  // prudence and is rejected outright on Free — "CPU limits are not
+  // supported for the Free plan [code: 100328]" — so the Worker could
+  // not deploy at all. A guard that stops the thing shipping is worth
+  // less than no guard.
+  //
+  // Free caps CPU itself, and the real wall is D1 refusing writes past
+  // 100k/day. The per-tick write budget above is the ceiling that
+  // actually does the work here.
+  //
+  // MOVING TO A PAID PLAN? Re-add [limits] cpu_ms and invert this test.
   const toml = readFileSync('wrangler.toml', 'utf8');
-  assert.match(toml, /\[limits\]/, 'wrangler.toml must declare [limits]');
-  const m = toml.match(/cpu_ms\s*=\s*(\d+)/);
-  assert.ok(m, 'wrangler.toml must set cpu_ms');
-  assert.ok(Number(m[1]) < 30000, `cpu_ms ${m[1]} is not below the 30000 default`);
+  const active = toml.split('\n').filter((l) => !l.trimStart().startsWith('#')).join('\n');
+  assert.doesNotMatch(active, /\[limits\]/,
+    'a [limits] block makes deploy fail on the Free plan');
+  assert.doesNotMatch(active, /cpu_ms/,
+    'cpu_ms is rejected by the Free plan and blocks deployment');
 });

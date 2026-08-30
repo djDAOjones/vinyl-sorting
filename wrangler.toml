@@ -45,15 +45,17 @@ id = "3f62537511354c4fad11caba49fd2235"
 [triggers]
 crons = ["*/5 * * * *"]
 
-# A tick is four rows of JSON parsing and scoring — milliseconds of CPU,
-# with the rest of its wall time spent waiting on the two-second Discogs
-# spacing, which costs no CPU. The 30s default is therefore 30s of room
-# a runaway loop could use; 10s is still ~100x what a healthy tick needs
-# and turns "spins until the platform stops it" into "dies quickly and
-# visibly". Cloudflare sells no hard spend cap, so ceilings are ours to
-# build (OPS-SPEND-GUARD).
-[limits]
-cpu_ms = 10000
+# NO [limits] BLOCK — deliberately, and do not add one back while this
+# account is on the Free plan. Cloudflare rejects the deploy outright:
+# "CPU limits are not supported for the Free plan [code: 100328]". It
+# was added here on 2026-08-30 and made the Worker undeployable until
+# it was removed; a test now guards against re-adding it.
+#
+# Nothing is lost. Free enforces its own per-invocation CPU cap, and
+# the real wall against runaway cost is D1 refusing writes past
+# 100k/day rather than billing for them. The per-tick write budget in
+# the matcher is the ceiling that does the work (OPS-SPEND-GUARD).
+# On a paid plan, re-add cpu_ms and update the guarding test.
 
 [observability]
 enabled = true
