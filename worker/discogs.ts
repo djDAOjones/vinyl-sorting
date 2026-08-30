@@ -41,10 +41,19 @@ export class DiscogsClient {
   readonly #fetch: typeof fetch;
   readonly #sleep: (ms: number) => Promise<void>;
 
+  /**
+   * `fetchImpl` defaults to a WRAPPER around the global fetch, not to
+   * the global itself. Storing the bare global on a field and calling
+   * it as `this.#fetch(...)` detaches it from globalThis, and the
+   * Workers runtime rejects that with "Illegal invocation: function
+   * called with incorrect `this` reference". Node's fetch tolerates it,
+   * so this only appeared once deployed — the production cron failed
+   * all 12 queries on its first real row.
+   */
   constructor(
     token: string,
     limiter: RateLimiter,
-    fetchImpl: typeof fetch = fetch,
+    fetchImpl: typeof fetch = (input, init) => fetch(input, init),
     sleep: (ms: number) => Promise<void> = (ms) => new Promise((r) => { setTimeout(r, ms); }),
   ) {
     this.#token = token;

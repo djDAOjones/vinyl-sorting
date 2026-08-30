@@ -13,6 +13,11 @@
 - [ ] **M2-FIRST-RUN Run the matcher over all 446 and clear the queue
   once** — The operation, not the code — deploy, let the cron matcher work
   through all 446 rows, then clear the review queue by keyboard.
+- [ ] **M2-EGRESS-IP Discogs throttles Cloudflare's shared egress, so
+  matching cannot run in the Worker** [sign-off] (2026-08-30) — The cron
+  matcher gets 429s from Discogs because Workers egress from shared IPs;
+  matching runs from the maintainer's machine instead, and needs a way to
+  write results back to the live database.
 
 ### Next milestone
 
@@ -30,6 +35,11 @@
   passage?** [sign-off] (2026-08-30) — Whether the app proposes the
   two-to-three-minute comparison passage from the track listing, or the
   listener always chooses it themselves.
+- [ ] **OPS-SPEND-GUARD Spend guard — cap what a runaway cron can cost**
+  (2026-08-30) — Cloudflare has no hard dollar cap, so the ceiling has to
+  be built: a budget alert to notice, a CPU limit per invocation, and a
+  per-tick write budget in the matcher so a loop cannot bill its way
+  through the night.
 - [ ] **M3-WORKS-PERFORMANCES MusicBrainz works, performances and
   per-track completeness** — Resolve work and recording identity from
   MusicBrainz, resolve composers for the 131 Various/Unknown rows, and

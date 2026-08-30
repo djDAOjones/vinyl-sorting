@@ -96,6 +96,26 @@ apply through wrangler's own D1 (18 tables, 4 views), and the seed
 loads into it — 267 releases, 4,681 provenance rows, 0 decision
 eligible. What is untested is only what needs a real account.
 
+## Matching runs from your machine, not from cron
+
+Discogs rate-limits by source IP, and Cloudflare Workers egress from
+addresses shared with other customers, so the deployed cron matcher
+gets 429s while the same token from a laptop returns 200 with 59
+requests remaining. The central rate limiter cannot help — the budget
+is being spent by strangers.
+
+So run the matcher here:
+
+```bash
+node tools/match-run.mjs
+```
+
+It is resumable (only rows with no `match_run` are selected) and
+completed all 446 rows with zero failed queries. Getting those results
+into the live database is the open question in `M2-EGRESS-IP`; the
+cron stays deployed and harmless in the meantime, recording an `error`
+state rather than a false "nothing found" whenever it is throttled.
+
 ## How no-sign-in stays safe now the matcher exists
 
 v1 has **no sign-in**, by your decision on 2026-08-30. M2 gives the

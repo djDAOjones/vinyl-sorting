@@ -2,6 +2,47 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — DEPLOY: five faults that only the real platform could show
+
+**Decision:** Ship to a Worker serving its own static assets, with the
+matcher run from the maintainer's machine rather than from cron.
+
+The app is live at `deep-groove.joe-2d2.workers.dev` with 446 items,
+446 match runs and 2,045 candidates. Every one of the following passed
+locally and failed in production:
+
+1. **Remote D1 rejects explicit transactions.** The seed wrapped itself
+   in `BEGIN`/`COMMIT`; miniflare accepted it, D1 refused. Removed —
+   safe because the dump is already in dependency order.
+2. **`d1 info <name>` resolves through wrangler.toml**, which holds a
+   placeholder on a first run. This is what made the maintainer's first
+   deploy appear to do nothing: it created the database, failed to read
+   the id back, and exited. Ids now come from `d1 list --json`.
+3. **D1 caps a query at 100 bound parameters.** The review queue bound
+   one per run id, so a 200-row page returned 500 in production and
+   passed locally. Chunked.
+4. **A stored global `fetch` is detached in Workers.** Calling
+   `this.#fetch(...)` raised "Illegal invocation" and failed all 12
+   queries on the first real row. Node tolerates it. The default is now
+   a wrapper.
+5. **Discogs throttles Cloudflare's shared egress IPs.** The Worker got
+   429s while the same token from a laptop returned 200 with 59
+   requests remaining. Not fixable by rate limiting, because the budget
+   is being spent by strangers sharing the IP. Split out as
+   M2-EGRESS-IP.
+
+**The pattern is the point.** Every one was invisible to a suite of 166
+tests and to a local emulator. Two of them — 4 and 5 — would have
+silently mis-reported records as unmatchable had the error state built
+in M2-MATCHER not existed to catch them. Building that turned out to
+be the difference between finding this in an afternoon and finding it
+in a loft.
+
+**R2 stays off.** Enabling it needs a dashboard action the API refuses
+to perform and which may ask for payment details, so the Worker treats
+the binding as optional: photo uploads answer a retryable 503 and the
+phone keeps them queued.
+
 ## 2026-08-30 — M2-REVIEW-QUEUE: two bugs that only a real browser was going to find
 
 **Decision:** Ship the keyboard-driven queue — 1–5 choose, N none, S

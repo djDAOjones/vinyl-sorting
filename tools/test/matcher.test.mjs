@@ -367,3 +367,16 @@ test('the client honours a Retry-After rather than hammering', async () => {
   assert.equal(results.length, 1, 'it retried and succeeded');
   assert.ok(slept.includes(3000), `expected a 3s wait from Retry-After, slept ${slept}`);
 });
+
+test('the client never calls a detached global fetch', () => {
+  // Storing the bare global on a field and calling it as
+  // `this.#fetch(...)` detaches it from globalThis. Node allows that;
+  // the Workers runtime answers "Illegal invocation" and the whole
+  // matcher fails. The default must be a wrapper, not the global.
+  const src = readFileSync('worker/discogs.ts', 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  assert.doesNotMatch(src, /fetchImpl\s*:\s*typeof fetch\s*=\s*fetch\s*[,)]/,
+    'defaulting straight to the global detaches it');
+  assert.match(src, /fetchImpl[^=]*=\s*\([^)]*\)\s*=>\s*fetch\(/,
+    'the default must wrap the global so it keeps its receiver');
+});
