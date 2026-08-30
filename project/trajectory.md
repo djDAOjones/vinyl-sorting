@@ -12,3 +12,4 @@
 - OPEN-DISCOGS-TOKEN — token valid (walter_odington); not a seller, which costs only condition-graded price suggestions — lowest price, count for sale and have/want all reachable (2026-08-30) — see decision-log
 - OPEN-SYSTEM-OF-RECORD — app database is authoritative; import is one-way and the OneDrive CSV export is a backup, not a round-trip (2026-08-30) — see decision-log
 - OPEN-USERS-ACCESS — no sign-in for v1 by maintainer decision; Worker exposes named operations only and capture never calls Discogs, so auth is revisited at M2 (2026-08-30) — see decision-log
+- M1-SCHEMA — four-entity D1 schema with the provenance rule enforced by views; 446 rows loaded with 4,681 provenance records and nothing decision-eligible (2026-08-30) — see decision-log

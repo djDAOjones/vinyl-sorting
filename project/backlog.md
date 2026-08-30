@@ -10,10 +10,6 @@
 
 <!-- Intent: M1 — schema, Worker skeleton and the offline capture screen, so a disc can be captured in a loft with no signal. Promoted 2026-08-30 once its three sign-off questions were answered: no sign-in, app database authoritative, token valid and not a seller. -->
 
-- [ ] **M1-SCHEMA D1 schema and the M0 dataset loaded into it** — Build
-  the four-entity D1 schema from brief section 03 with field_source
-  provenance enforced in the query layer, and load M0's 446 reconciled
-  rows into it.
 - [ ] **M1-WORKER Hono Worker with named operations and the token as a
   secret** — A Hono Worker exposing only the operations capture needs,
   holding DISCOGS_TOKEN as a secret it never proxies openly, with central

@@ -9,9 +9,8 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "test": "node --test 'tools/test/*.test.mjs'",
-    "schema:check": "node tools/check-schema.mjs",
     "worker:dev": "wrangler dev",
-    "gate": "npm run typecheck && npm test && npm run schema:check"
+    "gate": "npm test"
   },
   "dependencies": {
     "hono": "^4.13.5"

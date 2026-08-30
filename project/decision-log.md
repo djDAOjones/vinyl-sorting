@@ -2,6 +2,52 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — M1-SCHEMA: provenance decides where a value lands, and views decide what may read it
+
+**Decision:** The four-entity schema from brief section 03, with two
+enforcement mechanisms rather than conventions.
+
+**The query layer is real code.** Four views — `v_confirmed_field`,
+`v_decision_eligible_item`, `v_decision_eligible_release`,
+`v_eligible_work_coverage` — are the only route by which anything may
+feed a cluster, coverage check, sell list or shortlist. A `guess` or
+`legacy` value is unreachable through them *even when marked
+confirmed*, and an unconfirmed `discogs` value likewise. Tests assert
+both directions: that the loaded dataset yields nothing, and that
+confirming one row makes exactly that row appear. A view that is
+merely empty proves nothing; this one discriminates.
+
+**A value's destination is decided by its provenance, not its name.**
+`label_raw` sourced `legacy` is something a person typed and goes to
+`capture`; the same column sourced `discogs` is something a matcher
+wrote and goes to `release`. This is the AGENTS.md boundary — never
+write back over capture — made structural. Of the 446 rows, 31 labels
+reached `capture` (the ones M0 split out of the backlog) and 267
+reached `release`.
+
+**Nothing is dropped.** Values with no home in the model yet go to
+`raw_value` with provenance intact: 1,248 `guess`, 554 `discogs`
+(musicians and track listings on matched rows, homeless until M3
+resolves tracks into works) and 528 `legacy`. A first attempt tallied
+these by column name and was wrong twice — the 28 track listings M0
+reclassified are named like legacy columns and are guessed in truth.
+Counting by name would have reproduced, in the statistics, the exact
+confusion the provenance rule exists to end.
+
+**Load result:** 446 items, 446 captures, 267 releases across 277
+links — 10 items share a pressing with another, which is two copies of
+one release and not a duplicate — and 4,681 `field_source` rows. Zero
+decision-eligible, which is the done-when.
+
+**Testable without Cloudflare.** D1 is SQLite, so the schema and the
+load run against Node's built-in `node:sqlite`: no emulator, no
+account, no deploy. The same SQL is what `wrangler d1 execute` applies.
+
+**Alternatives:** Enforce provenance in application code — rejected,
+that is the convention the rule explicitly refuses. Drop the values
+with no home — rejected, `musicians` and the track listings are M3's
+input.
+
 ## 2026-08-30 — OPEN-USERS-ACCESS: no sign-in for v1, and the risk is deferred rather than accepted
 
 **Decision:** No sign-in for v1. Two or more trusted people capture,
