@@ -1,40 +1,4632 @@
 {
-  "ranAt": "2026-08-30T13:45:15.321Z",
-  "attempted": 2,
-  "verified": 1,
-  "needsReview": 1,
-  "noMatch": 0,
+  "ranAt": "2026-08-30T14:32:48.260Z",
+  "attempted": 330,
+  "verified": 92,
+  "needsReview": 216,
+  "noMatch": 22,
   "rejectedBeforeAnyCall": 0,
   "errored": 0,
-  "apiCalls": 7,
+  "apiCalls": 1085,
   "queryErrors": 0,
   "outcomes": [
     {
-      "itemId": 4,
+      "itemId": 117,
       "verdict": "verified",
       "reason": "score 115, families identifier+title+people+format, margin 55",
-      "chosenDiscogsId": 2759910,
+      "chosenDiscogsId": 10805645,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 25,
+      "capture": {
+        "catno": "SLS 859",
+        "title": "The Tchaikovsky Ballets - Highlights From Swan Lake - The Sleeping Beauty - Nutcracker",
+        "name": "Efrem Kurtz"
+      }
+    },
+    {
+      "itemId": 118,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "2241-2",
+        "title": "Abigail II: The Revenge",
+        "name": "Kletski"
+      }
+    },
+    {
+      "itemId": 119,
+      "verdict": "verified",
+      "reason": "score 115, families identifier+title+people+format, margin 37",
+      "chosenDiscogsId": 7594967,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "HM 511",
+        "title": "Symphony No. 5 (In E Minor Opus 64)",
+        "name": "Sir Malcolm Sargent"
+      }
+    },
+    {
+      "itemId": 120,
+      "verdict": "needs_review",
+      "reason": "score 5 < 80; only 0 signal family (none) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 2,
+      "queryErrors": 0,
+      "candidates": 19,
+      "capture": {
+        "catno": "CBS0003",
+        "title": "Greatest Hits Volume 1",
+        "name": "Bernstein and Ormandy"
+      }
+    },
+    {
+      "itemId": 121,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 30,
+      "capture": {
+        "catno": "ALL 718",
+        "title": "Concerto 1 Opus 23",
+        "name": "Samuel Samosud"
+      }
+    },
+    {
+      "itemId": 122,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 67",
+      "chosenDiscogsId": 13295609,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "CHVL 152",
+        "title": "Sleeping Beauty Ballet Suite Op. 66 • 1812 Overture Suite Op. 49",
+        "name": "Lizzio and Littig"
+      }
+    },
+    {
+      "itemId": 123,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 26,
+      "capture": {
+        "catno": "ALP 1790",
+        "title": "The Sleeping Beauty Suite From The Ballet",
+        "name": "Efrem Kurtz"
+      }
+    },
+    {
+      "itemId": 124,
+      "verdict": "needs_review",
+      "reason": "margin 10 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "T574",
+        "title": "Violin Concerto In D Major, Op.35",
+        "name": "William Steinberg"
+      }
+    },
+    {
+      "itemId": 125,
+      "verdict": "verified",
+      "reason": "score 115, families identifier+title+people+format, margin 55",
+      "chosenDiscogsId": 1985178,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "CCV 5022",
+        "title": "The Nutcracker Suite (Excerpts)",
+        "name": "Arthur Fiedler"
+      }
+    },
+    {
+      "itemId": 126,
+      "verdict": "verified",
+      "reason": "score 105, families identifier+title+people, margin 35",
+      "chosenDiscogsId": 9229913,
       "queriesRun": 3,
       "queryErrors": 0,
       "candidates": 20,
       "capture": {
-        "catno": "CFP 40311",
-        "title": "Carmina Burana",
+        "catno": "EMX 41 2067 1",
+        "title": "Sleeping Beauty and Swan Lake Ballet Suites",
+        "name": "Herbert von Karajan"
+      }
+    },
+    {
+      "itemId": 127,
+      "verdict": "needs_review",
+      "reason": "score 30 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 7 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "1",
+        "title": "Nutcracker Suite",
+        "name": "Sigmund Spaeth"
+      }
+    },
+    {
+      "itemId": 128,
+      "verdict": "verified",
+      "reason": "score 85, families identifier+title+people+format, margin 85",
+      "chosenDiscogsId": 29783254,
+      "queriesRun": 7,
+      "queryErrors": 0,
+      "candidates": 1,
+      "capture": {
+        "catno": "B0000951-02",
+        "title": "Tchaikovsky: 1812 Overture; Symphony No. 6 In B Minor \"Pathetique\"",
+        "name": "Charles Dutoit"
+      }
+    },
+    {
+      "itemId": 129,
+      "verdict": "verified",
+      "reason": "score 80, families identifier+title, margin 57",
+      "chosenDiscogsId": 3968098,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "GBL 5526",
+        "title": "Suites: \"Nutcracker\" / Sleeping Beauty",
+        "name": "Rudolf Moralt; Willem Van Otterloo"
+      }
+    },
+    {
+      "itemId": 130,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 30",
+      "chosenDiscogsId": 8949505,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "T562",
+        "title": "Symphonie Espagnole",
+        "name": "Kiril Kondrashin"
+      }
+    },
+    {
+      "itemId": 131,
+      "verdict": "needs_review",
+      "reason": "margin 10 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 27,
+      "capture": {
+        "catno": "SB 6769",
+        "title": "Symphonies 6 & 8",
+        "name": "André Previn"
+      }
+    },
+    {
+      "itemId": 132,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 22,
+      "capture": {
+        "catno": "CFP 4016",
+        "title": "If Music Be The Food Of Love ... Prepare For Indigestion",
+        "name": "Davison"
+      }
+    },
+    {
+      "itemId": 133,
+      "verdict": "verified",
+      "reason": "score 105, families identifier+title+people, margin 35",
+      "chosenDiscogsId": 15275031,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "SBRG 72363",
+        "title": "The Four Seasons, Op. 8",
+        "name": "Leonard Bernstein"
+      }
+    },
+    {
+      "itemId": 134,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 57",
+      "chosenDiscogsId": 8848040,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 25,
+      "capture": {
+        "catno": "ABM 756",
+        "title": "Vivaldi: The Four Seasons",
+        "name": "Garcia"
+      }
+    },
+    {
+      "itemId": 135,
+      "verdict": "needs_review",
+      "reason": "margin 10 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "L 00.301 L",
+        "title": "Les Quatre Saisons",
+        "name": "Bryks"
+      }
+    },
+    {
+      "itemId": 136,
+      "verdict": "verified",
+      "reason": "score 115, families identifier+title+people+format, margin 37",
+      "chosenDiscogsId": 5511313,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 16,
+      "capture": {
+        "catno": "7 49557 1",
+        "title": "The Four Seasons - Le Quattro Stagioni - Die Vier Jahreszeiten - Les Quatre Saisons",
+        "name": "Nigel Kennedy"
+      }
+    },
+    {
+      "itemId": 137,
+      "verdict": "verified",
+      "reason": "score 115, families identifier+title+people+format, margin 92",
+      "chosenDiscogsId": 31487645,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "LLP 386",
+        "title": "The Seasons",
+        "name": "Karl Münchinger"
+      }
+    },
+    {
+      "itemId": 138,
+      "verdict": "verified",
+      "reason": "score 115, families identifier+title+people+format, margin 55",
+      "chosenDiscogsId": 4084798,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 24,
+      "capture": {
+        "catno": "CFP 109",
+        "title": "Das Rheingold Highlights",
+        "name": "Rudolf Kempe"
+      }
+    },
+    {
+      "itemId": 139,
+      "verdict": "needs_review",
+      "reason": "margin 10 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 29,
+      "capture": {
+        "catno": "ECS 627",
+        "title": "Piano Concertos Nos. 1 & 2",
+        "name": "Anthony Collins (2)"
+      }
+    },
+    {
+      "itemId": 140,
+      "verdict": "needs_review",
+      "reason": "score 30 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "59",
+        "title": "Ride Of The Valkyries...",
+        "name": "Enrique Batiz"
+      }
+    },
+    {
+      "itemId": 141,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 24,
+      "capture": {
+        "catno": "S 61196",
+        "title": "Ride Of The Valkyries",
+        "name": "Richard Wagner"
+      }
+    },
+    {
+      "itemId": 142,
+      "verdict": "needs_review",
+      "reason": "score 5 < 80; only 0 signal family (none) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "8 20 207",
+        "title": "Der Fliegende Holländer",
+        "name": "Franz Konwitschny"
+      }
+    },
+    {
+      "itemId": 143,
+      "verdict": "verified",
+      "reason": "score 115, families identifier+title+people+format, margin 100",
+      "chosenDiscogsId": 15055322,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "65 00 056",
+        "title": "Der Fliegende Hollander",
+        "name": "Wolfgang Sawallisch"
+      }
+    },
+    {
+      "itemId": 144,
+      "verdict": "verified",
+      "reason": "score 80, families identifier+title, margin 55",
+      "chosenDiscogsId": 15407561,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 22,
+      "capture": {
+        "catno": "137-03 130/32",
+        "title": "Tannhäuser",
+        "name": "Pitz and Sawallisch"
+      }
+    },
+    {
+      "itemId": 145,
+      "verdict": "verified",
+      "reason": "score 115, families identifier+title+people+format, margin 67",
+      "chosenDiscogsId": 2954611,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 22,
+      "capture": {
+        "catno": "CFP 40286",
+        "title": "A London Symphony",
+        "name": "Vernon Handley"
+      }
+    },
+    {
+      "itemId": 146,
+      "verdict": "needs_review",
+      "reason": "margin 10 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 25,
+      "capture": {
+        "catno": "ASD 3317",
+        "title": "Facade Suite",
+        "name": "Louis Frémaux"
+      }
+    },
+    {
+      "itemId": 147,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 30",
+      "chosenDiscogsId": 12708908,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 22,
+      "capture": {
+        "catno": "MFP 2152",
+        "title": "The Heart Of The Overture",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 148,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "STXIS5277",
+        "title": "Janet Baker singss Schumann, Schubert and Brahmms",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 149,
+      "verdict": "needs_review",
+      "reason": "margin 10 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 24,
+      "capture": {
+        "catno": "MFP 2032",
+        "title": "Great Tenor Arias",
+        "name": "Michael Collins (4)"
+      }
+    },
+    {
+      "itemId": 150,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 67",
+      "chosenDiscogsId": 2043075,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "SMR 620 B",
+        "title": "Classics By Candlelight - Volume Two",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 151,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 23,
+      "capture": {
+        "catno": "RDS 6032",
+        "title": "Interlude For Strings",
+        "name": "Josef Leo Gruber"
+      }
+    },
+    {
+      "itemId": 152,
+      "verdict": "verified",
+      "reason": "score 115, families identifier+title+people+format, margin 55",
+      "chosenDiscogsId": 9729077,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "SPA/A 126",
+        "title": "The World Of Eric Robinson",
+        "name": "Eric Robinson (5)"
+      }
+    },
+    {
+      "itemId": 153,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 25,
+      "capture": {
+        "catno": "SPA 488",
+        "title": "The World Of Your Hundred Best Tunes - The New Chart Vol.2",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 154,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "SPA 155",
+        "title": "The World Of Your Hundred Best Tunes Vol.2",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 155,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "SPA.316",
+        "title": "The World Of Your Hundred Best Tunes Vol. 6",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 156,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "SPA.299",
+        "title": "The World Of Your Hundred Best Tunes Vol.5",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 157,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 22,
+      "capture": {
+        "catno": "POLTV 11",
+        "title": "Classics For Dreaming",
+        "name": "James Last"
+      }
+    },
+    {
+      "itemId": 158,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 17,
+      "capture": {
+        "catno": "SPA 491",
+        "title": "The World Of Your Hundred Best Tunes The New Chart Volume1",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 159,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 23,
+      "capture": {
+        "catno": "SPA.355",
+        "title": "The World Of Your Hundred Best Tunes Vol.7",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 160,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 25,
+      "capture": {
+        "catno": "SPA 176",
+        "title": "The World Of The Immortal Classics",
+        "name": "Chacksfield"
+      }
+    },
+    {
+      "itemId": 161,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 14,
+      "capture": {
+        "catno": "SPA. 356",
+        "title": "The World Of Your Hundred Best Tunes Vol. 8",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 162,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 18,
+      "capture": {
+        "catno": "SPA 125",
+        "title": "The World Of Stereo Action",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 163,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 22,
+      "capture": {
+        "catno": "TWOX 1025",
+        "title": "Intermezzo",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 164,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 30",
+      "chosenDiscogsId": 3172272,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 17,
+      "capture": {
+        "catno": "MER 384",
+        "title": "Romance Of The Symphony",
+        "name": "Douglas Gamley"
+      }
+    },
+    {
+      "itemId": 165,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 25,
+      "capture": {
+        "catno": "SPA 377",
+        "title": "Hungarian & Slavonic Dances",
+        "name": "Fritz Reiner"
+      }
+    },
+    {
+      "itemId": 166,
+      "verdict": "verified",
+      "reason": "score 105, families identifier+title+people, margin 25",
+      "chosenDiscogsId": 2967973,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 23,
+      "capture": {
+        "catno": "CFP 40277",
+        "title": "Richard Baker Presents: These You Have Loved",
+        "name": "baker"
+      }
+    },
+    {
+      "itemId": 167,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 24,
+      "capture": {
+        "catno": "CFP 40294",
+        "title": "These You Have Loved Volume Two",
+        "name": "baker"
+      }
+    },
+    {
+      "itemId": 168,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 42",
+      "chosenDiscogsId": 6658907,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 22,
+      "capture": {
+        "catno": "CFP 40378",
+        "title": "These You Have Loved Vol 5",
+        "name": "baker"
+      }
+    },
+    {
+      "itemId": 169,
+      "verdict": "needs_review",
+      "reason": "margin 10 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 25,
+      "capture": {
+        "catno": "CFP 154",
+        "title": "An Evening at the Proms",
+        "name": "Sir Malcolm Sargent"
+      }
+    },
+    {
+      "itemId": 170,
+      "verdict": "verified",
+      "reason": "score 115, families identifier+title+people+format, margin 82",
+      "chosenDiscogsId": 33327081,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "RDS 6036",
+        "title": "Dancing Strings",
+        "name": "Anatole Fistoulari"
+      }
+    },
+    {
+      "itemId": 171,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 37",
+      "chosenDiscogsId": 18382135,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 24,
+      "capture": {
+        "catno": "RDS 9011",
+        "title": "Stereo Spectacular",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 172,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 23,
+      "capture": {
+        "catno": "CFP 40318",
+        "title": "Serenade For Flute",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 173,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 7,
+      "capture": {
+        "catno": "RDS6028",
+        "title": "Romantic Gypsy Violins",
+        "name": "rene"
+      }
+    },
+    {
+      "itemId": 174,
+      "verdict": "verified",
+      "reason": "score 115, families identifier+title+people+format, margin 55",
+      "chosenDiscogsId": 25815499,
+      "queriesRun": 7,
+      "queryErrors": 0,
+      "candidates": 2,
+      "capture": {
+        "catno": "RDM2321-30",
+        "title": "Eric Robinson Presents Music For You",
+        "name": "Robinson"
+      }
+    },
+    {
+      "itemId": 175,
+      "verdict": "verified",
+      "reason": "score 115, families identifier+title+people+format, margin 82",
+      "chosenDiscogsId": 9683715,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 25,
+      "capture": {
+        "catno": "SMR 737",
+        "title": "Classics By Candlelight",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 176,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 13,
+      "capture": {
+        "catno": "RTD-4 2020",
+        "title": "Classical Gold",
+        "name": "Gamely"
+      }
+    },
+    {
+      "itemId": 177,
+      "verdict": "needs_review",
+      "reason": "score 35 < 80; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 2,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "RDM",
+        "title": "Festival Of Light Classical Music",
+        "name": "Alexander Gibson; Josef Leo Gruber; Massimo Freccia; René Leibowitz; Sir Adrian Boult; Victor Desarzens"
+      }
+    },
+    {
+      "itemId": 178,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 22,
+      "capture": {
+        "catno": "RDS 6020",
+        "title": "Mood Music For Listening And Relaxation",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 179,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 60",
+      "chosenDiscogsId": 15134573,
+      "queriesRun": 2,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "EGS/4/5010",
+        "title": "Opera And Ballet Gold",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 180,
+      "verdict": "needs_review",
+      "reason": "score 35 < 80; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 15,
+      "capture": {
+        "catno": "RDS9860",
+        "title": "Eric Robinson's World of Music",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 181,
+      "verdict": "verified",
+      "reason": "score 80, families identifier+title, margin 27",
+      "chosenDiscogsId": 8814436,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 24,
+      "capture": {
+        "catno": "RDS 6861",
+        "title": "Stardust",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 182,
+      "verdict": "needs_review",
+      "reason": "margin 20 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "DRDS 9131",
+        "title": "Broadway Festival",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 183,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; margin 12 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 23,
+      "capture": {
+        "catno": "RDM 2037",
+        "title": "Jóia Rara",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 184,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 60",
+      "chosenDiscogsId": 2144713,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "NE 1055",
+        "title": "Encore",
+        "name": "Anatole Fistoulari"
+      }
+    },
+    {
+      "itemId": 185,
+      "verdict": "needs_review",
+      "reason": "score 35 < 80; margin 10 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 4,
+      "queryErrors": 0,
+      "candidates": 3,
+      "capture": {
+        "catno": "6866030",
+        "title": "An Evening with the English Chamber Orchestra",
+        "name": "Leppard, De Waart, Mackarras"
+      }
+    },
+    {
+      "itemId": 186,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "SN 184",
+        "title": "Srinivasa Mainpahi / Halopranatharthi",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 187,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "184061",
+        "title": "Classics Up To Date",
+        "name": "James Last"
+      }
+    },
+    {
+      "itemId": 188,
+      "verdict": "needs_review",
+      "reason": "score 25 < 80; only 1 signal family (title) — a catalogue number alone is a lead, not a verdict",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 3,
+      "capture": {
+        "catno": "RDS9452",
+        "title": "Classical Piano Music 2",
+        "name": "Earl Wild"
+      }
+    },
+    {
+      "itemId": 189,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 3,
+      "capture": {
+        "catno": "RDS9451",
+        "title": "Classical Piano Music 1",
+        "name": "Earl Wild"
+      }
+    },
+    {
+      "itemId": 190,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "SPA 155",
+        "title": "The World Of Your Hundred Best Tunes Vol.2",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 191,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "RDM.2001 to RDM.2010",
+        "title": "Popular Music That Will Live Forever",
+        "name": "Bowen"
+      }
+    },
+    {
+      "itemId": 192,
+      "verdict": "needs_review",
+      "reason": "margin 20 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "RDM.2001",
+        "title": "Popular Music That Will Live Forever - Concert Favourites",
+        "name": "Liebowitz"
+      }
+    },
+    {
+      "itemId": 193,
+      "verdict": "verified",
+      "reason": "score 105, families identifier+title+people, margin 37",
+      "chosenDiscogsId": 12819631,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 2,
+      "capture": {
+        "catno": "SXLP.20047",
+        "title": "Damnation of Faust, Suite, etc.",
+        "name": "Dervaux"
+      }
+    },
+    {
+      "itemId": 194,
+      "verdict": "needs_review",
+      "reason": "margin 15 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 22,
+      "capture": {
+        "catno": "CFP 40367",
+        "title": "Hallé Encore! Volume 2",
+        "name": "Maurice Handford"
+      }
+    },
+    {
+      "itemId": 195,
+      "verdict": "needs_review",
+      "reason": "score 15 < 80; only 1 signal family (format) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 3,
+      "capture": {
+        "catno": "RDS6688",
+        "title": "The Romantic Music of Russia",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 196,
+      "verdict": "needs_review",
+      "reason": "margin 10 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "NE 496",
+        "title": "Classics 100",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 197,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "ONE 1173",
+        "title": "Hooked On Classics 2 - Can't Stop The Classics",
+        "name": "Clark"
+      }
+    },
+    {
+      "itemId": 198,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 1,
+      "capture": {
+        "catno": "RDS9453",
+        "title": "Earl Wild Classical Piano Magic 3",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 199,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "RDS9454",
+        "title": "Earl Wild Classical Piano Magic 4",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 200,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "RDS9455",
+        "title": "Earl Wild Classical Piano Magic 5",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 201,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 16,
+      "capture": {
+        "catno": "SPA 296",
+        "title": "Great Opera Choruses",
+        "name": "Carlo Franci; Georg Solti; Herbert Von Karajan; Lamberto Gardelli; Lorin Maazel; Richard Bonynge; Thomas Schippers"
+      }
+    },
+    {
+      "itemId": 202,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 17,
+      "capture": {
+        "catno": "ONE1146",
+        "title": "Hooked on Classics",
+        "name": "Louis Clark"
+      }
+    },
+    {
+      "itemId": 203,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 24,
+      "capture": {
+        "catno": "RDM 1013",
+        "title": "Promenade Favourites",
+        "name": "Gilbert Vinter; René Leibowitz"
+      }
+    },
+    {
+      "itemId": 204,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 13,
+      "capture": {
+        "catno": "ALP 1681",
+        "title": "The Best Of Gigli",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 205,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 17,
+      "capture": {
+        "catno": "STPL 511.390",
+        "title": "Tchaikovsky - Weber - Strauss",
+        "name": "Heinrich Hollreiser; Jonel Perlea"
+      }
+    },
+    {
+      "itemId": 206,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 13,
+      "capture": {
+        "catno": "GMEL - 8C/S9",
+        "title": "Music From Fantasia",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 207,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 24,
+      "capture": {
+        "catno": "CRD 1006",
+        "title": "Face The Music With Joseph Cooper (Piano Favourites • Hidden Melodies)",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 208,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 22,
+      "capture": {
+        "catno": "SXLP.20030",
+        "title": "\"Pop\" Concert",
+        "name": "Pierre Dervaux (2)"
+      }
+    },
+    {
+      "itemId": 209,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "ACL 30",
+        "title": "The Young Person's Guide To The Orchestra / Peter And The Wolf",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 210,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 30",
+      "chosenDiscogsId": 3301068,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 22,
+      "capture": {
+        "catno": "ODN 1003",
+        "title": "In Concert",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 211,
+      "verdict": "needs_review",
+      "reason": "margin 20 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "MFP 2141",
+        "title": "Marches From The Classics",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 212,
+      "verdict": "verified",
+      "reason": "score 105, families identifier+title+people, margin 45",
+      "chosenDiscogsId": 5495207,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "MFP 2109",
+        "title": "Symphonic Dances",
+        "name": "Felix Slatkin"
+      }
+    },
+    {
+      "itemId": 213,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 23,
+      "capture": {
+        "catno": "MFP 2028",
+        "title": "Philharmonic Pops",
+        "name": "Robert Irving (2)"
+      }
+    },
+    {
+      "itemId": 214,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 4,
+      "queryErrors": 0,
+      "candidates": 14,
+      "capture": {
+        "catno": "SPA.264",
+        "title": "The World Of Your Hundred Best Tunes Vol. 4",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 215,
+      "verdict": "verified",
+      "reason": "score 105, families identifier+title+people, margin 55",
+      "chosenDiscogsId": 2233466,
+      "queriesRun": 4,
+      "queryErrors": 0,
+      "candidates": 25,
+      "capture": {
+        "catno": "6870 604",
+        "title": "Serenade In Blue",
+        "name": "John Gregory"
+      }
+    },
+    {
+      "itemId": 216,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "SPA 112",
+        "title": "The World Of Your Hundred Best Tunes, The Top Ten",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 217,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 85",
+      "chosenDiscogsId": 8785043,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "SMR 620 A",
+        "title": "Classics By Candlelight - Volume One",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 218,
+      "verdict": "needs_review",
+      "reason": "margin 10 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 26,
+      "capture": {
+        "catno": "SPR 90021",
+        "title": "Mountain Fiesta",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 219,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 4,
+      "queryErrors": 0,
+      "candidates": 12,
+      "capture": {
+        "catno": "LRL-15131",
+        "title": "The Magic Flute Of James Galway",
+        "name": "Charles Gerhardt"
+      }
+    },
+    {
+      "itemId": 220,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 12,
+      "capture": {
+        "catno": "ASD 2338",
+        "title": "Janet Baker Sings Mahler (Kindertotenlieder / Lieder Eines Fahrenden Gesellen / Ich Bin Der Welt Abhanden Gekommen)",
+        "name": "Sir John Barbirolli"
+      }
+    },
+    {
+      "itemId": 221,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 23,
+      "capture": {
+        "catno": "MFP 2113",
+        "title": "Tchaikovsky: Nutcracker Suite, Mendelssohn: A Midsummer Night's Dream",
+        "name": "Felix Slatkin"
+      }
+    },
+    {
+      "itemId": 222,
+      "verdict": "needs_review",
+      "reason": "score 50 < 80; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 22,
+      "capture": {
+        "catno": "3680642",
+        "title": "Classical Favourites",
+        "name": "Rachlin"
+      }
+    },
+    {
+      "itemId": 223,
+      "verdict": "verified",
+      "reason": "score 115, families identifier+title+people+format, margin 115",
+      "chosenDiscogsId": 8975670,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 1,
+      "capture": {
+        "catno": "OX-7155-ND",
+        "title": "Debussy et Ravel Au Koto",
+        "name": "Nosaka"
+      }
+    },
+    {
+      "itemId": 224,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 30,
+      "capture": {
+        "catno": "TWO 176",
+        "title": "Semprini Plays The Marvellous Music Of Grieg",
+        "name": "Vilem Tausky"
+      }
+    },
+    {
+      "itemId": 225,
+      "verdict": "verified",
+      "reason": "score 115, families identifier+title+people+format, margin 55",
+      "chosenDiscogsId": 4992678,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 14,
+      "capture": {
+        "catno": "MER 333",
+        "title": "Pops Concert In Germany",
+        "name": "Douglas Gamley"
+      }
+    },
+    {
+      "itemId": 226,
+      "verdict": "needs_review",
+      "reason": "score 25 < 80; only 1 signal family (title) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "RDS6677",
+        "title": "Dances from the Opera",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 227,
+      "verdict": "verified",
+      "reason": "score 80, families identifier+title, margin 80",
+      "chosenDiscogsId": 28965274,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 1,
+      "capture": {
+        "catno": "RDS6676",
+        "title": "Pageantry and Splendour",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 228,
+      "verdict": "needs_review",
+      "reason": "score 25 < 80; only 1 signal family (title) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 22,
+      "capture": {
+        "catno": "RDS9865",
+        "title": "Hungarian Rhapsody",
+        "name": "Eric Robinson / Charles Gerhardt / Douglas Gamley"
+      }
+    },
+    {
+      "itemId": 229,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "RDS9866",
+        "title": "Rustle of Spring - A Scandinavian Rhapsody",
+        "name": "Eric Robinson / Charles Gerhardt / Douglas Gamley"
+      }
+    },
+    {
+      "itemId": 230,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "RDS9867",
+        "title": "The Romantic Music of Russia",
+        "name": "Eric Robinson / Charles Gerhardt / Douglas Gamley"
+      }
+    },
+    {
+      "itemId": 231,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "RDS9868",
+        "title": "Bolero! A Spanish Serenade",
+        "name": "Eric Robinson / Charles Gerhardt / Douglas Gamley"
+      }
+    },
+    {
+      "itemId": 232,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 1,
+      "capture": {
+        "catno": "RDS9861",
+        "title": "Austria Land of Music and Laughter",
+        "name": "Eric Robinson / Charles Gerhardt / Douglas Gamley"
+      }
+    },
+    {
+      "itemId": 233,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 2,
+      "capture": {
+        "catno": "RDS9864",
+        "title": "The Magic and Gaity of France",
+        "name": "Eric Robinson / Charles Gerhardt / Douglas Gamley"
+      }
+    },
+    {
+      "itemId": 234,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "RDS9863",
+        "title": "German Land of Mystery and Melody",
+        "name": "Eric Robinson / Charles Gerhardt / Douglas Gamley"
+      }
+    },
+    {
+      "itemId": 235,
+      "verdict": "verified",
+      "reason": "score 80, families identifier+title, margin 57",
+      "chosenDiscogsId": 8680121,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "PLD 4219",
+        "title": "Italian Serenade",
+        "name": "Eric Robinson / Charles Gerhardt / Douglas Gamley"
+      }
+    },
+    {
+      "itemId": 236,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 2,
+      "capture": {
+        "catno": "PNW2CD",
+        "title": "Peace Not War Volume Two",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 237,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 26,
+      "capture": {
+        "catno": "MFP 50192",
+        "title": "Waltzes With Love",
+        "name": "Geoff Love"
+      }
+    },
+    {
+      "itemId": 238,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "2371 538",
+        "title": "Classics Up To Date 3",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 239,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "2371 538",
+        "title": "Classics Up To Date 3",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 240,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "2371 538",
+        "title": "Classics Up To Date 3",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 241,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 26,
+      "capture": {
+        "catno": "2870 304",
+        "title": "Rock Gently With Beethoven, Bach And Brahms",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 242,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "RDS9869",
+        "title": "The World of Merry England",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 243,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "RDS9869",
+        "title": "From Bohemians Fields and Forests",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 244,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "8 55 185",
+        "title": "Knallbonbons",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 245,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 27,
+      "capture": {
+        "catno": "SEOM 4",
+        "title": "The King Of Instruments",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 246,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 65",
+      "chosenDiscogsId": 6829339,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 24,
+      "capture": {
+        "catno": "ALL-717",
+        "title": "Piano Concerto In E Flat / Piano Concerto In G Minor",
+        "name": "Boulv"
+      }
+    },
+    {
+      "itemId": 247,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 2,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "AM2248",
+        "title": "Symphony No 4 \"Italian\" / Symphony No 4 \"Tragic\"",
+        "name": "Sir Adrian Boult; Sir John Barbirolli"
+      }
+    },
+    {
+      "itemId": 248,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 2,
+      "queryErrors": 0,
+      "candidates": 12,
+      "capture": {
+        "catno": "ALL747",
+        "title": "Schubert's Unfinished Symphony",
+        "name": "Alfred van Weth"
+      }
+    },
+    {
+      "itemId": 249,
+      "verdict": "needs_review",
+      "reason": "margin 20 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 12,
+      "capture": {
+        "catno": "S 72768",
+        "title": "Concerto Pour Violon & Orchestre N° 2 En Mi Mineur, Op. 64 / Concerto Pour Violon & Orchestre En Ré, Op. 35",
+        "name": "Antal Dorati; Leonard Bernstein"
+      }
+    },
+    {
+      "itemId": 250,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 18,
+      "capture": {
+        "catno": "SPA 233",
+        "title": "Guitar Concerto / Fantasía Para Un Gentilhombre",
+        "name": "Rodrigo"
+      }
+    },
+    {
+      "itemId": 251,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 57",
+      "chosenDiscogsId": 6767891,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "XID 5214",
+        "title": "Concerto In D Major For Mandoline And Orchestra & Dittersdorf Concerto In A Major For Harp And Orchestra",
+        "name": "Pfluger"
+      }
+    },
+    {
+      "itemId": 252,
+      "verdict": "verified",
+      "reason": "score 115, families identifier+title+people+format, margin 65",
+      "chosenDiscogsId": 6610952,
+      "queriesRun": 4,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "33CX 1078",
+        "title": "A Mass Of Life",
+        "name": "Sir Thomas Beecham"
+      }
+    },
+    {
+      "itemId": 253,
+      "verdict": "needs_review",
+      "reason": "margin 10 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 17,
+      "capture": {
+        "catno": "CFP 101",
+        "title": "1812 Overture / Russlan And Ludmila Overture / Lohengrin Prelude To Act 3 / Night On A Bare Mountain",
+        "name": "Sir Charles Mackerras"
+      }
+    },
+    {
+      "itemId": 254,
+      "verdict": "needs_review",
+      "reason": "margin 15 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 19,
+      "capture": {
+        "catno": "MER 320",
+        "title": "Rhapsodies",
+        "name": "Joseph Primavera"
+      }
+    },
+    {
+      "itemId": 255,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 67",
+      "chosenDiscogsId": 11195497,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "smr 620 c",
+        "title": "Classics By Candle Light Volume Three",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 256,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 60",
+      "chosenDiscogsId": 5345242,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "SMR 620 D",
+        "title": "Classics By Candlelight Vol. Four",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 257,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 27,
+      "capture": {
+        "catno": "MFP 2034",
+        "title": "1812 And Other Famous Overtures",
+        "name": "Nicolai Malko"
+      }
+    },
+    {
+      "itemId": 258,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 22,
+      "capture": {
+        "catno": "PST 604",
+        "title": "Viennese Waltzes",
+        "name": "Fontanna"
+      }
+    },
+    {
+      "itemId": 259,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "ONE 1226",
+        "title": "Hooked On Classics 3 - Journey Through The Classics",
+        "name": "Eugene Danks; Louis Clark"
+      }
+    },
+    {
+      "itemId": 260,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 85",
+      "chosenDiscogsId": 24365930,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 19,
+      "capture": {
+        "catno": "W-6408",
+        "title": "Stamping sirba/Turning hora",
+        "name": "Gui"
+      }
+    },
+    {
+      "itemId": 261,
+      "verdict": "verified",
+      "reason": "score 105, families identifier+title+people, margin 45",
+      "chosenDiscogsId": 21214852,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "AZ 8",
+        "title": "Music From The Ballet",
+        "name": "Sir Charles Mackerras"
+      }
+    },
+    {
+      "itemId": 262,
+      "verdict": "verified",
+      "reason": "score 115, families identifier+title+people+format, margin 25",
+      "chosenDiscogsId": 7582399,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 22,
+      "capture": {
+        "catno": "SUA ST 50582",
+        "title": "Modern Chamber Music For Wind Instruments",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 263,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 24,
+      "capture": {
+        "catno": "CFP 40023",
+        "title": "Favourite Overtures Of The London Philharmonic",
+        "name": "Guy Barbier"
+      }
+    },
+    {
+      "itemId": 264,
+      "verdict": "needs_review",
+      "reason": "margin 10 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "35383",
+        "title": "Songs You Love",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 265,
+      "verdict": "verified",
+      "reason": "score 105, families identifier+title+people, margin 37",
+      "chosenDiscogsId": 33795864,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 23,
+      "capture": {
+        "catno": "FDY 2067",
+        "title": "Fingal's Cave And Other Favourite Overtures",
+        "name": "Bowers"
+      }
+    },
+    {
+      "itemId": 266,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 67",
+      "chosenDiscogsId": 10505756,
+      "queriesRun": 2,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "PS5032",
+        "title": "Polyphonie Sacrée De La Renaissance",
+        "name": "Gramente"
+      }
+    },
+    {
+      "itemId": 267,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 57",
+      "chosenDiscogsId": 5478300,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 22,
+      "capture": {
+        "catno": "DPA 509",
+        "title": "Favourite Piano Music",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 268,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 65",
+      "chosenDiscogsId": 2170765,
+      "queriesRun": 7,
+      "queryErrors": 0,
+      "candidates": 8,
+      "capture": {
+        "catno": "RTL 2075B",
+        "title": "Music For The Seasons - Summer",
+        "name": "Alexander von Pitamic; Alfred Scholz; Eduard Van Lindenberg; Eric Rogers (2); Frank Shipway; Henry Adolph; Josef Leo Gruber; Laurence Siegel"
+      }
+    },
+    {
+      "itemId": 269,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 65",
+      "chosenDiscogsId": 2170765,
+      "queriesRun": 7,
+      "queryErrors": 0,
+      "candidates": 8,
+      "capture": {
+        "catno": "RTL 2075B",
+        "title": "Music For The Seasons - Summer",
+        "name": "Alexander von Pitamic; Alfred Scholz; Eduard Van Lindenberg; Eric Rogers (2); Frank Shipway; Henry Adolph; Josef Leo Gruber; Laurence Siegel"
+      }
+    },
+    {
+      "itemId": 270,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 65",
+      "chosenDiscogsId": 2170765,
+      "queriesRun": 7,
+      "queryErrors": 0,
+      "candidates": 8,
+      "capture": {
+        "catno": "RTL 2075B",
+        "title": "Music For The Seasons - Summer",
+        "name": "Alexander von Pitamic; Alfred Scholz; Eduard Van Lindenberg; Eric Rogers (2); Frank Shipway; Henry Adolph; Josef Leo Gruber; Laurence Siegel"
+      }
+    },
+    {
+      "itemId": 271,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 65",
+      "chosenDiscogsId": 2170765,
+      "queriesRun": 7,
+      "queryErrors": 0,
+      "candidates": 8,
+      "capture": {
+        "catno": "RTL 2075B",
+        "title": "Music For The Seasons - Summer",
+        "name": "Alexander von Pitamic; Alfred Scholz; Eduard Van Lindenberg; Eric Rogers (2); Frank Shipway; Henry Adolph; Josef Leo Gruber; Laurence Siegel"
+      }
+    },
+    {
+      "itemId": 272,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 30,
+      "capture": {
+        "catno": "ATL 4019",
+        "title": "Masterpieces Of Music",
+        "name": "Riccardo Cariolo"
+      }
+    },
+    {
+      "itemId": 273,
+      "verdict": "verified",
+      "reason": "score 80, families identifier+title, margin 47",
+      "chosenDiscogsId": 9617476,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "NT 145",
+        "title": "Mein Schönstes Kurkonzert",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 274,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 57",
+      "chosenDiscogsId": 25367845,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "RDS 9457",
+        "title": "Grand Piano Partnerships",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 275,
+      "verdict": "needs_review",
+      "reason": "score 25 < 80; only 1 signal family (title) — a catalogue number alone is a lead, not a verdict",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 1,
+      "capture": {
+        "catno": "Elementry1176",
+        "title": "Ballet Class vol 8",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 276,
+      "verdict": "verified",
+      "reason": "score 115, families identifier+title+people+format, margin 55",
+      "chosenDiscogsId": 6884828,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 16,
+      "capture": {
+        "catno": "6856 030",
+        "title": "Concertgebouw Orchestra Amsterdam",
+        "name": "Bernard Haitink"
+      }
+    },
+    {
+      "itemId": 277,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 1,
+      "capture": {
+        "catno": "ENP-00002",
+        "title": "Dance Music For You?2",
+        "name": "Bliss"
+      }
+    },
+    {
+      "itemId": 278,
+      "verdict": "verified",
+      "reason": "score 105, families identifier+title+people, margin 82",
+      "chosenDiscogsId": 15255128,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "LRD - 1",
+        "title": "Le Più Belle Canzoni Del Mondo",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 279,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "6324",
+        "title": "I've Gotta Be Me",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 280,
+      "verdict": "verified",
+      "reason": "score 80, families identifier+title, margin 32",
+      "chosenDiscogsId": 3497091,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "X-6325",
+        "title": "Blessed Are The Believers",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 281,
+      "verdict": "verified",
+      "reason": "score 105, families identifier+title+people, margin 82",
+      "chosenDiscogsId": 15255128,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "LRD - 1",
+        "title": "Le Più Belle Canzoni Del Mondo",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 282,
+      "verdict": "verified",
+      "reason": "score 105, families identifier+title+people, margin 82",
+      "chosenDiscogsId": 15255128,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "LRD - 1",
+        "title": "Le Più Belle Canzoni Del Mondo",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 283,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 55",
+      "chosenDiscogsId": 11401002,
+      "queriesRun": 7,
+      "queryErrors": 0,
+      "candidates": 2,
+      "capture": {
+        "catno": "RDS 6321-RDS 6330",
+        "title": "Eric Robinson Presents Music For You",
+        "name": "Anatole Fistoulari; Arthur Bliss; Douglas Gamley; Eric Hammerstein; Eric Robinson (5); Gilbert Vinter; James Walker (3); Oskar Danon; René Leibowitz"
+      }
+    },
+    {
+      "itemId": 284,
+      "verdict": "verified",
+      "reason": "score 105, families identifier+title+people, margin 82",
+      "chosenDiscogsId": 15255128,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "LRD - 1",
+        "title": "Le Più Belle Canzoni Del Mondo",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 285,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 19,
+      "capture": {
+        "catno": "ASD 3008",
+        "title": "Bolero - The Sorcerer's Apprentice - España - Danse Macabre - Prélude A L'Après-Midi D'Un Faune",
+        "name": "Louis Frémaux"
+      }
+    },
+    {
+      "itemId": 286,
+      "verdict": "verified",
+      "reason": "score 105, families identifier+title+people, margin 57",
+      "chosenDiscogsId": 6539982,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "CFP 158",
+        "title": "Bravo!",
+        "name": "Sir Adrian Boult"
+      }
+    },
+    {
+      "itemId": 287,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 30",
+      "chosenDiscogsId": 5035829,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "MER 391",
+        "title": "In The Heart Of A Woman / Right Face, Wrong Time",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 288,
+      "verdict": "verified",
+      "reason": "score 115, families identifier+title+people+format, margin 67",
+      "chosenDiscogsId": 2398718,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 22,
+      "capture": {
+        "catno": "CFP 40320",
+        "title": "Hallé Encore!",
+        "name": "Maurice Handford"
+      }
+    },
+    {
+      "itemId": 289,
+      "verdict": "verified",
+      "reason": "score 115, families identifier+title+people+format, margin 82",
+      "chosenDiscogsId": 1444191,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "MFP 2037",
+        "title": "Philharmonia Favourites",
+        "name": "George Weldon"
+      }
+    },
+    {
+      "itemId": 290,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 4,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "TC-EMTVD-45",
+        "title": "The Classic Experience",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 291,
+      "verdict": "needs_review",
+      "reason": "margin 10 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "HM 549",
+        "title": "Œuvres D'orgue Influencées Par L'italie",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 292,
+      "verdict": "verified",
+      "reason": "score 115, families identifier+title+people+format, margin 92",
+      "chosenDiscogsId": 2226924,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "ADE C1",
+        "title": "All-Time Classics",
+        "name": "Rachlin"
+      }
+    },
+    {
+      "itemId": 293,
+      "verdict": "verified",
+      "reason": "score 115, families identifier+title+people+format, margin 55",
+      "chosenDiscogsId": 3786573,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "CFP 40254",
+        "title": "Favourite Marches",
+        "name": "Davison"
+      }
+    },
+    {
+      "itemId": 294,
+      "verdict": "needs_review",
+      "reason": "margin 20 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "MFP 2150",
+        "title": "The Heart Of The Symphony",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 295,
+      "verdict": "verified",
+      "reason": "score 105, families identifier+title+people, margin 45",
+      "chosenDiscogsId": 10403319,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "PR. 124",
+        "title": "Waltz Time In Vienna",
+        "name": "Al D'Artega"
+      }
+    },
+    {
+      "itemId": 296,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "MER 205",
+        "title": "Piano Concerto In A-Minor / 3 Etudes",
+        "name": "Horst Stein"
+      }
+    },
+    {
+      "itemId": 297,
+      "verdict": "verified",
+      "reason": "score 115, families identifier+title+people+format, margin 82",
+      "chosenDiscogsId": 7204268,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 25,
+      "capture": {
+        "catno": "ROY 2002",
+        "title": "Grieg: The Holberg Suites/Elgar: Serenade Op. 20/Respighi: Ancient Airs And Dances Suite No. 3",
+        "name": "Warchal"
+      }
+    },
+    {
+      "itemId": 298,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 30",
+      "chosenDiscogsId": 6611528,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "MFP 50099",
+        "title": "Roger Webb Plays Gershwin",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 299,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "PA 172",
+        "title": "The World Of Kathleen Ferrier",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 300,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 23,
+      "capture": {
+        "catno": "RB-6585",
+        "title": "Operatic Duets",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 301,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "SPA 105",
+        "title": "The World Of Italian Opera",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 302,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 55",
+      "chosenDiscogsId": 1593618,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "6.24088 AP",
+        "title": "Weisses Gold",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 303,
+      "verdict": "needs_review",
+      "reason": "margin 10 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 23,
+      "capture": {
+        "catno": "XLP 30059",
+        "title": "Favourite Opera Choruses",
+        "name": "Unknown"
+      }
+    },
+    {
+      "itemId": 304,
+      "verdict": "verified",
+      "reason": "score 115, families identifier+title+people+format, margin 55",
+      "chosenDiscogsId": 4573357,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 28,
+      "capture": {
+        "catno": "SPA 489",
+        "title": "The World Of Opera Vol. 3",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 305,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+title+format, margin 70",
+      "chosenDiscogsId": 10122551,
+      "queriesRun": 4,
+      "queryErrors": 0,
+      "candidates": 14,
+      "capture": {
+        "catno": "2870393",
+        "title": "Favourite Piano Classics",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 306,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 8,
+      "queryErrors": 0,
+      "candidates": 14,
+      "capture": {
+        "catno": "6308 177",
+        "title": "Play Bach – 6 Masterpieces",
+        "name": "J.S. Bach"
+      }
+    },
+    {
+      "itemId": 307,
+      "verdict": "needs_review",
+      "reason": "score 68 < 80; margin 8 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "CBS Harmony 30001",
+        "title": "Bach’s Greatest Hits, Vol. 1",
+        "name": "J.S. Bach"
+      }
+    },
+    {
+      "itemId": 308,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "Decca (London) LL 3287",
+        "title": "Play Bach No. 1",
+        "name": "J.S. Bach"
+      }
+    },
+    {
+      "itemId": 309,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 7,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "London (UK) PS 287 / Mono: LL 3287",
+        "title": "Original Jazz Interpretations of Bach – Play Bach, Vol. 1",
+        "name": "J.S. Bach"
+      }
+    },
+    {
+      "itemId": 310,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "HMV (EMI) HQS 1145",
+        "title": "Bach – Recital",
+        "name": "J.S. Bach"
+      }
+    },
+    {
+      "itemId": 311,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "XID 5248",
+        "title": "Segovia & Rosalyn Tureck Play Bach",
+        "name": "J.S. Bach"
+      }
+    },
+    {
+      "itemId": 312,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "DGG 2530 597",
+        "title": "Berlioz – Symphonie fantastique, Op. 14",
+        "name": "Herbert von Karajan"
+      }
+    },
+    {
+      "itemId": 313,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "HMV Concert Classics SXLP 30295",
+        "title": "Berlioz – Symphonie fantastique, Op. 14",
+        "name": "Sir Thomas Beecham"
+      }
+    },
+    {
+      "itemId": 314,
+      "verdict": "needs_review",
+      "reason": "score 23 < 80; only 0 signal family (none) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "CBS (UK) SPR 21",
+        "title": "Berlioz – Symphonie fantastique, Op. 14",
+        "name": "Leonard Bernstein"
+      }
+    },
+    {
+      "itemId": 315,
+      "verdict": "needs_review",
+      "reason": "score 25 < 80; only 1 signal family (title) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 7,
+      "queryErrors": 0,
+      "candidates": 2,
+      "capture": {
+        "catno": "Columbia/EMI (set) 33CX/ANG [Cat. 051103]",
+        "title": "Brahms – The Four Symphonies",
+        "name": "Otto Klemperer"
+      }
+    },
+    {
+      "itemId": 316,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "DG Resonance 2535 102",
+        "title": "Brahms – Symphony No. 1 in C minor, Op. 68",
+        "name": "Karl Böhm"
+      }
+    },
+    {
+      "itemId": 317,
+      "verdict": "verified",
+      "reason": "score 135, families identifier+label+title+people, margin 45",
+      "chosenDiscogsId": 3241345,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 14,
+      "capture": {
+        "catno": "CFP 40096",
+        "title": "Brahms – Symphony No. 1 in C minor, Op. 68",
+        "name": "James Loughran"
+      }
+    },
+    {
+      "itemId": 318,
+      "verdict": "needs_review",
+      "reason": "score 53 < 80; only 1 signal family (label) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "CFP 40219",
+        "title": "Brahms – Symphony No. 2 in D major, Op. 73",
+        "name": "James Loughran"
+      }
+    },
+    {
+      "itemId": 319,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+label, margin 37",
+      "chosenDiscogsId": 7820396,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 12,
+      "capture": {
+        "catno": "CFP 40237",
+        "title": "Brahms – Symphony No. 3 in F major, Op. 90",
+        "name": "James Loughran"
+      }
+    },
+    {
+      "itemId": 320,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "Mercury Wing WL 1003",
+        "title": "Brahms – Symphony No. 4 in E minor, Op. 98",
+        "name": "Paul Paray"
+      }
+    },
+    {
+      "itemId": 321,
+      "verdict": "needs_review",
+      "reason": "score 53 < 80; only 1 signal family (label) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "T 30",
+        "title": "Brahms – Violin Concerto in D major, Op. 77",
+        "name": "Anthony Collins"
+      }
+    },
+    {
+      "itemId": 322,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "Philips Fontana SFL 14033",
+        "title": "Brahms – Violin Concerto in D major, Op. 77",
+        "name": "Hein Jordans"
+      }
+    },
+    {
+      "itemId": 323,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 2,
+      "queryErrors": 0,
+      "candidates": 1,
+      "capture": {
+        "catno": "Columbia/ CBS (M 30517); France: Pathé (Cat. 6990 55)",
+        "title": "Tchaikovsky – Violin Concerto in D major, Op. 35 / Mendelssohn – Violin Concerto in E minor, Op. 64",
+        "name": "Eugene Ormandy"
+      }
+    },
+    {
+      "itemId": 324,
+      "verdict": "needs_review",
+      "reason": "margin 20 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 7,
+      "queryErrors": 0,
+      "candidates": 31,
+      "capture": {
+        "catno": "SUA 10474",
+        "title": "Brahms – Violin Sonatas Nos. 2 & 3",
+        "name": "Johannes Brahms"
+      }
+    },
+    {
+      "itemId": 325,
+      "verdict": "needs_review",
+      "reason": "score 23 < 80; only 0 signal family (none) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "Decca Ace of Diamonds SDD 538",
+        "title": "Brahms – Piano Works Vol. 7: Variations on a Theme by Handel, Op. 24; Variations on a Theme by Paganini, Op. 35",
+        "name": "Johannes Brahms"
+      }
+    },
+    {
+      "itemId": 326,
+      "verdict": "verified",
+      "reason": "score 135, families identifier+label+title+people, margin 37",
+      "chosenDiscogsId": 3076864,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 27,
+      "capture": {
+        "catno": "T 213",
+        "title": "Brahms – Piano Concerto No. 2 in B-flat major, Op. 83",
+        "name": "Dean Dixon"
+      }
+    },
+    {
+      "itemId": 327,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 7,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "RCA Red Seal LSC-7054 (US); later RL 42057 (2×LP)",
+        "title": "Brahms – Ein deutsches Requiem, Op. 45 / Vier ernste Gesänge, Op. 121",
+        "name": "Erich Leinsdorf"
+      }
+    },
+    {
+      "itemId": 328,
+      "verdict": "verified",
+      "reason": "score 105, families identifier+title+people, margin 45",
+      "chosenDiscogsId": 5760263,
+      "queriesRun": 7,
+      "queryErrors": 0,
+      "candidates": 30,
+      "capture": {
+        "catno": "CFP 40288",
+        "title": "Brahms – String Sextet No. 1 in B-flat major, Op. 18",
+        "name": "Johannes Brahms"
+      }
+    },
+    {
+      "itemId": 329,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 23,
+      "capture": {
+        "catno": "SPA 315",
+        "title": "The World of Brahms",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 330,
+      "verdict": "needs_review",
+      "reason": "score 5 < 80; only 0 signal family (none) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 12,
+      "capture": {
+        "catno": "410 640-1",
+        "title": "Brahms – Symphony No. 1 in C minor, Op. 68",
+        "name": "Riccardo Chailly"
+      }
+    },
+    {
+      "itemId": 331,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "EMI Columbia SAX 5294",
+        "title": "Bruckner – Symphony No. 3 in D minor, WAB 103",
+        "name": "George Szell"
+      }
+    },
+    {
+      "itemId": 332,
+      "verdict": "needs_review",
+      "reason": "score 23 < 80; only 0 signal family (none) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "Urania URLP 899",
+        "title": "Bruckner – Mass No. 3 in F minor, WAB 28",
+        "name": "Karl Forster"
+      }
+    },
+    {
+      "itemId": 333,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 12,
+      "capture": {
+        "catno": "DG 2530 336",
+        "title": "Bruckner – Symphony No. 4 in E-flat major “Romantic”, WAB 104",
+        "name": "Daniel Barenboim"
+      }
+    },
+    {
+      "itemId": 334,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 10,
+      "queryErrors": 0,
+      "candidates": 4,
+      "capture": {
+        "catno": "LSC-3177",
+        "title": "Bruckner – Symphony No. 6 in A major, WAB 106",
+        "name": "William Steinberg"
+      }
+    },
+    {
+      "itemId": 335,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 8,
+      "queryErrors": 0,
+      "candidates": 23,
+      "capture": {
+        "catno": "PL 10.750",
+        "title": "Bruckner – Symphony No. 7 in E major, WAB 107",
+        "name": "Hans Rosbaud"
+      }
+    },
+    {
+      "itemId": 336,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "CBS (2×LP) M2 35238",
+        "title": "Bruckner – Symphony No. 9 in D minor, WAB 109 / Te Deum",
+        "name": "Bruno Walter"
+      }
+    },
+    {
+      "itemId": 337,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 16,
+      "capture": {
+        "catno": "Westminster (2LP) WST 233/234",
+        "title": "Bruckner – Symphony No. 8 in C minor, WAB 108",
+        "name": "Hans Knappertsbusch"
+      }
+    },
+    {
+      "itemId": 338,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "139 420",
+        "title": "Chopin – Polonaises (Complete)",
+        "name": "Frédéric Chopin"
+      }
+    },
+    {
+      "itemId": 339,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 7,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "CBS [SMSA 2408] (US)",
+        "title": "Chopin – Piano Concerto No. 1 in E minor, Op. 11 / Andante spianato et Grande polonaise brillante, Op. 22",
+        "name": "David Josefowitz / Jean-Marie Auberson"
+      }
+    },
+    {
+      "itemId": 340,
+      "verdict": "needs_review",
+      "reason": "score 50 < 80; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 7,
+      "queryErrors": 0,
+      "candidates": 5,
+      "capture": {
+        "catno": "Columbia/CBS (mono) [CCV 5003]",
+        "title": "Chopin – 24 Preludes, Op. 28",
+        "name": "Frédéric Chopin"
+      }
+    },
+    {
+      "itemId": 341,
+      "verdict": "needs_review",
+      "reason": "score 30 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "Vox (UK) PL 10940",
+        "title": "Chopin – 24 Preludes, Op. 28 / Piano Sonata No. 2 in B-flat minor, Op. 35",
+        "name": "Frédéric Chopin"
+      }
+    },
+    {
+      "itemId": 342,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "EMI/MFP 6038",
+        "title": "Chopin – Les Sylphides / Schumann – Carnaval, Op. 9",
+        "name": "Robert Irving"
+      }
+    },
+    {
+      "itemId": 343,
+      "verdict": "needs_review",
+      "reason": "score 68 < 80; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "Vox/Turnabout AM 2223",
+        "title": "Chopin – Piano Recital",
+        "name": "Frédéric Chopin"
+      }
+    },
+    {
+      "itemId": 344,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "6500 042",
+        "title": "Chopin – Piano Concerto No. 2 in F minor, Op. 21",
+        "name": "Eliahu Inbal"
+      }
+    },
+    {
+      "itemId": 345,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 16,
+      "capture": {
+        "catno": "Columbia Odyssey 32 16 0058",
+        "title": "Chopin – Waltzes (Complete)",
+        "name": "Frédéric Chopin"
+      }
+    },
+    {
+      "itemId": 346,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "RCA (3×LP box) RL 85018",
+        "title": "The Chopin Collection: Nocturnes & Waltzes",
+        "name": "Various"
+      }
+    },
+    {
+      "itemId": 347,
+      "verdict": "needs_review",
+      "reason": "score 23 < 80; only 0 signal family (none) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "EMI Archive SH 139",
+        "title": "Elgar – Symphony No. 1 in A-flat major, Op. 55",
+        "name": "Sir Edward Elgar"
+      }
+    },
+    {
+      "itemId": 348,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 23,
+      "capture": {
+        "catno": "SXLP 30268",
+        "title": "Elgar – Symphony No. 1 in A-flat major, Op. 55",
+        "name": "Sir John Barbirolli"
+      }
+    },
+    {
+      "itemId": 349,
+      "verdict": "needs_review",
+      "reason": "score 23 < 80; only 0 signal family (none) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "EMI/MFP 21071",
+        "title": "Gershwin – Rhapsody in Blue; Piano Concerto in F",
+        "name": "Maurice Abravanel"
+      }
+    },
+    {
+      "itemId": 350,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 8,
+      "queryErrors": 0,
+      "candidates": 17,
+      "capture": {
+        "catno": "9500 917",
+        "title": "Gershwin – Rhapsody in Blue / Piano Concerto in F (two-piano versions)",
+        "name": "George Gershwin"
+      }
+    },
+    {
+      "itemId": 351,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict",
+      "chosenDiscogsId": null,
+      "queriesRun": 7,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "MALS 368",
+        "title": "Handel – Messiah (Complete)",
+        "name": "Sir Malcolm Sargent"
+      }
+    },
+    {
+      "itemId": 352,
+      "verdict": "needs_review",
+      "reason": "score 68 < 80; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "SFP 40020",
+        "title": "Handel – Messiah (Complete)",
+        "name": "Sir Malcolm Sargent"
+      }
+    },
+    {
+      "itemId": 353,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 6,
+      "capture": {
+        "catno": "EMI Columbia 33SX 1078–80",
+        "title": "Handel – Messiah (Highlights)",
+        "name": "Sir Malcolm Sargent"
+      }
+    },
+    {
+      "itemId": 354,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 7,
+      "queryErrors": 0,
+      "candidates": 2,
+      "capture": {
+        "catno": "Capitol/EMI MFP 2014 (UK mono) / MFP 2134 (stereo)",
+        "title": "Holst – The Planets, Op. 32",
         "name": "Leopold Stokowski"
       }
     },
     {
-      "itemId": 5,
+      "itemId": 355,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "HMV ASD 4047",
+        "title": "Holst – The Planets, Op. 32",
+        "name": "Sir Simon Rattle"
+      }
+    },
+    {
+      "itemId": 356,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "CFP 40243",
+        "title": "Holst – The Planets, Op. 32",
+        "name": "James Loughran"
+      }
+    },
+    {
+      "itemId": 357,
+      "verdict": "needs_review",
+      "reason": "score 25 < 80; only 1 signal family (title) — a catalogue number alone is a lead, not a verdict; margin 20 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 23,
+      "capture": {
+        "catno": "EMI Studio 2 TWO 167",
+        "title": "Rimsky-Korsakov – Scheherazade, Op. 35",
+        "name": "Constantin Silvestri"
+      }
+    },
+    {
+      "itemId": 358,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "Philips/Fontana SFL 14139",
+        "title": "Rimsky-Korsakov – Scheherazade, Op. 35",
+        "name": "Jean Fournet"
+      }
+    },
+    {
+      "itemId": 359,
+      "verdict": "needs_review",
+      "reason": "score 30 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 23,
+      "capture": {
+        "catno": "WRC T 12",
+        "title": "Rimsky-Korsakov – Scheherazade, Op. 35",
+        "name": "Alexander Schönherr"
+      }
+    },
+    {
+      "itemId": 360,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 7,
+      "queryErrors": 0,
+      "candidates": 28,
+      "capture": {
+        "catno": "MAL 568",
+        "title": "Rimsky-Korsakov – Scheherazade, Op. 35",
+        "name": "Wilhelm Rohr"
+      }
+    },
+    {
+      "itemId": 361,
+      "verdict": "needs_review",
+      "reason": "score 53 < 80; only 1 signal family (label) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "MFP 2013",
+        "title": "Rimsky-Korsakov – Scheherazade, Op. 35",
+        "name": "Lovro von Matacic"
+      }
+    },
+    {
+      "itemId": 362,
+      "verdict": "verified",
+      "reason": "score 135, families identifier+label+title+people, margin 67",
+      "chosenDiscogsId": 9224321,
+      "queriesRun": 7,
+      "queryErrors": 0,
+      "candidates": 22,
+      "capture": {
+        "catno": "EMX 2096",
+        "title": "Rimsky-Korsakov – Scheherazade, Op. 35",
+        "name": "Evgeny Svetlanov"
+      }
+    },
+    {
+      "itemId": 363,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 17 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "Melodiya D 04406",
+        "title": "Rimsky-Korsakov – Scheherazade, Op. 35",
+        "name": "Kirill Kondrashin"
+      }
+    },
+    {
+      "itemId": 364,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 18,
+      "capture": {
+        "catno": "PA172",
+        "title": "The world of Catherine Ferrier",
+        "name": null
+      }
+    },
+    {
+      "itemId": 365,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 23,
+      "capture": {
+        "catno": "RB – 6585",
+        "title": "Jussi Bjoerling operatic duets with Robert Merrill",
+        "name": null
+      }
+    },
+    {
+      "itemId": 366,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "SPA 105",
+        "title": "The world of Italian opera",
+        "name": null
+      }
+    },
+    {
+      "itemId": 367,
+      "verdict": "verified",
+      "reason": "score 80, families identifier+title, margin 55",
+      "chosenDiscogsId": 1593618,
+      "queriesRun": 4,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "6.24088 AP",
+        "title": "Weisses Gold",
+        "name": null
+      }
+    },
+    {
+      "itemId": 368,
+      "verdict": "needs_review",
+      "reason": "score 43 < 80; only 1 signal family (title) — a catalogue number alone is a lead, not a verdict; margin 20 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "HMV7 stereo",
+        "title": "Famous opera chorus",
+        "name": null
+      }
+    },
+    {
+      "itemId": 369,
+      "verdict": "verified",
+      "reason": "score 80, families identifier+title, margin 75",
+      "chosenDiscogsId": 4573357,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 9,
+      "capture": {
+        "catno": "SPA489",
+        "title": "The world of opera volume three",
+        "name": null
+      }
+    },
+    {
+      "itemId": 370,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 15,
+      "capture": {
+        "catno": "ACL 1054",
+        "title": "HMS Pinafore",
+        "name": null
+      }
+    },
+    {
+      "itemId": 371,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 5,
+      "capture": {
+        "catno": "RTL2045",
+        "title": "The Diamond symphonies",
+        "name": null
+      }
+    },
+    {
+      "itemId": 372,
+      "verdict": "verified",
+      "reason": "score 80, families identifier+title, margin 57",
+      "chosenDiscogsId": 7204268,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 25,
+      "capture": {
+        "catno": "Roy 2002",
+        "title": "Greek Elgar",
+        "name": null
+      }
+    },
+    {
+      "itemId": 373,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 22,
+      "capture": {
+        "catno": "PST 604",
+        "title": "Viennese waltzes",
+        "name": null
+      }
+    },
+    {
+      "itemId": 374,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 2,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "ONE1226",
+        "title": "Hooked on Classics 3",
+        "name": null
+      }
+    },
+    {
+      "itemId": 375,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 18,
+      "capture": {
+        "catno": "W 6408",
+        "title": "World record treasures night on the bold mountain the sorcerers apprentice Debussy",
+        "name": null
+      }
+    },
+    {
+      "itemId": 376,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 8,
+      "capture": {
+        "catno": "MFP2034",
+        "title": "1812 and other famous overtures",
+        "name": null
+      }
+    },
+    {
+      "itemId": 377,
       "verdict": "needs_review",
       "reason": "margin 20 < 25 over the runner-up",
       "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "AZ8",
+        "title": "The Philharmonic Orchestra music from the ballet women privilege records",
+        "name": null
+      }
+    },
+    {
+      "itemId": 378,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 3,
+      "capture": {
+        "catno": "SUAST50582",
+        "title": "Modern chamber music for wind instruments",
+        "name": null
+      }
+    },
+    {
+      "itemId": 379,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
       "queriesRun": 4,
+      "queryErrors": 0,
+      "candidates": 24,
+      "capture": {
+        "catno": "CFP40023",
+        "title": "Favourite overtures",
+        "name": null
+      }
+    },
+    {
+      "itemId": 380,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 1,
+      "capture": {
+        "catno": "GCWM 10 A/S7",
+        "title": "Russel of spring a Scandinavian Rhapsody",
+        "name": null
+      }
+    },
+    {
+      "itemId": 381,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "Readers digest RTM 2052",
+        "title": "20th century USA westside story slaughter on 10th Avenue",
+        "name": null
+      }
+    },
+    {
+      "itemId": 382,
+      "verdict": "verified",
+      "reason": "score 80, families identifier+title, margin 57",
+      "chosenDiscogsId": 11645209,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 2,
+      "capture": {
+        "catno": "ANG35383",
+        "title": "Elizabeth Schwarzkopf Gerald Moore",
+        "name": null
+      }
+    },
+    {
+      "itemId": 383,
+      "verdict": "verified",
+      "reason": "score 80, families identifier+title, margin 55",
+      "chosenDiscogsId": 33795864,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 4,
+      "capture": {
+        "catno": "FDY2067",
+        "title": "Fingal's Cave and other overtures",
+        "name": null
+      }
+    },
+    {
+      "itemId": 384,
+      "verdict": "verified",
+      "reason": "score 80, families identifier+title, margin 57",
+      "chosenDiscogsId": 10505756,
+      "queriesRun": 2,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "PS5032",
+        "title": "Polyphonic sacree de la Renaissance",
+        "name": null
+      }
+    },
+    {
+      "itemId": 385,
+      "verdict": "verified",
+      "reason": "score 80, families identifier+title, margin 57",
+      "chosenDiscogsId": 5478300,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "DPA 509/10",
+        "title": "Favourite piano music",
+        "name": null
+      }
+    },
+    {
+      "itemId": 386,
+      "verdict": "needs_review",
+      "reason": "score 25 < 80; only 1 signal family (title) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 6,
+      "capture": {
+        "catno": "RTL2075 MCPS",
+        "title": "Music for the seasons summer",
+        "name": null
+      }
+    },
+    {
+      "itemId": 387,
+      "verdict": "needs_review",
+      "reason": "score 25 < 80; only 1 signal family (title) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 7,
+      "capture": {
+        "catno": "RTL2075 MCPS",
+        "title": "Music for the seasons spring",
+        "name": null
+      }
+    },
+    {
+      "itemId": 388,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 30,
+      "capture": {
+        "catno": "ATL 4019",
+        "title": "Masterpieces of music Tchaikovsky Weber",
+        "name": null
+      }
+    },
+    {
+      "itemId": 389,
+      "verdict": "verified",
+      "reason": "score 80, families identifier+title, margin 57",
+      "chosenDiscogsId": 9617476,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "NT145",
+        "title": "Mein schonstes kurkonzert",
+        "name": null
+      }
+    },
+    {
+      "itemId": 390,
+      "verdict": "needs_review",
+      "reason": "score 43 < 80; only 1 signal family (title) — a catalogue number alone is a lead, not a verdict",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 1,
+      "capture": {
+        "catno": "GWIL6AS/7",
+        "title": "Grand piano partnerships",
+        "name": null
+      }
+    },
+    {
+      "itemId": 391,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 12,
+      "capture": {
+        "catno": "ST1176",
+        "title": "Ballet Classics",
+        "name": null
+      }
+    },
+    {
+      "itemId": 392,
+      "verdict": "verified",
+      "reason": "score 80, families identifier+title, margin 55",
+      "chosenDiscogsId": 6884828,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 24,
+      "capture": {
+        "catno": "Phillips 685 6030",
+        "title": "concert Orchestra Amsterdam",
+        "name": null
+      }
+    },
+    {
+      "itemId": 393,
+      "verdict": "no_match",
+      "reason": "nothing scored above zero",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 0,
+      "capture": {
+        "catno": "268GERS10A",
+        "title": "Music for you readers digest",
+        "name": null
+      }
+    },
+    {
+      "itemId": 394,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
       "queryErrors": 0,
       "candidates": 19,
       "capture": {
-        "catno": "LC-03098",
-        "title": "I Want You",
-        "name": "Unknown"
+        "catno": "ASD 3008",
+        "title": "City of Birmingham Symphony Orchestra",
+        "name": null
+      }
+    },
+    {
+      "itemId": 395,
+      "verdict": "verified",
+      "reason": "score 80, families identifier+title, margin 80",
+      "chosenDiscogsId": 6539982,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 1,
+      "capture": {
+        "catno": "CFP158",
+        "title": "Adrian Bolt bravo",
+        "name": null
+      }
+    },
+    {
+      "itemId": 396,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 2,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "MER331",
+        "title": "Ballet favourites",
+        "name": null
+      }
+    },
+    {
+      "itemId": 397,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict",
+      "chosenDiscogsId": null,
+      "queriesRun": 5,
+      "queryErrors": 0,
+      "candidates": 3,
+      "capture": {
+        "catno": "CFP40320",
+        "title": "How encore Morris Hanford",
+        "name": null
+      }
+    },
+    {
+      "itemId": 398,
+      "verdict": "verified",
+      "reason": "score 80, families identifier+title, margin 50",
+      "chosenDiscogsId": 1444191,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "MFP 2037",
+        "title": "Philharmonic favourites",
+        "name": null
+      }
+    },
+    {
+      "itemId": 399,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 2,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "MER205",
+        "title": "Grieg Chopin",
+        "name": null
+      }
+    },
+    {
+      "itemId": 400,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 31,
+      "capture": {
+        "catno": "EMT VD 45",
+        "title": "The classic experience",
+        "name": null
+      }
+    },
+    {
+      "itemId": 401,
+      "verdict": "needs_review",
+      "reason": "margin 20 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 2,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "HM549",
+        "title": "Liberace plays Rhapsody in blue",
+        "name": null
+      }
+    },
+    {
+      "itemId": 402,
+      "verdict": "verified",
+      "reason": "score 80, families identifier+title, margin 75",
+      "chosenDiscogsId": 10122551,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 14,
+      "capture": {
+        "catno": "2870393",
+        "title": "Favourite piano Classics",
+        "name": null
+      }
+    },
+    {
+      "itemId": 403,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 19,
+      "capture": {
+        "catno": "MER 320",
+        "title": "Rhapsodies",
+        "name": null
+      }
+    },
+    {
+      "itemId": 404,
+      "verdict": "needs_review",
+      "reason": "score 25 < 80; only 1 signal family (title) — a catalogue number alone is a lead, not a verdict",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 5,
+      "capture": {
+        "catno": "RTL2075 MCPS",
+        "title": "Music for the seasons autumn",
+        "name": null
+      }
+    },
+    {
+      "itemId": 405,
+      "verdict": "needs_review",
+      "reason": "score 25 < 80; only 1 signal family (title) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 7,
+      "capture": {
+        "catno": "RTL2075 MCPS",
+        "title": "Music for the seasons winter",
+        "name": null
+      }
+    },
+    {
+      "itemId": 406,
+      "verdict": "needs_review",
+      "reason": "score 43 < 80; only 1 signal family (title) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 4,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "ADE C1 arcade records",
+        "title": "All-time Classics",
+        "name": null
+      }
+    },
+    {
+      "itemId": 407,
+      "verdict": "needs_review",
+      "reason": "margin 20 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "CFP 40254",
+        "title": "Favourite marches",
+        "name": null
+      }
+    },
+    {
+      "itemId": 408,
+      "verdict": "needs_review",
+      "reason": "margin 20 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "MF P2150",
+        "title": "Heart of the symphony",
+        "name": null
+      }
+    },
+    {
+      "itemId": 409,
+      "verdict": "needs_review",
+      "reason": "margin 20 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "PR124",
+        "title": "Waltz time in Vienna",
+        "name": null
+      }
+    },
+    {
+      "itemId": 410,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 23,
+      "capture": {
+        "catno": "NKF 30046 (Norsk Kulturråds Klassikerserie, Jansons)",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 411,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 6,
+      "queryErrors": 0,
+      "candidates": 12,
+      "capture": {
+        "catno": "TWO‑269",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 412,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 16,
+      "capture": {
+        "catno": "CFP‑160",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 413,
+      "verdict": "verified",
+      "reason": "score 90, families identifier+label, margin 85",
+      "chosenDiscogsId": 3418745,
+      "queriesRun": 7,
+      "queryErrors": 0,
+      "candidates": 3,
+      "capture": {
+        "catno": "MFP‑57010",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 414,
+      "verdict": "needs_review",
+      "reason": "score 35 < 80; only 1 signal family (label) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 7,
+      "queryErrors": 0,
+      "candidates": 10,
+      "capture": {
+        "catno": "W‑5828",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 415,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 4,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "ATL‑4001",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 416,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 4,
+      "queryErrors": 0,
+      "candidates": 25,
+      "capture": {
+        "catno": "M‑2277",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 417,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 27,
+      "capture": {
+        "catno": "MFP 2005",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 418,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 24,
+      "capture": {
+        "catno": "SXLP 20104",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 419,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict",
+      "chosenDiscogsId": null,
+      "queriesRun": 4,
+      "queryErrors": 0,
+      "candidates": 1,
+      "capture": {
+        "catno": "SMSA-2307",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 420,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 24,
+      "capture": {
+        "catno": "CFP 187",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 421,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 23,
+      "capture": {
+        "catno": "CFP 40001",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 422,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "420540-1",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 423,
+      "verdict": "needs_review",
+      "reason": "margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 2,
+      "queryErrors": 0,
+      "candidates": 24,
+      "capture": {
+        "catno": "73045",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 424,
+      "verdict": "needs_review",
+      "reason": "score 23 < 80; only 0 signal family (none) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 15,
+      "capture": {
+        "catno": "943201",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 425,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "GBL 5539",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 426,
+      "verdict": "needs_review",
+      "reason": "score 30 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 7 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "BRL 34",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 427,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 17,
+      "capture": {
+        "catno": "ALL 704",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 428,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "2531103",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 429,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 14,
+      "capture": {
+        "catno": "2535147",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 430,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 23,
+      "capture": {
+        "catno": "CFP 193",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 431,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 26,
+      "capture": {
+        "catno": "CFP 40007",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 432,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 13,
+      "capture": {
+        "catno": "CFP 40017",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 433,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 24,
+      "capture": {
+        "catno": "CFP 40019",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 434,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 23,
+      "capture": {
+        "catno": "CFP 40076",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 435,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 24,
+      "capture": {
+        "catno": "ASD 2737",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 436,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 23,
+      "capture": {
+        "catno": "CFP 40018",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 437,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 28,
+      "capture": {
+        "catno": "CFP 142",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 438,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "89642",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 439,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 22,
+      "capture": {
+        "catno": "SXDL 7578",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 440,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 21,
+      "capture": {
+        "catno": "SXLP 30286",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 441,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "35883",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 442,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 24,
+      "capture": {
+        "catno": "MFP 2010",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 443,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 3,
+      "queryErrors": 0,
+      "candidates": 23,
+      "capture": {
+        "catno": "MFP 2112",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 444,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict; margin 0 < 25 over the runner-up",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 16,
+      "capture": {
+        "catno": "AM 2239",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 445,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "AM 240",
+        "title": null,
+        "name": null
+      }
+    },
+    {
+      "itemId": 446,
+      "verdict": "needs_review",
+      "reason": "score 60 < 80; only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict",
+      "chosenDiscogsId": null,
+      "queriesRun": 1,
+      "queryErrors": 0,
+      "candidates": 20,
+      "capture": {
+        "catno": "4042",
+        "title": null,
+        "name": null
       }
     }
   ]

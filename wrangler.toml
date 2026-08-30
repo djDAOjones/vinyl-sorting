@@ -13,7 +13,7 @@ compatibility_date = "2026-08-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "deep-groove"
-database_id = "REPLACE_WITH_ID_FROM_wrangler_d1_create"
+database_id = "59862adc-60d8-4207-98e3-c6e9ae55eefd"
 
 [[r2_buckets]]
 binding = "PHOTOS"
@@ -22,7 +22,7 @@ bucket_name = "deep-groove-photos"
 # API response cache, keyed by normalised query. Unused until M2.
 [[kv_namespaces]]
 binding = "CACHE"
-id = "REPLACE_WITH_ID_FROM_wrangler_kv_namespace_create"
+id = "3f62537511354c4fad11caba49fd2235"
 
 # The matcher runs from cron, never from a route. With no sign-in, an
 # HTTP trigger would be a stranger's lever on the Discogs rate limit;

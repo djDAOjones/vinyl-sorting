@@ -21,33 +21,52 @@ w() { npx wrangler "$@" </dev/null; }
 say() { printf '\n\033[36m==> %s\033[0m\n' "$1"; }
 
 say "Checking you are logged in"
-if ! w whoami 2>&1 | grep -qi 'account'; then
+# Test for the failure string, not for the word "account": wrangler's
+# logged-out message mentions a "temporary preview account", so
+# grepping for "account" reports success when you are logged out.
+if w whoami 2>&1 | grep -qi 'not authenticated'; then
   echo "Not logged in. Run:  npx wrangler login"
   exit 1
 fi
-w whoami 2>&1 | grep -i 'account' | head -3
+echo "Logged in."
+
+# Resource ids are read from the LIST commands, never from `d1 info`:
+# `d1 info <name>` resolves the name through wrangler.toml, which still
+# holds a placeholder on a first run, so it fails with a 7404.
+d1_id() {
+  w d1 list --json 2>/dev/null | python3 -c '
+import json,sys
+try: rows=json.load(sys.stdin)
+except Exception: rows=[]
+print(next((r["uuid"] for r in rows if r.get("name")=="deep-groove"), ""))'
+}
+kv_id() {
+  w kv namespace list 2>/dev/null | python3 -c '
+import json,sys
+try: rows=json.load(sys.stdin)
+except Exception: rows=[]
+print(next((r["id"] for r in rows if r.get("title","").endswith("CACHE")), ""))'
+}
 
 say "Creating D1 database (skipped if it exists)"
-if w d1 info deep-groove >/dev/null 2>&1; then
+D1_ID="$(d1_id)"
+if [ -n "$D1_ID" ]; then
   echo "deep-groove already exists"
 else
   w d1 create deep-groove
+  D1_ID="$(d1_id)"
 fi
-D1_ID="$(w d1 info deep-groove --json 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin).get("uuid",""))' || true)"
-[ -n "$D1_ID" ] || { echo "Could not read the D1 id; check 'npx wrangler d1 info deep-groove'"; exit 1; }
+[ -n "$D1_ID" ] || { echo "Could not read the D1 id; check 'npx wrangler d1 list'"; exit 1; }
 echo "D1 id: $D1_ID"
 
 say "Creating R2 bucket (skipped if it exists)"
 w r2 bucket create deep-groove-photos 2>&1 | tail -2 || echo "already exists"
 
 say "Creating KV namespace (skipped if it exists)"
-KV_ID="$(w kv namespace list 2>/dev/null | python3 -c '
-import json,sys
-try: rows=json.load(sys.stdin)
-except Exception: rows=[]
-print(next((r["id"] for r in rows if r.get("title","").endswith("CACHE")), ""))' || true)"
+KV_ID="$(kv_id)"
 if [ -z "$KV_ID" ]; then
-  KV_ID="$(w kv namespace create CACHE 2>&1 | grep -oE '"id": *"[a-f0-9]+"' | grep -oE '[a-f0-9]{20,}' | head -1)"
+  w kv namespace create CACHE >/dev/null 2>&1 || true
+  KV_ID="$(kv_id)"
 fi
 [ -n "$KV_ID" ] || { echo "Could not create or find the CACHE namespace"; exit 1; }
 echo "KV id: $KV_ID"
@@ -63,15 +82,42 @@ open('wrangler.toml', 'w', encoding='utf8').write(s)
 print('wrangler.toml updated')
 PY
 
-say "Applying the schema"
+# Read a single number back out of a remote query.
+remote_num() {
+  w d1 execute deep-groove --remote --yes --json --command "$1" 2>/dev/null | python3 -c '
+import json,sys
+raw=sys.stdin.read()
+try:
+  d=json.loads(raw[raw.index("["):])
+  v=list(d[0]["results"][0].values())[0]
+  print(0 if v is None else v)
+except Exception:
+  print(0)'
+}
+
+say "Applying the schema (only migrations not yet applied)"
+APPLIED="$(remote_num 'SELECT MAX(version) FROM schema_migration;')"
+echo "already applied: version $APPLIED"
 for f in schema/*.sql; do
-  echo "  $f"
-  w d1 execute deep-groove --remote --file "$f" --yes >/dev/null
+  # 001-init.sql -> 1. Re-running a CREATE TABLE is an error, not a
+  # no-op, so idempotency has to come from the migration table.
+  v=$(basename "$f" | sed -E 's/^0*([0-9]+).*/\1/')
+  if [ "$v" -le "$APPLIED" ] 2>/dev/null; then
+    echo "  skip $f (version $v)"
+  else
+    echo "  apply $f (version $v)"
+    w d1 execute deep-groove --remote --file "$f" --yes >/dev/null
+  fi
 done
 
 say "Loading the dataset"
 [ -f data/seed.sql ] || node tools/load-dataset.mjs --sql
-w d1 execute deep-groove --remote --file data/seed.sql --yes >/dev/null
+ROWS="$(remote_num 'SELECT COUNT(*) FROM item;')"
+if [ "$ROWS" -gt 0 ] 2>/dev/null; then
+  echo "$ROWS items already loaded; skipping (delete them first to reload)"
+else
+  w d1 execute deep-groove --remote --file data/seed.sql --yes >/dev/null
+fi
 w d1 execute deep-groove --remote --yes --command \
   "SELECT (SELECT COUNT(*) FROM item) items, (SELECT COUNT(*) FROM match_run) runs, (SELECT COUNT(*) FROM v_decision_eligible_item) eligible;"
 
