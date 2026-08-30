@@ -34,11 +34,12 @@
   passage?** [sign-off] (2026-08-30) — Whether the app proposes the
   two-to-three-minute comparison passage from the track listing, or the
   listener always chooses it themselves.
-- [ ] **OPS-SPEND-GUARD Spend guard — cap what a runaway cron can cost**
-  (2026-08-30) — Cloudflare has no hard dollar cap, so the ceiling has to
-  be built: a budget alert to notice, a CPU limit per invocation, and a
-  per-tick write budget in the matcher so a loop cannot bill its way
-  through the night.
+- [~] **OPS-SPEND-GUARD Spend guard — cap what a runaway cron can cost**
+  [maintainer] (2026-08-30) — Cloudflare has no hard dollar cap, so the
+  ceiling has to be built; the code half is in — cpu_ms is capped and the
+  matcher stops at a per-tick write budget and says so — leaving the $10
+  budget alert and a ceiling set from the first full run's measured
+  volume.
 - [ ] **M3-WORKS-PERFORMANCES MusicBrainz works, performances and
   per-track completeness** — Resolve work and recording identity from
   MusicBrainz, resolve composers for the 131 Various/Unknown rows, and

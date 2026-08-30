@@ -248,11 +248,27 @@ export function createApp() {
  */
 export const WRITE_BUDGET_PER_TICK = 200;
 
+/**
+ * Options rather than four positional arguments, because two of them
+ * exist only so a test can run on a fake clock. The limiter and the
+ * client already accept injected time; this passes it through, which
+ * is the difference between a test suite that takes a second and one
+ * that spends 95 of them genuinely waiting out the Discogs spacing.
+ */
+export interface MatchBatchOptions {
+  batchSize?: number;
+  writeBudget?: number;
+  now?: () => number;
+  sleep?: (ms: number) => Promise<void>;
+}
+
 export async function runMatchBatch(
   env: Env,
-  batchSize = 4,
-  writeBudget = WRITE_BUDGET_PER_TICK,
+  opts: MatchBatchOptions = {},
 ): Promise<{ processed: number; rowsWritten: number; stoppedShort: boolean }> {
+  const {
+    batchSize = 4, writeBudget = WRITE_BUDGET_PER_TICK, now, sleep,
+  } = opts;
   if (!env.DISCOGS_TOKEN) {
     console.warn('match: DISCOGS_TOKEN is not set; nothing to do');
     return { processed: 0, rowsWritten: 0, stoppedShort: false };
@@ -260,8 +276,12 @@ export async function runMatchBatch(
   const limiter = new RateLimiter({
     get: (k) => env.CACHE.get(k),
     put: (k, v, o) => env.CACHE.put(k, v, o),
-  });
-  const client = new DiscogsClient(env.DISCOGS_TOKEN, limiter);
+  }, now);
+  // fetchImpl left to the client's own default ON PURPOSE: naming
+  // fetch here would put an outbound call in a second file and break
+  // the invariant that every upstream request goes through the one
+  // rate-limited client. Only the clock is injected.
+  const client = new DiscogsClient(env.DISCOGS_TOKEN, limiter, undefined, sleep);
 
   const rows = await pendingRows(env, batchSize);
   let rowsWritten = 0;

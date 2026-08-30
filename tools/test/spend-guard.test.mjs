@@ -18,11 +18,27 @@ import { persistRun } from '../../worker/match/run.ts';
 import { WRITE_BUDGET_PER_TICK, runMatchBatch } from '../../worker/index.ts';
 import { makeEnv } from './helpers/bindings.mjs';
 
-/** Every table persistRun can write to, so "rows written" is measured, not trusted. */
-const TABLES = ['release', 'match_run', 'match_candidate', 'field_source', 'item'];
-const countRows = (env) => TABLES.reduce(
-  (n, t) => n + Number(env.DB.raw.prepare(`SELECT count(*) AS n FROM ${t}`).get().n), 0,
-);
+/**
+ * A clock that sleeping advances. The limiter spaces Discogs requests
+ * two seconds apart and the client honours that by actually waiting,
+ * so a real clock makes these tests take 95 seconds to assert
+ * arithmetic. Injecting time keeps the spacing behaviour under test —
+ * the client still waits, it just waits instantly.
+ */
+const fakeTime = () => {
+  let t = 1_700_000_000_000;
+  return { now: () => t, sleep: async (ms) => { t += ms; } };
+};
+
+/**
+ * Rows WRITTEN, which is not rows ADDED — the distinction is the whole
+ * billing question. D1 meters inserts and updates alike, so the
+ * `UPDATE item SET release_id` and the provenance upsert each cost a
+ * row write while adding no row. Counting table sizes would have
+ * undercounted them; SQLite's total_changes() counts what actually
+ * changed, which is the same thing D1 charges for.
+ */
+const written = (env) => Number(env.DB.raw.prepare('SELECT total_changes() AS n').get().n);
 
 /** A verified result carrying the full five candidates — the costliest shape. */
 const verifiedResult = (itemId) => ({
@@ -45,9 +61,9 @@ test('persistRun reports exactly the number of rows it wrote', async () => {
   env.DB.raw.exec("INSERT INTO item (crate) VALUES ('B4')");
   env.DB.raw.exec("INSERT INTO capture (item_id, catno_raw) VALUES (1, 'SXL 6113')");
 
-  const before = countRows(env);
+  const before = written(env);
   const reported = await persistRun(env, { itemId: 1, catnoRaw: 'SXL 6113' }, verifiedResult(1));
-  const actual = countRows(env) - before;
+  const actual = written(env) - before;
 
   // An accounting that drifts from reality is worse than none: the
   // budget would be spent against a number nobody is checking.
@@ -61,9 +77,9 @@ test('a release already known is not written twice, and is not counted twice', a
   env.DB.raw.exec("INSERT INTO capture (item_id, catno_raw) VALUES (1, 'SXL 6113'), (2, 'SXL 6113')");
 
   const first = await persistRun(env, { itemId: 1 }, verifiedResult(1));
-  const before = countRows(env);
+  const before = written(env);
   const second = await persistRun(env, { itemId: 2 }, verifiedResult(2));
-  const actual = countRows(env) - before;
+  const actual = written(env) - before;
 
   assert.equal(second, actual, 'the second run also reports truthfully');
   assert.ok(second < first, 'the shared release is not re-created, so the second run costs less');
@@ -82,7 +98,7 @@ test('the matcher stops at its write budget and says it stopped short', async ()
   const realFetch = globalThis.fetch;
   globalThis.fetch = async () => { throw new Error('offline in test'); };
   try {
-    const out = await runMatchBatch(env, 6, 3);
+    const out = await runMatchBatch(env, { batchSize: 6, writeBudget: 3, ...fakeTime() });
     assert.equal(out.stoppedShort, true, 'it must report that it stopped short');
     assert.ok(out.processed < 6, `processed ${out.processed} of 6 — it should not have finished`);
     assert.ok(out.rowsWritten >= 3, 'it stopped at the budget, not before reaching it');
@@ -100,7 +116,7 @@ test('a tick inside its budget does not claim it stopped short', async () => {
   const realFetch = globalThis.fetch;
   globalThis.fetch = async () => { throw new Error('offline in test'); };
   try {
-    const out = await runMatchBatch(env, 4, WRITE_BUDGET_PER_TICK);
+    const out = await runMatchBatch(env, { batchSize: 4, ...fakeTime() });
     assert.equal(out.stoppedShort, false);
     assert.equal(out.processed, 1);
   } finally {
