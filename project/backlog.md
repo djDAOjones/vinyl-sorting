@@ -8,11 +8,11 @@
 
 ### Current milestone
 
-<!-- Intent: M1 — schema, Worker skeleton and the offline capture screen, so a disc can be captured in a loft with no signal. Promoted 2026-08-30 once its three sign-off questions were answered: no sign-in, app database authoritative, token valid and not a seller. -->
+<!-- Intent: Empty — M1 shipped 2026-08-30: D1 schema with provenance enforced by views, a Worker exposing named operations only, and a photo-first offline capture app verified in a browser. Deploying needs a Cloudflare login, which is a maintainer step; see README. -->
 
 ### Next milestone
 
-<!-- Intent: Empty — M2 is the next committed milestone but stays in the icebox until capture is real. Promoting it is the trigger to revisit auth, per OPEN-USERS-ACCESS. -->
+<!-- Intent: M2 — the matcher and the review queue. Promoting it is the trigger to revisit auth, per OPEN-USERS-ACCESS: it is the first milestone where a caller could drive a Discogs query against the live token. -->
 
 ### Icebox
 

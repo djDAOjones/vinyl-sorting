@@ -55,10 +55,17 @@ Create the photo bucket and the cache namespace, putting the KV id into
 npx wrangler r2 bucket create deep-groove-photos && npx wrangler kv namespace create CACHE
 ```
 
-Apply the schema, then load M0's 446 rows:
+Apply the schema:
 
 ```bash
 npx wrangler d1 execute deep-groove --remote --file schema/001-init.sql
+```
+
+Generate the seed — it is derived from the committed CSV in one
+command, so it is not itself committed — and load M0's 446 rows:
+
+```bash
+node tools/load-dataset.mjs --sql && npx wrangler d1 execute deep-groove --remote --file data/seed.sql
 ```
 
 Store the Discogs token as a secret. It is never committed, and no

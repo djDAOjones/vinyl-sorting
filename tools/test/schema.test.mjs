@@ -188,3 +188,38 @@ test('the loaded dataset is entirely decision-ineligible — the done-when', { s
   assert.equal(count(db, 'v_eligible_work_coverage'), 0);
   assert.ok(count(db, 'field_source') > 4000, 'provenance was recorded, not skipped');
 });
+
+// ── the only route into a remote D1 ───────────────────────────────
+
+test('the seed SQL reconstructs the dataset exactly', { skip: !existsSync(csv) }, async () => {
+  const { toSeedSql } = await import('../load-dataset.mjs');
+  const source = loadDataset(':memory:', csv);
+  const sql = toSeedSql(source.db);
+
+  const target = fresh();
+  target.exec(sql);
+
+  for (const table of ['item', 'capture', 'release', 'field_source', 'raw_value']) {
+    assert.equal(count(target, table), count(source.db, table), `${table} did not round-trip`);
+  }
+  assert.equal(count(target, 'item'), 446);
+  assert.equal(count(target, 'v_decision_eligible_item'), 0, 'a re-seeded database is no more trusted');
+
+  // Batched, because `wrangler d1 execute` ships every statement:
+  // one INSERT per row would be over 12,000 of them.
+  const statements = (sql.match(/^INSERT INTO/gm) ?? []).length;
+  assert.ok(statements < 200, `expected batched inserts, got ${statements} statements`);
+});
+
+test('seed SQL escapes quotes rather than breaking on them', async () => {
+  const { toSeedSql } = await import('../load-dataset.mjs');
+  const db = fresh();
+  db.exec('INSERT INTO item (crate) VALUES (\'B4\')');
+  db.prepare('INSERT INTO capture (item_id, title_raw) VALUES (?, ?)')
+    .run(1, "Bach's Greatest Hits, Vol. 1 -- not a comment");
+
+  const target = fresh();
+  target.exec(toSeedSql(db));
+  assert.equal(one(target, 'SELECT title_raw FROM capture').title_raw,
+    "Bach's Greatest Hits, Vol. 1 -- not a comment");
+});

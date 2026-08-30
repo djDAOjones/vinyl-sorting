@@ -23,3 +23,6 @@ dist/
 
 # Local D1 / SQLite fixtures built by the schema gate
 data/*.sqlite
+
+# Deploy seed, regenerated from the committed CSV in one command
+data/seed.sql
