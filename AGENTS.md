@@ -15,6 +15,12 @@ what the item needs. Stop and ask at any of these boundaries; in
 autonomous modes, stop means park the item with a note, take the
 next.
 
+Sanctioned dependency exception (maintainer, 2026-08-30, at the M1
+boundary): the brief's named stack — `hono` at runtime, and
+`typescript`, `vite`, `wrangler` and `@cloudflare/workers-types` as
+dev dependencies. Nothing else. The rule still bites for every other
+package, and adding one is still a stop-and-ask.
+
 Project boundaries, same force as the above:
 
 - `Pre August 2026/` is a read-only archive. Never edit, move or

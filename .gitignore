@@ -16,3 +16,10 @@ project/reports/
 node_modules/
 dist/
 .wrangler/
+
+# Vite build output and TS build info
+.vite/
+*.tsbuildinfo
+
+# Local D1 / SQLite fixtures built by the schema gate
+data/*.sqlite
