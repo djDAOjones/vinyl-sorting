@@ -74,6 +74,19 @@ function generateVariants(text: string): string[] {
 
   const digitTrim = trimBeforeFirstDigits(spaced);
   if (digitTrim) addVariant(out, digitTrim);
+
+  // Separate a letter prefix from its digits. The ported ladder only
+  // ever removed separators, never introduced them, so a catalogue
+  // number typed without a space produced exactly one variant and
+  // Discogs was asked one question. Measured against the live API:
+  // `RDS9451` returns nothing, `RDS 9451` returns the record. That gap
+  // accounted for most of a 53-out-of-60 no-match run.
+  const split = /^([A-Z]+)[\s-]*(\d[\dA-Z\s/-]*)$/.exec(spaced);
+  if (split?.[1] && split[2]) {
+    const [, letters, digits] = split;
+    addVariant(out, `${letters} ${digits.trim()}`);
+    addVariant(out, `${letters}-${digits.trim()}`);
+  }
   return out;
 }
 

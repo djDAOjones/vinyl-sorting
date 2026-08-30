@@ -39,26 +39,55 @@ export class DiscogsClient {
   readonly #token: string;
   readonly #limiter: RateLimiter;
   readonly #fetch: typeof fetch;
+  readonly #sleep: (ms: number) => Promise<void>;
 
-  constructor(token: string, limiter: RateLimiter, fetchImpl: typeof fetch = fetch) {
+  constructor(
+    token: string,
+    limiter: RateLimiter,
+    fetchImpl: typeof fetch = fetch,
+    sleep: (ms: number) => Promise<void> = (ms) => new Promise((r) => { setTimeout(r, ms); }),
+  ) {
     this.#token = token;
     this.#limiter = limiter;
     this.#fetch = fetchImpl;
+    this.#sleep = sleep;
+  }
+
+  /**
+   * Wait for the shared budget rather than failing on it. Throwing here
+   * made the matcher report "nothing found" for rows it never actually
+   * searched — the local limiter refused, the caller swallowed the
+   * error, and 53 rows out of 60 were silently marked unmatched.
+   */
+  async #awaitBudget(): Promise<void> {
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const decision = await this.#limiter.take('discogs');
+      if (decision.allowed) return;
+      await this.#sleep(Math.min(decision.retryAfterMs + 50, 65_000));
+    }
+    throw new DiscogsError(429, 'shared Discogs budget unavailable after waiting');
   }
 
   async #get(path: string, params: Record<string, string> = {}): Promise<unknown> {
-    const decision = await this.#limiter.take('discogs');
-    if (!decision.allowed) {
-      throw new DiscogsError(429, `rate limited locally; retry in ${decision.retryAfterMs}ms`);
-    }
     const url = new URL(`${BASE}${path}`);
     for (const [k, v] of Object.entries(params)) if (v) url.searchParams.set(k, v);
 
-    const res = await this.#fetch(url.toString(), {
-      headers: { Authorization: `Discogs token=${this.#token}`, 'User-Agent': USER_AGENT },
-    });
-    if (!res.ok) throw new DiscogsError(res.status, `${path} -> HTTP ${res.status}`);
-    return res.json();
+    // Discogs enforces its own limit too, and answers 429 with a
+    // Retry-After. Honour it rather than hammering.
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      await this.#awaitBudget();
+      const res = await this.#fetch(url.toString(), {
+        headers: { Authorization: `Discogs token=${this.#token}`, 'User-Agent': USER_AGENT },
+      });
+      if (res.status === 429) {
+        const retryAfter = Number(res.headers.get('retry-after') ?? 0);
+        await this.#sleep(retryAfter > 0 ? retryAfter * 1000 : 2_000 * attempt);
+        continue;
+      }
+      if (!res.ok) throw new DiscogsError(res.status, `${path} -> HTTP ${res.status}`);
+      return res.json();
+    }
+    throw new DiscogsError(429, `${path} -> throttled by Discogs after 4 attempts`);
   }
 
   /**

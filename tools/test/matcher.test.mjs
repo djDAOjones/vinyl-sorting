@@ -257,3 +257,113 @@ test('excluding the circular field genuinely changes the verdict', async () => {
     'the circular reading manufactures a second family out of nothing');
   assert.equal(honest.families.length, 1, 'on this row the catalogue number is the only human evidence');
 });
+
+test('a catalogue number typed without a space still asks Discogs the spaced question', () => {
+  // Measured against the live API: `RDS9451` returns nothing and
+  // `RDS 9451` returns the record. The ported ladder only ever removed
+  // separators, never introduced them, so a compacted catalogue number
+  // produced a single variant — most of a 53-of-60 no-match run.
+  const v = normaliseCatno('RDS9451');
+  assert.ok(v.includes('RDS 9451'), `expected a spaced variant, got ${JSON.stringify(v)}`);
+  assert.ok(v.includes('RDS-9451'));
+  assert.equal(v[0], 'RDS9451', 'the literal reading still comes first');
+});
+
+test('splitting letters from digits does not mangle numbers that need no split', () => {
+  assert.deepEqual(normaliseCatno('420540-1'), ['420540-1', '4205401']);
+  assert.ok(normaliseCatno('SXL 6113').includes('SXL 6113'));
+  // Every variant still has a digit — a label word is never searched.
+  for (const raw of ['CBS77506', 'CFP 40001', '6.24088 AP', 'Columbia / CBS']) {
+    for (const v of normaliseCatno(raw)) assert.match(v, /\d/, `${raw} -> ${v}`);
+  }
+});
+
+// ── a throttled search is not a negative result ───────────────────
+
+test('when every query fails the row is an error, never "nothing found"', async () => {
+  const failing = {
+    search: async () => { throw new Error('HTTP 429'); },
+    getRelease: async () => ({}),
+  };
+  const { outcome } = await matchRow(
+    { itemId: 1, captureId: 1, catnoRaw: 'SXL 6113', titleRaw: 'Symphony No. 5' }, failing);
+
+  assert.equal(outcome.verdict, 'error',
+    'reporting a throttled row as no_match marks it unmatched for ever');
+  assert.ok(outcome.queryErrors > 0);
+  assert.match(outcome.reason, /queries failed/);
+  assert.notEqual(outcome.verdict, 'no_match');
+});
+
+test('a genuine empty result set is still no_match', async () => {
+  const empty = { search: async () => [], getRelease: async () => ({}) };
+  const { outcome } = await matchRow(
+    { itemId: 1, captureId: 1, catnoRaw: 'SXL 6113', titleRaw: 'Symphony No. 5' }, empty);
+  assert.equal(outcome.verdict, 'no_match');
+  assert.equal(outcome.queryErrors, 0);
+});
+
+test('partial failure still yields a verdict, and says how many rungs failed', async () => {
+  let call = 0;
+  const flaky = {
+    search: async () => {
+      call++;
+      if (call === 1) throw new Error('HTTP 429');
+      return [{ id: 7, catno: 'SXL 6113', label: ['Decca'], title: 'Solti - Symphony No. 5', year: 1964, format: ['Vinyl', 'LP'] }];
+    },
+    getRelease: async () => ({}),
+  };
+  const { outcome } = await matchRow({
+    itemId: 1, captureId: 1, catnoRaw: 'SXL 6113', labelRaw: 'Decca',
+    titleRaw: 'Symphony No. 5', nameRaw: 'Solti', yearRaw: '1964',
+  }, flaky);
+  assert.notEqual(outcome.verdict, 'error');
+  assert.equal(outcome.queryErrors, 1);
+  assert.match(outcome.reason, /1 query error/);
+});
+
+test('the client waits for the shared budget instead of failing on it', async () => {
+  const { DiscogsClient } = await import('../../worker/discogs.ts');
+  const { RateLimiter } = await import('../../worker/rate-limit.ts');
+
+  // A store that is already at the limit for this window, then rolls.
+  let now = 1_000_000;
+  const counters = new Map([[`rl:discogs:${now - (now % 60_000)}`, '50']]);
+  const limiter = new RateLimiter(
+    { get: async (k) => counters.get(k) ?? null, put: async (k, v) => { counters.set(k, v); } },
+    () => now,
+  );
+
+  let fetched = 0;
+  const client = new DiscogsClient('tok', limiter,
+    async () => { fetched++; return new Response('{"results":[]}', { status: 200 }); },
+    // Sleeping advances the clock into the next window.
+    async (ms) => { now += ms; });
+
+  const results = await client.search({ catno: 'SXL 6113' });
+  assert.deepEqual(results, [], 'the call completed rather than throwing');
+  assert.equal(fetched, 1, 'it waited for the budget, then made exactly one request');
+});
+
+test('the client honours a Retry-After rather than hammering', async () => {
+  const { DiscogsClient } = await import('../../worker/discogs.ts');
+  const { RateLimiter } = await import('../../worker/rate-limit.ts');
+
+  const counters = new Map();
+  const limiter = new RateLimiter({
+    get: async (k) => counters.get(k) ?? null, put: async (k, v) => { counters.set(k, v); },
+  }, () => 1_000_000);
+
+  let calls = 0;
+  const slept = [];
+  const client = new DiscogsClient('tok', limiter, async () => {
+    calls++;
+    return calls === 1
+      ? new Response('', { status: 429, headers: { 'retry-after': '3' } })
+      : new Response('{"results":[{"id":1}]}', { status: 200 });
+  }, async (ms) => { slept.push(ms); });
+
+  const results = await client.search({ catno: 'X' });
+  assert.equal(results.length, 1, 'it retried and succeeded');
+  assert.ok(slept.includes(3000), `expected a 3s wait from Retry-After, slept ${slept}`);
+});

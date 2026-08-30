@@ -32,10 +32,12 @@ export interface MatchRow {
 
 export interface MatchOutcome {
   itemId: number;
-  verdict: GateResult['verdict'] | 'rejected';
+  /** `error` when the search never completed — see queryErrors. */
+  verdict: GateResult['verdict'] | 'rejected' | 'error';
   reason: string;
   chosenDiscogsId: number | null;
   queriesRun: number;
+  queryErrors: number;
   candidates: number;
 }
 
@@ -54,7 +56,10 @@ export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
   const sane = checkRow(row);
   if (!sane.usable) {
     return {
-      outcome: { itemId: row.itemId, verdict: 'rejected', reason: sane.reason, chosenDiscogsId: null, queriesRun: 0, candidates: 0 },
+      outcome: {
+        itemId: row.itemId, verdict: 'rejected', reason: sane.reason,
+        chosenDiscogsId: null, queriesRun: 0, queryErrors: 0, candidates: 0,
+      },
       gate: null, queries: [],
     };
   }
@@ -69,14 +74,22 @@ export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
   /** Deduplicated by release id — the same release surfaces on several rungs. */
   const seen = new Map<number, SearchResult>();
   let queriesRun = 0;
+  let queryErrors = 0;
+  let lastError = '';
   for (const q of queries) {
     if (seen.size >= ENOUGH) break;
     queriesRun++;
     let results: SearchResult[];
     try {
       results = await client.search(q.params);
-    } catch {
-      // A failed rung is not a failed row: try the next one.
+    } catch (err) {
+      // A failed rung is not a failed row: try the next one. But the
+      // failure is COUNTED, because a row that never reached Discogs
+      // has not been searched, and reporting that as "nothing found"
+      // would silently mark it unmatched for ever. A rate-limited run
+      // did exactly that to 53 rows out of 60.
+      queryErrors++;
+      lastError = err instanceof Error ? err.message : String(err);
       continue;
     }
     for (const r of results) if (r?.id && !seen.has(r.id)) seen.set(r.id, r);
@@ -85,13 +98,26 @@ export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
   const scored: Scored[] = [...seen.values()].map((r) => scoreCandidate(capture, r));
   const gate = applyGate(scored);
 
+  // Nothing found AND something went wrong is not a negative result.
+  if (scored.length === 0 && queryErrors > 0) {
+    return {
+      outcome: {
+        itemId: row.itemId, verdict: 'error',
+        reason: `all ${queryErrors} of ${queriesRun} queries failed; last: ${lastError}`,
+        chosenDiscogsId: null, queriesRun, queryErrors, candidates: 0,
+      },
+      gate: null, queries,
+    };
+  }
+
   return {
     outcome: {
       itemId: row.itemId,
       verdict: gate.verdict,
-      reason: gate.reason,
+      reason: queryErrors ? `${gate.reason} (${queryErrors} query error(s))` : gate.reason,
       chosenDiscogsId: gate.verdict === 'verified' ? gate.chosen?.id ?? null : null,
       queriesRun,
+      queryErrors,
       candidates: scored.length,
     },
     gate,
@@ -106,8 +132,9 @@ export async function persistRun(
   result: Awaited<ReturnType<typeof matchRow>>,
 ): Promise<void> {
   const state = result.outcome.verdict === 'verified' ? 'auto-accepted'
-    : result.outcome.verdict === 'rejected' ? 'rejected'
-      : result.outcome.verdict === 'no_match' ? 'rejected' : 'needs-review';
+    : result.outcome.verdict === 'error' ? 'error'
+      : result.outcome.verdict === 'rejected' ? 'rejected'
+        : result.outcome.verdict === 'no_match' ? 'rejected' : 'needs-review';
 
   let releaseId: number | null = null;
   if (result.outcome.chosenDiscogsId !== null) {

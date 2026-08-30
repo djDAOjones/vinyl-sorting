@@ -65,9 +65,11 @@ for (const row of rows) {
   const result = await matchRow(row, client);
   await persistRun(env, row, result);
   outcomes.push({ ...result.outcome, capture: { catno: row.catnoRaw, title: row.titleRaw, name: row.nameRaw } });
-  if (++n % 10 === 0) console.log(`  ${n}/${rows.length}…`);
-  // The limiter refuses over budget; this paces under it.
-  await new Promise((r) => setTimeout(r, 200));
+  if (++n % 10 === 0) {
+    console.log(`  ${n}/${rows.length}… (${outcomes.reduce((a, o) => a + o.queriesRun, 0)} queries)`);
+  }
+  // No sleep here: the client waits on the shared budget itself, which
+  // is the only pacing that also holds inside the Worker.
 }
 
 const by = (v) => outcomes.filter((o) => o.verdict === v).length;
@@ -78,7 +80,9 @@ const stats = {
   needsReview: by('needs_review'),
   noMatch: by('no_match'),
   rejectedBeforeAnyCall: by('rejected'),
+  errored: by('error'),
   apiCalls: outcomes.reduce((a, o) => a + o.queriesRun, 0),
+  queryErrors: outcomes.reduce((a, o) => a + (o.queryErrors ?? 0), 0),
 };
 writeFileSync(out, `${JSON.stringify({ ...stats, outcomes }, null, 2)}\n`);
 
@@ -87,5 +91,6 @@ console.log(`  verified (auto-accepted): ${stats.verified}`);
 console.log(`  needs review            : ${stats.needsReview}`);
 console.log(`  nothing found           : ${stats.noMatch}`);
 console.log(`  rejected before any call: ${stats.rejectedBeforeAnyCall}`);
-console.log(`  Discogs queries spent   : ${stats.apiCalls}`);
+console.log(`  never searched (errors)  : ${stats.errored}`);
+console.log(`  Discogs queries spent   : ${stats.apiCalls} (${stats.queryErrors} failed)`);
 console.log(`  -> ${out}`);
