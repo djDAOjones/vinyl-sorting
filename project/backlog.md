@@ -22,11 +22,6 @@
   passphrase?** [sign-off] (2026-08-30) — Determines whether Cloudflare
   Access is worth configuring or a shared passphrase suffices, which
   changes the M1 sign-in build.
-- [ ] **OPEN-SYSTEM-OF-RECORD Is the app database the system of record,
-  or does OneDrive stay authoritative?** [sign-off] (2026-08-30) — The
-  brief assumes the app database is authoritative with a nightly CSV
-  export to OneDrive; confirming this decides whether import is one-way
-  and whether CSV export is a convenience or a contract.
 
 ### Icebox
 

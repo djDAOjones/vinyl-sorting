@@ -2,6 +2,32 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — OPEN-SYSTEM-OF-RECORD: the app database is authoritative
+
+**Decision:** Confirmed by the maintainer — the app database is the
+system of record. Import is one-way: the frozen spreadsheets flow in
+once and are never written back. The CSV export to OneDrive is a
+readable backup, not a synchronisation contract.
+
+**Rationale:** The alternative makes round-tripping a first-class
+problem, and round-tripping between a database and a spreadsheet is
+where the previous nine schema generations died. One-way import means
+`data/deep-groove-v1.csv` is a handoff artefact rather than a live
+mirror, and M1 can load it and forget it.
+
+**Consequences to hold to:**
+
+- Editing moves into the app. A spreadsheet edited after M1 loads is
+  not a source of truth, and nothing will reconcile it.
+- The export is written for a human to read and for disaster recovery.
+  Nothing reads it back in.
+- `Pre August 2026/` stays read-only, as it already is.
+
+**Alternatives:** OneDrive stays authoritative — rejected by the
+maintainer. It would have required two-way sync, conflict resolution
+and a merge story for per-field provenance, none of which a private
+household tool should be carrying.
+
 ## 2026-08-30 — OPEN-DISCOGS-TOKEN: valid, not a seller, and that costs less than assumed
 
 **Decision:** Keep the existing token. The account will not be made a
