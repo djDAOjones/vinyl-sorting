@@ -33,3 +33,7 @@ data/reverify.json
 
 # wrangler local state (miniflare D1 etc)
 .wrangler/
+
+# Local match database and its report inputs
+data/deep-groove.sqlite
+data/match-run.json
