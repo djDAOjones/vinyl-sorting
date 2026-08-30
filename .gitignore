@@ -1,0 +1,18 @@
+# Read-only source archive — 189M, contains a Discogs token.
+# M0 reads from here and writes elsewhere; it never belongs in git.
+Pre August 2026/
+
+# Secrets — never commit, in any location
+*discogs_personal_access_token*
+.dev.vars
+.env
+.env.*
+
+# pm-next generated janitor report (per install step 3)
+project/reports/
+
+# OS / tooling
+.DS_Store
+node_modules/
+dist/
+.wrangler/
