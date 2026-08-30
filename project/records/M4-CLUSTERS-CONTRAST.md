@@ -4,7 +4,7 @@ name: Cluster building, contrast scoring and shortlisting
 summary: Build clusters from complete performances, score how far apart two readings are before any listening happens, and shortlist large clusters to three with the remainder visibly set aside and recallable.
 status: todo
 milestone: icebox
-order: 6
+order: 7
 ---
 # Clusters, contrast and shortlists
 

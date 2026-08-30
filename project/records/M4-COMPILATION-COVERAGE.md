@@ -4,7 +4,7 @@ name: Compilation coverage check
 summary: For each of the 132 compilations, answer per track whether that work is owned on a record being kept — disposing of 43% of the collection without a record going on the turntable.
 status: todo
 milestone: icebox
-order: 7
+order: 8
 ---
 # Compilation coverage check
 

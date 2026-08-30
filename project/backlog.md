@@ -38,6 +38,17 @@
   id checks, and the scorer keeps refusals apart from wrong answers;
   twenty photographed labels are now the only thing left, because
   synthesising labels would score the model against its own output.
+- [ ] **CAPTURE-BULK-PHOTOS Photograph a crate in one pass, one row per
+  photo** [detail](records/CAPTURE-BULK-PHOTOS.md) (2026-08-30) — Capture
+  takes one disc at a time, so walking a crate of twenty is twenty form
+  interactions — add a bulk mode that turns a multi-select or a run of
+  shots into one row each, with the crate sticky and nothing typed.
+- [ ] **PHOTOS-TO-DESKTOP Pull captured photos and their row ids out for
+  a chat pack** [detail](records/PHOTOS-TO-DESKTOP.md) (2026-08-30) —
+  Photos taken on the phone land in R2 and nothing can read them back —
+  the Worker has a PUT and no GET — so the desktop needs a way to fetch
+  them with their item ids, without turning "no route reads a photo" into
+  "one route returns all of them" in an app with no sign-in.
 - [ ] **M3-WORKS-PERFORMANCES MusicBrainz works, performances and
   per-track completeness** — Resolve work and recording identity from
   MusicBrainz, resolve composers for the 131 Various/Unknown rows, and

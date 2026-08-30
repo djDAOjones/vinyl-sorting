@@ -4,7 +4,7 @@ name: MusicBrainz works, performances and per-track completeness
 summary: Resolve work and recording identity from MusicBrainz, resolve composers for the 131 Various/Unknown rows, and attach real per-track completeness so clustering stops relying on the track-count heuristic.
 status: todo
 milestone: icebox
-order: 5
+order: 6
 ---
 # Works, performances, completeness
 

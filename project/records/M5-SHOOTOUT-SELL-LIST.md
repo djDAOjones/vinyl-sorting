@@ -4,7 +4,7 @@ name: Blind shootout sessions, three outcomes, and the sell list
 summary: Session cards sized to a sitting, blind scoring with performance and sound scored separately, keep-one / keep-several / defer, and the valuation pass feeding shortlists and the sell list.
 status: todo
 milestone: icebox
-order: 8
+order: 9
 ---
 # The comparison session and the sell list
 
