@@ -18,8 +18,8 @@
 
 import { putEntry, allEntries } from './queue.ts';
 import {
-  CAPTURED_KIND, PHOTO_LONG_EDGE, bulkFields, scaleTo, summarise,
-  type QueuedCapture, type QueuedPhoto,
+  CAPTURED_KIND, PHOTO_LONG_EDGE, bulkFields, scaleTo, summarise, torchSupported,
+  videoConstraints, type QueuedCapture, type QueuedPhoto,
 } from './queue-logic.ts';
 import { startSync, drain } from './sync.ts';
 
@@ -65,12 +65,21 @@ function render(): void {
       <div class="status" id="status">queue…</div>
     </div>
 
+    <div class="cam" id="cam" hidden>
+      <video id="video" playsinline muted autoplay></video>
+      <div class="camBar">
+        <button class="torch" id="torch" type="button" hidden aria-pressed="false">🔦</button>
+        <button class="shutter" id="shutter" type="button" aria-label="Take a photograph"></button>
+        <button class="camOff" id="camOff" type="button">Done</button>
+      </div>
+    </div>
+
     <button class="shot" id="shot" type="button" aria-label="Photograph this record">
       <span class="hint">📷 Photograph</span>
     </button>
     <input id="file" type="file" accept="image/*" capture="environment" multiple hidden>
     <div class="strip" id="strip"></div>
-    <p class="note">Keep going — label, sleeve, runout, whatever the record needs.
+    <p class="note" id="camNote">Keep going — label, sleeve, runout, whatever the record needs.
       Nothing to label or choose. Queue it when you are done with this disc.</p>
 
     <button class="bulk" id="bulkBtn" type="button">📚 Photograph a whole crate</button>
@@ -130,7 +139,9 @@ function render(): void {
   localStorage.removeItem('dg.crate');
 
   const file = $<HTMLInputElement>('file');
-  $('shot').addEventListener('click', () => file.click());
+  $('shot').addEventListener('click', () => { void startCamera(); });
+  $('shutter').addEventListener('click', () => { void grabFrame(); });
+  $('camOff').addEventListener('click', () => stopCamera());
   file.addEventListener('change', () => {
     // `multiple` as well, so a phone that offers the camera roll can
     // hand over a run of shots in one go.
@@ -152,6 +163,129 @@ function render(): void {
   $('save').addEventListener('click', () => { void save(); });
   $('clear').addEventListener('click', () => { resetForm(); });
   void refreshStatus();
+}
+
+/**
+ * The live camera.
+ *
+ * `<input capture>` opens the phone's own camera, which is a better
+ * camera — but it demands "Use Photo" after every frame and then closes,
+ * so ten photographs is thirty taps and twenty context switches. A
+ * stream in the page is one tap per photograph and the viewfinder never
+ * goes away.
+ *
+ * The cost is real and worth stating: a video frame has no HDR and no
+ * multi-frame stacking, so it is a weaker image than the same phone's
+ * still. That is why the constraints ask for 4K and why the file input
+ * stays on the page — for a label whose catalogue number will not come
+ * out, the native camera is still there.
+ */
+let stream: MediaStream | null = null;
+
+function camEls() {
+  return {
+    cam: document.getElementById('cam'),
+    video: document.getElementById('video') as HTMLVideoElement | null,
+    torch: document.getElementById('torch') as HTMLButtonElement | null,
+    shot: document.getElementById('shot'),
+    note: document.getElementById('camNote'),
+  };
+}
+
+async function startCamera(): Promise<void> {
+  const { cam, video, torch, shot, note } = camEls();
+  if (!cam || !video || !shot) return;
+  if (!navigator.mediaDevices?.getUserMedia) {
+    // No stream available — the file input is still wired up and does
+    // the whole job, one photograph at a time.
+    flash('This browser has no in-page camera; using the phone camera instead.', 'err');
+    (document.getElementById('file') as HTMLInputElement).click();
+    return;
+  }
+  try {
+    stream = await navigator.mediaDevices.getUserMedia(videoConstraints());
+  } catch {
+    // Denied, or no camera. Never leave the user with nothing.
+    flash('No camera access — using the phone camera instead.', 'err');
+    (document.getElementById('file') as HTMLInputElement).click();
+    return;
+  }
+  video.srcObject = stream;
+  await video.play().catch(() => {});
+  cam.hidden = false;
+  shot.hidden = true;
+  if (note) note.textContent = 'Tap the shutter for each photograph — no confirming, '
+    + 'no closing. Done when this disc is finished, then Queue it.';
+
+  const track = stream.getVideoTracks()[0];
+  const caps = track?.getCapabilities?.();
+  if (track && torch && torchSupported(caps)) {
+    torch.hidden = false;
+    torch.onclick = async () => {
+      const on = torch.getAttribute('aria-pressed') === 'true';
+      try {
+        // `torch` is not in the DOM typings — it is a real constraint
+        // that Chrome implements and the spec lists, so the cast is the
+        // typings being behind rather than a guess about the platform.
+        await track.applyConstraints(
+          { advanced: [{ torch: !on }] } as unknown as MediaTrackConstraints);
+        torch.setAttribute('aria-pressed', String(!on));
+        torch.classList.toggle('on', !on);
+      } catch { torch.hidden = true; }
+    };
+  } else if (torch) {
+    // iOS Safari exposes no torch at all. A dead button is worse than
+    // no button, so it stays hidden rather than pretending.
+    torch.hidden = true;
+  }
+}
+
+function stopCamera(): void {
+  const { cam, video, shot, note } = camEls();
+  for (const t of stream?.getTracks() ?? []) t.stop();
+  stream = null;
+  if (video) video.srcObject = null;
+  if (cam) cam.hidden = true;
+  if (shot) shot.hidden = false;
+  if (note) note.textContent = 'Keep going — label, sleeve, runout, whatever the record needs. '
+    + 'Nothing to label or choose. Queue it when you are done with this disc.';
+}
+
+/**
+ * Grab the current frame. One tap, no confirmation, no closing — which
+ * is the entire reason this exists.
+ *
+ * Drawn straight to the stored size rather than at full resolution and
+ * downscaled later. Encoding a 4K JPEG and then re-encoding it at 1568
+ * was measured at ~1.8 s a shot, which is slower than the taps: hold
+ * the shutter down and the frames fall behind the thumb. Scaling in
+ * `drawImage` is one encode instead of two, at a sixth of the pixels,
+ * and nothing is lost — the full-resolution frame was being thrown away
+ * at save time anyway.
+ */
+async function grabFrame(): Promise<void> {
+  const { video } = camEls();
+  if (!video || !video.videoWidth) return;
+
+  // Feedback FIRST. The encode takes long enough to notice, and a
+  // shutter that responds after it is a shutter that feels broken.
+  const el = document.getElementById('shutter');
+  el?.classList.add('fired');
+  setTimeout(() => el?.classList.remove('fired'), 140);
+  if (navigator.vibrate) navigator.vibrate(12);
+
+  const target = scaleTo(video.videoWidth, video.videoHeight, PHOTO_LONG_EDGE)
+    ?? { width: video.videoWidth, height: video.videoHeight };
+  const canvas = document.createElement('canvas');
+  canvas.width = target.width;
+  canvas.height = target.height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  ctx.drawImage(video, 0, 0, target.width, target.height);
+  const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/jpeg', 0.9));
+  if (!blob) return;
+  photos.push({ blob, url: URL.createObjectURL(blob) });
+  renderPhotos();
 }
 
 /**

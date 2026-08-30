@@ -45,8 +45,18 @@ Capture has two modes. One disc at a time, with the label and catalogue
 number typed; or **Photograph a whole crate** — pick or shoot many, and
 each photo becomes its own row with nothing typed at all.
 
-Capture asks nothing about a photograph. Tap, tap, tap — the button
-says how many you have so far, and `Queue it` ends the record. Every
+Capture opens a live camera in the page: one tap per photograph, no
+"Use Photo" to confirm, and the viewfinder never closes. **Done** ends
+the viewfinder, **Queue it** uploads the lot. A torch toggle appears
+only where the device exposes one — Chrome on Android does, Safari on
+iOS does not, so on an iPhone there is no flash and no button
+pretending there is.
+
+The phone's own camera is still one tap away underneath, because a
+video frame has no HDR or multi-frame stacking and a catalogue number
+printed small may need the better sensor.
+
+Capture asks nothing about a photograph. `Queue it` ends the record. Every
 one is stored as kind `other`, meaning "a photograph of this item, not
 described", because there is no consistency to describe and any other
 value would be an invented fact. Order is kept in the key, since order

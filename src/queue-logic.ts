@@ -36,6 +36,43 @@ export interface QueuedPhoto {
  */
 export const CAPTURED_KIND = 'other';
 
+/**
+ * What to ask the camera for.
+ *
+ * Resolution is the whole point: the field this exists to read is a
+ * catalogue number printed smaller than everything around it, and a
+ * video frame is already a weaker image than the phone's own still —
+ * no HDR, no multi-frame stacking. So ask for far more than the 1568 px
+ * the photo is eventually stored at, and let the browser give what it
+ * can. `ideal` rather than `exact` so a device that cannot manage 4K
+ * hands back its best instead of failing outright.
+ */
+export function videoConstraints(): MediaStreamConstraints {
+  return {
+    video: {
+      facingMode: { ideal: 'environment' },
+      width: { ideal: 3840 },
+      height: { ideal: 2160 },
+    },
+    audio: false,
+  };
+}
+
+/**
+ * Whether this camera can hold its lamp on.
+ *
+ * `torch` is a continuous lamp rather than a shutter-synchronised
+ * flash, which is what is wanted anyway: a label held under a steady
+ * light can be framed before the shutter, where a flash fires after the
+ * decision is made. Chrome on Android supports it; Safari on iOS does
+ * not expose it at all, so the control has to be capability-gated
+ * rather than shown and hoped for.
+ */
+export function torchSupported(capabilities: unknown): boolean {
+  return Boolean(capabilities && typeof capabilities === 'object' && 'torch' in capabilities
+    && (capabilities as { torch?: unknown }).torch);
+}
+
 export interface QueuedCapture {
   clientId: string;
   createdAt: number;

@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 import {
   BULK_CARRIED, CAPTURED_KIND, PHOTO_LONG_EDGE, bulkFields, markFailed,
   medianMs, nextBackoffMs, scaleTo, selectDrainable, shouldStopDraining, summarise,
-  toRequestBody,
+  toRequestBody, torchSupported, videoConstraints,
 } from '../../src/queue-logic.ts';
 
 const entry = (over = {}) => ({
@@ -209,4 +209,34 @@ test('several photos on one capture keep distinct keys, numbered by order', () =
     { kind: 'other', r2Key: 'labels/c1-2.jpg' },
     { kind: 'other', r2Key: 'labels/c1-3.jpg' },
   ]);
+});
+
+// ── the live camera ───────────────────────────────────────────────
+
+test('the camera is asked for far more resolution than is stored', () => {
+  // The field this exists to read is a catalogue number printed smaller
+  // than everything around it, and a video frame is already weaker than
+  // the same phone's still — no HDR, no multi-frame stacking. Asking
+  // for the storage size would throw away the margin that makes small
+  // print legible.
+  const c = videoConstraints();
+  const v = /** @type {any} */ (c.video);
+  assert.equal(v.facingMode.ideal, 'environment', 'the back camera, not the selfie one');
+  assert.ok(v.width.ideal >= PHOTO_LONG_EDGE * 2, 'well above the 1568 px it is stored at');
+  assert.equal(c.audio, false, 'never the microphone — it is not needed and it is intrusive');
+  // `ideal`, never `exact`: a device that cannot manage 4K must hand
+  // back its best rather than failing to open at all.
+  assert.equal(v.width.exact, undefined);
+  assert.equal(v.height.exact, undefined);
+});
+
+test('the torch button appears only where a torch actually exists', () => {
+  // Safari on iOS exposes no torch, and a dead button is worse than no
+  // button — it reads as a bug in the app rather than a limit of the
+  // platform.
+  assert.equal(torchSupported({ torch: true }), true);
+  assert.equal(torchSupported({ torch: false }), false, 'present but unsupported is still no');
+  assert.equal(torchSupported({}), false, 'a camera that never mentions torch');
+  assert.equal(torchSupported(undefined), false, 'getCapabilities missing entirely');
+  assert.equal(torchSupported(null), false);
 });

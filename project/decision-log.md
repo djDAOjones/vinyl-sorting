@@ -2,6 +2,55 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — CAPTURE-LIVE-CAMERA: a viewfinder that stays open
+
+**Decision:** Capture opens a live camera in the page. One tap per
+photograph, no confirmation, no closing; a torch toggle where the
+device has one; **Done** ends the viewfinder and **Queue it** uploads
+the lot. `<input capture>` stays on the page as the fallback.
+
+**Rationale:** Maintainer: "the flow should be camera on (flash on if
+possible) and then store each shutter action, then click to upload
+all." The file input cannot do that. iOS always shows Retake / Use
+Photo and then closes the camera, so ten photographs is thirty taps and
+ten context switches — and that friction lands on the one activity the
+brief names as the thing that must not be slow.
+
+`getUserMedia` gives a viewfinder that never goes away. It needs HTTPS,
+which the live site has.
+
+**Two costs, both real, both stated rather than discovered later.**
+
+A video frame is a weaker image than the same phone's still: no HDR, no
+multi-frame stacking. That matters here more than usual, because the
+field this exists to read is a catalogue number printed smaller than
+everything else on the label. So the constraints ask for 3840×2160
+`ideal` — far above the 1568 px the photo is stored at — and the file
+input stays on the page for a label the stream cannot resolve.
+
+**Torch will almost certainly not appear on the iPhone.** It is a real
+constraint that Chrome implements and Safari does not expose at all.
+The button is capability-gated on `getCapabilities().torch` and stays
+hidden otherwise, because a dead control reads as a broken app rather
+than a platform limit. "Flash if possible" turns out to mean "not on
+iOS", and saying so is better than shipping a button that does nothing.
+
+**Frames are grabbed at the stored size, not at full resolution.** The
+first version drew the 4K frame, encoded it, and let `downscale` encode
+it again at save — two encodes, the first at six times the pixels. Now
+`drawImage` scales in one step. Nothing is lost: the full-resolution
+frame was being discarded at save anyway.
+
+Shutter feedback fires before the encode rather than after, because the
+encode is long enough to notice and a shutter that responds afterwards
+feels broken.
+
+**What is not verified:** shutter latency on a real phone. It was
+measured only in a headless browser pane, where the renderer is
+throttled and every timing came back pinned to a ~1 s tick — a
+measurement of the harness, not the code. The structural gain is
+certain; the number is not, and no number is claimed.
+
 ## 2026-08-30 — CAPTURE-UNDESCRIBED: the app stops asking what a photograph shows
 
 **Decision:** Capture takes as many photographs of a record as you tap
