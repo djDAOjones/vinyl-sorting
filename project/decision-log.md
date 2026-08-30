@@ -2,6 +2,60 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — OPEN-SELL-THRESHOLD: value is never a reason to keep
+
+**Decision:** A copy is kept for musical reasons only. Market value
+does not earn a keep, however high. Selling is only attempted above
+**£10**; below that the effort is not worth it.
+
+**Rationale:** Maintainer's ruling, asked as "a losing copy turns out
+to be worth £80 — sell or keep as an asset?" The answer separates the
+two questions the shootout kept entangling: whether the music is worth
+having, and whether the object is worth money. Only the first can keep
+a record. Deciding it once removes a per-record hesitation from every
+session, which is an R5 mitigation — the shootout dies around session
+six when each decision reopens the same argument.
+
+The £10 floor is about effort, not worth: listing, packing and posting
+a £4 record costs more than it returns.
+
+**Follow-on, unresolved:** what happens to a sub-£10 loser. It is not
+sold and not kept, and nothing in the design says where it goes —
+donate, charity shop, or a "not worth selling" pile. Small, but it will
+come up the first session that produces one, so it is in the wish-list
+rather than invented here.
+
+## 2026-08-30 — OPS-SPEND-GUARD: the Free plan is the wall; the write budget is belt-and-braces
+
+**Decision:** Ship the per-tick write budget and ship no CPU limit. The
+account is on the **Free plan** (confirmed from the dashboard: 113 of
+100,000 requests today, with an Upgrade button), so runaway billing is
+not possible — D1 refuses writes past 100k/day rather than charging for
+them. `WRITE_BUDGET_PER_TICK` stays at a provisional 200.
+
+**Rationale:** This item was written on the premise that "Cloudflare
+sells no hard spend cap", which is true on Workers Paid and moot on
+Free. Its own scope note said to settle the plan question first because
+it decides how much the rest matters. It did: the wall already exists,
+the budget alert is set, and the per-tick budget is now redundancy
+rather than the only defence.
+
+The ceiling stays provisional deliberately. The item asked for it to be
+measured, and it still should be — but a guessed number costing nothing
+while billing is impossible is not worth blocking the item for. A test
+asserts its headroom, so it cannot be tightened into a throttle by
+accident.
+
+**Cost of getting this wrong, recorded:** `[limits] cpu_ms` was added
+here as prudence and made the Worker undeployable on Free — every
+deploy failed with code 100328 until it was removed. The lesson is
+narrower than "test your config": a guard that blocks shipping is worse
+than the risk it guards. The test is inverted to hold that.
+
+**Trigger to revisit:** upgrading to a paid plan. Then the wall
+disappears, cpu_ms becomes settable, and the ceiling wants its
+measurement.
+
 ## 2026-08-30 — DEPLOY: six faults only the real platform could show, and one wrong conclusion
 
 **Decision:** Ship to a Worker serving its own static assets. The

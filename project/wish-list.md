@@ -13,3 +13,7 @@
   the collection, since keep-several is a first-class outcome.
 - Sampling set-aside copies from large clusters, beyond the one-click
   recall already in M4.
+- Where a sub-£10 shootout loser actually goes. Not sold (below the
+  effort floor), not kept (no musical reason) — donate, charity shop,
+  or a "not worth selling" pile? Comes up the first session that
+  produces one. From OPEN-SELL-THRESHOLD, 2026-08-30.

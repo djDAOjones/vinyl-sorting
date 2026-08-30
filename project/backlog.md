@@ -27,20 +27,10 @@
 
 <!-- Intent: M2–M5 — verify, resolve works, cluster and decide. Committed and sequenced behind capture; trigger is the milestone before it going green. -->
 
-- [ ] **OPEN-SELL-THRESHOLD Sell threshold — what happens to a valuable
-  losing copy?** [sign-off] (2026-08-30) — A copy that loses its shootout
-  but turns out to be worth £80: sell it, or keep it as an asset? Worth
-  deciding once rather than per record.
 - [ ] **OPEN-PASSAGE-SELECTION Should the app propose the comparison
   passage?** [sign-off] (2026-08-30) — Whether the app proposes the
   two-to-three-minute comparison passage from the track listing, or the
   listener always chooses it themselves.
-- [~] **OPS-SPEND-GUARD Spend guard — cap what a runaway cron can cost**
-  [maintainer] (2026-08-30) — Cloudflare has no hard dollar cap, so the
-  ceiling has to be built; the code half is in — cpu_ms is capped and the
-  matcher stops at a per-tick write budget and says so — leaving the $10
-  budget alert and a ceiling set from the first full run's measured
-  volume.
 - [ ] **M3-WORKS-PERFORMANCES MusicBrainz works, performances and
   per-track completeness** — Resolve work and recording identity from
   MusicBrainz, resolve composers for the 131 Various/Unknown rows, and
