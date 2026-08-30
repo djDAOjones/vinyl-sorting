@@ -35,3 +35,10 @@ U+2011 non-breaking hyphen (`TWO‑269`, `CFP‑160`) — the repair is
 faithful, not normalising. The normalisation ladder must fold U+2011
 and U+2013 to ASCII hyphen before any exact-match step, or these seven
 rows will silently fail to match.
+
+**From OPEN-USERS-ACCESS (2026-08-30):** v1 has no sign-in. M2 is the
+first milestone where a public endpoint would reach Discogs with the
+maintainer's live token, so revisit auth BEFORE shipping the matcher:
+either add Cloudflare Access then, or keep matching strictly
+server-side as a queued job with no caller-controlled query.
+

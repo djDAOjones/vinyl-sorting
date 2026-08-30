@@ -53,7 +53,10 @@ queue) building from this GitHub repo on push; a Cloudflare Worker
 (Hono) holding the Discogs token, proxying and rate-limiting Discogs
 and MusicBrainz, and running matching, clustering and coverage as
 queued jobs; D1 for the schema, KV for the API cache, R2 for label
-photos, Access for email sign-in.
+photos. No sign-in for v1 by maintainer decision (2026-08-30) — see
+the decision log; the Worker exposes named operations rather than an
+open proxy, and auth is revisited before M2 puts the Discogs token
+behind a public endpoint.
 
 A Worker is not optional: the Discogs API sends no CORS headers, and a
 static site cannot hold a secret.

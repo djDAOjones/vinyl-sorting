@@ -1,7 +1,7 @@
 ---
 id: M1-CAPTURE
 name: Schema, Worker skeleton and the capture screen
-summary: D1 schema per the brief section 03, Hono Worker with Access sign-in and the Discogs token as a secret, and the photo-first offline capture form; then import M0's dataset.
+summary: D1 schema per the brief section 03, Hono Worker with no sign-in and the Discogs token as a secret it never proxies openly, and the photo-first offline capture form; then import M0's dataset.
 status: todo
 milestone: next
 order: 1
@@ -24,3 +24,10 @@ the network and never loses a queued entry on refresh.
 **Done when** a record can be captured on a phone with no signal, in a
 loft, and appears in the collection afterwards. Median entry under 30
 seconds, measured rather than estimated. ~3 days.
+
+**From OPEN-USERS-ACCESS (2026-08-30):** no sign-in for v1. Build the
+Worker with named operations only — capture write, dataset read — and
+no general Discogs proxy endpoint. Capture never calls Discogs, so the
+token need not be reachable from the browser at all in M1. Deploy to an
+unguessable Pages subdomain.
+

@@ -15,13 +15,9 @@
 <!-- Intent: M1 — schema, Worker skeleton and the offline capture screen, so a disc can be captured in a loft with no signal. Plus the open questions that gate it. -->
 
 - [ ] **M1-CAPTURE Schema, Worker skeleton and the capture screen** — D1
-  schema per the brief section 03, Hono Worker with Access sign-in and the
-  Discogs token as a secret, and the photo-first offline capture form;
-  then import M0's dataset.
-- [ ] **OPEN-USERS-ACCESS Who else is capturing — Access or a shared
-  passphrase?** [sign-off] (2026-08-30) — Determines whether Cloudflare
-  Access is worth configuring or a shared passphrase suffices, which
-  changes the M1 sign-in build.
+  schema per the brief section 03, Hono Worker with no sign-in and the
+  Discogs token as a secret it never proxies openly, and the photo-first
+  offline capture form; then import M0's dataset.
 
 ### Icebox
 

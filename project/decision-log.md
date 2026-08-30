@@ -2,6 +2,40 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — OPEN-USERS-ACCESS: no sign-in for v1, and the risk is deferred rather than accepted
+
+**Decision:** No sign-in for v1. Two or more trusted people capture,
+and the maintainer chose no authentication after being shown that
+Cloudflare Access needs no password — an emailed code or a Google
+sign-in — and that it is free to 50 users. That is the maintainer's
+call and the build follows it. `brief.md` is updated so the identity
+document stops claiming Access sign-in.
+
+**The concern, recorded once:** an open URL means anyone who finds it
+can read and edit the collection, and any public endpoint that reaches
+Discogs does so with a token now confirmed live. The brief also says
+"not public, ever". Per-person identity would additionally have told
+`shelf`-sourced values who read them off the record.
+
+**Why this costs nothing yet.** Capture does not call Discogs — it is
+typing what is printed on a label, offline, into an IndexedDB queue. So
+M1 needs no Discogs path reachable from the browser at all. The Worker
+gets named operations only, capture-write and dataset-read, rather than
+a general proxy; the token stays a Worker secret that no caller can
+aim. Deployment goes to an unguessable Pages subdomain.
+
+**Where it becomes live: M2.** The matcher is the first thing that
+would let a caller drive Discogs queries. Noted on M2-MATCHER as a
+gate: before shipping the matcher, either add Access then, or keep
+matching strictly server-side as a queued job with no
+caller-controlled query. The second option preserves "no sign-in" and
+still closes the quota hole, so this may never need revisiting as an
+auth question at all.
+
+**Alternatives:** Cloudflare Access with an email allowlist —
+recommended and declined. A shared passphrase — not offered seriously;
+it is more friction than Access and weaker.
+
 ## 2026-08-30 — OPEN-SYSTEM-OF-RECORD: the app database is authoritative
 
 **Decision:** Confirmed by the maintainer — the app database is the

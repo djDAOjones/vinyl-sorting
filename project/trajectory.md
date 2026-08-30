@@ -11,3 +11,4 @@
 - M0-RECONCILIATION-REPORT — 446-row CSV plus a report naming every source, rule and drop; archive verified unchanged, rebuild byte-identical. M0 complete (2026-08-30) — see decision-log
 - OPEN-DISCOGS-TOKEN — token valid (walter_odington); not a seller, which costs only condition-graded price suggestions — lowest price, count for sale and have/want all reachable (2026-08-30) — see decision-log
 - OPEN-SYSTEM-OF-RECORD — app database is authoritative; import is one-way and the OneDrive CSV export is a backup, not a round-trip (2026-08-30) — see decision-log
+- OPEN-USERS-ACCESS — no sign-in for v1 by maintainer decision; Worker exposes named operations only and capture never calls Discogs, so auth is revisited at M2 (2026-08-30) — see decision-log
