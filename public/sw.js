@@ -16,8 +16,9 @@
  *  - /api: never cached. A stale capture list is misleading, and writes
  *    are queued in IndexedDB by the page rather than retried here.
  */
-const CACHE = 'deep-groove-shell-v2';
-const SHELL = ['/', '/index.html', '/review.html', '/manifest.webmanifest', '/icon.svg'];
+const CACHE = 'deep-groove-shell-v3';
+const SHELL = ['/', '/index.html', '/review.html', '/manifest.webmanifest',
+  '/icon.svg', '/apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE)

@@ -6,6 +6,17 @@
 <meta name="theme-color" content="#14191f">
 <title>Vinyl sorter — capture</title>
 <link rel="manifest" href="/manifest.webmanifest">
+<!-- iOS reads none of the manifest's icons. Without this it uses a
+     screenshot of the page as the home-screen icon, which looks broken.
+     PNG only — apple-touch-icon does not accept SVG — and full-bleed,
+     because iOS applies its own rounded mask and a pre-rounded source
+     gets rounded twice. -->
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Vinyl sorter">
+<!-- Legacy standalone flag. iOS 17+ honours the manifest's `display`,
+     older versions only this, and it costs nothing to say both. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
