@@ -181,6 +181,43 @@ function render(): void {
  * out, the native camera is still there.
  */
 let stream: MediaStream | null = null;
+/** Kept across a restart, so turning the phone does not put the lamp out. */
+let torchOn = false;
+
+/**
+ * The live video track, resolved at every use rather than captured.
+ *
+ * THE BUG THIS FIXES: the torch handler used to close over the track
+ * that existed when the camera opened. Turning the phone restarts the
+ * stream and stops that track, so the next tap applied a constraint to
+ * a dead one, threw, and the catch hid the button — a torch that
+ * worked until you rotated and then vanished, blaming the platform for
+ * a stale reference.
+ */
+const videoTrack = (): MediaStreamTrack | null => stream?.getVideoTracks()[0] ?? null;
+
+/** Apply the torch to whichever track is live now. Reports success. */
+async function setTorch(on: boolean): Promise<boolean> {
+  const track = videoTrack();
+  if (!track) return false;
+  try {
+    // `torch` is not in the DOM typings — it is a real constraint that
+    // Chrome implements and the spec lists, so the cast is the typings
+    // being behind rather than a guess about the platform.
+    await track.applyConstraints({ advanced: [{ torch: on }] } as unknown as MediaTrackConstraints);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Paint the torch button from `torchOn`. */
+function renderTorch(): void {
+  const torch = document.getElementById('torch');
+  if (!torch) return;
+  torch.setAttribute('aria-pressed', String(torchOn));
+  torch.classList.toggle('on', torchOn);
+}
 
 function camEls() {
   return {
@@ -233,6 +270,12 @@ async function restartStream(): Promise<void> {
   }
   video.srcObject = stream;
   await video.play().catch(() => {});
+  // The new track starts dark. Relighting it is what keeps the lamp on
+  // across a turn, which is exactly when a crate in a loft needs it.
+  if (torchOn && !(await setTorch(true))) {
+    torchOn = false;
+    renderTorch();
+  }
 }
 
 async function startCamera(): Promise<void> {
@@ -263,8 +306,7 @@ async function startCamera(): Promise<void> {
     + 'no closing. Done when this disc is finished, then Queue it.';
   renderPhotos();
 
-  const track = stream.getVideoTracks()[0];
-  if (!track || !torch) return;
+  if (!torch) return;
 
   /**
    * The torch is OFFERED, then tried, rather than decided in advance.
@@ -275,28 +317,24 @@ async function startCamera(): Promise<void> {
    * the first tap costs one tap and tells the truth; hiding it costs
    * the feature everywhere the report is wrong.
    */
-  const known = torchSupported(track.getCapabilities?.());
+  const known = torchSupported(videoTrack()?.getCapabilities?.());
   torch.hidden = false;
+  torchOn = false;
+  renderTorch();
   torch.onclick = async () => {
-    const on = torch.getAttribute('aria-pressed') === 'true';
-    try {
-      // `torch` is not in the DOM typings — it is a real constraint
-      // that Chrome implements and the spec lists, so the cast is the
-      // typings being behind rather than a guess about the platform.
-      await track.applyConstraints(
-        { advanced: [{ torch: !on }] } as unknown as MediaTrackConstraints);
-      torch.setAttribute('aria-pressed', String(!on));
-      torch.classList.toggle('on', !on);
-    } catch {
-      // Safari on iOS refuses this outright. Say why, and say what does
-      // work — the system torch stays lit while the camera is running,
-      // so the lamp is available even though the page cannot reach it.
-      torch.hidden = true;
-      flash(known
-        ? 'The camera refused the torch. Use Control Centre instead — it stays on while you shoot.'
-        : 'This browser will not let a page control the torch. Swipe into Control Centre and '
-          + 'turn it on there — it stays on while you shoot.', 'err');
+    if (await setTorch(!torchOn)) {
+      torchOn = !torchOn;
+      renderTorch();
+      return;
     }
+    // Safari on iOS refuses this outright. Say why, and say what does
+    // work — the system torch stays lit while the camera is running, so
+    // the lamp is available even though the page cannot reach it.
+    torch.hidden = true;
+    flash(known
+      ? 'The camera refused the torch. Use Control Centre instead — it stays on while you shoot.'
+      : 'This browser will not let a page control the torch. Swipe into Control Centre and '
+        + 'turn it on there — it stays on while you shoot.', 'err');
   };
 }
 
@@ -308,6 +346,8 @@ function stopCamera(): void {
   if (cam) cam.hidden = true;
   if (shot) shot.hidden = false;
   document.body.classList.remove('shooting');
+  torchOn = false;
+  renderTorch();
   if (note) note.textContent = 'Keep going — label, sleeve, runout, whatever the record needs. '
     + 'Nothing to label or choose. Queue it when you are done with this disc.';
 }
