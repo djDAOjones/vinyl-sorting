@@ -8,16 +8,16 @@
 
 ### Current milestone
 
-<!-- Intent: Empty — M0 shipped 2026-08-30: 446 rows reconciled into data/deep-groove-v1.csv with a reconciliation report, nothing decision-eligible. M1 is ready to promote and needs OPEN-USERS-ACCESS, OPEN-SYSTEM-OF-RECORD and OPEN-DISCOGS-TOKEN answered first; promotion is a maintainer call. -->
-
-### Next milestone
-
-<!-- Intent: M1 — schema, Worker skeleton and the offline capture screen, so a disc can be captured in a loft with no signal. Plus the open questions that gate it. -->
+<!-- Intent: M1 — schema, Worker skeleton and the offline capture screen, so a disc can be captured in a loft with no signal. Promoted 2026-08-30 once its three sign-off questions were answered: no sign-in, app database authoritative, token valid and not a seller. -->
 
 - [ ] **M1-CAPTURE Schema, Worker skeleton and the capture screen** — D1
   schema per the brief section 03, Hono Worker with no sign-in and the
   Discogs token as a secret it never proxies openly, and the photo-first
   offline capture form; then import M0's dataset.
+
+### Next milestone
+
+<!-- Intent: Empty — M2 is the next committed milestone but stays in the icebox until capture is real. Promoting it is the trigger to revisit auth, per OPEN-USERS-ACCESS. -->
 
 ### Icebox
 

@@ -3,7 +3,7 @@ id: M1-CAPTURE
 name: Schema, Worker skeleton and the capture screen
 summary: D1 schema per the brief section 03, Hono Worker with no sign-in and the Discogs token as a secret it never proxies openly, and the photo-first offline capture form; then import M0's dataset.
 status: todo
-milestone: next
+milestone: current
 order: 1
 ---
 # Schema, Worker skeleton and the capture screen
