@@ -2,6 +2,50 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — M0-RECONCILIATION-REPORT: the report is generated from the build it describes
+
+**Decision:** `tools/build-report.mjs` writes both artefacts —
+`data/deep-groove-v1.csv` and `data/reconciliation-report.md` — from a
+single `buildDataset()` call, and embeds a machine-readable summary
+block. The gate asserts those numbers still equal a fresh build, that
+the digests the report quotes match `data/archive-manifest.json`, and
+that every source row is either imported, dropped or explained.
+
+**Rationale:** A hand-written report is out of date the moment an
+import changes, and a report that disagrees with its dataset is worse
+than none — it is the artefact that is supposed to make the import
+trustworthy. Generating both from the same in-memory rows makes
+disagreement impossible rather than unlikely. The summary block exists
+so the gate can check the claim rather than the prose.
+
+The report states rules, not just counts: the placeholder rule, the
+multiplicity rule for de-duplication, why a wrong label is worse than
+an absent one, and that there are no AI ratings. Tests assert those
+sentences are present, because a count without its rule cannot be
+disputed later.
+
+**M0 is complete.** 446 rows: 305 enriched, 141 backlog, 0 merged from
+the load files because all 83 were already present. 210 placeholders
+dropped with every ID listed. 0 rows decision-eligible. Verified: the
+frozen archive is byte-for-byte unchanged after the whole milestone
+(87 files, 143,245,336 bytes), the rebuild is byte-identical, and git
+records no write inside `Pre August 2026/`.
+
+**Expect the totals to move.** The report says so in its own text. It
+is a record of this pass, not a permanent truth; what should survive is
+the rule each count came from.
+
+**Milestone state:** Current is now empty. M1 is ready to promote but
+carries three `sign-off` questions — OPEN-USERS-ACCESS,
+OPEN-SYSTEM-OF-RECORD and OPEN-DISCOGS-TOKEN — and promoting it is a
+maintainer call, not a self-approval. `_meta.md` says so rather than
+leaving an unexplained empty milestone.
+
+**Alternatives:** Write the report by hand — rejected, it would drift
+from the data on the first re-import. Emit only the summary JSON —
+rejected, the report has to be readable by a person deciding whether
+to trust the import.
+
 ## 2026-08-30 — M0-IMPORT-AI-WORKS: the ratings do not exist, and the track listings had already leaked
 
 **Decision:** Attach the AI columns to the 305 enriched rows tagged

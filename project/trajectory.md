@@ -8,3 +8,4 @@
 - M0-IMPORT-REMEDIAL — 141 rows imported needing capture, 210 placeholders dropped with every ID named; dataset now 446 rows (2026-08-30) — see decision-log
 - M0-MERGE-LOAD-FILES — all 83 usable rows already present in Remedial: 0 merged, 83 duplicate decisions recorded; dataset stays 446 (2026-08-30) — see decision-log
 - M0-IMPORT-AI-WORKS — AI track listings, confidence, remarks and sources attached to 305 rows as guess; no AI ratings exist; 28 AI track listings found hiding in the enriched sheet and reclassified (2026-08-30) — see decision-log
+- M0-RECONCILIATION-REPORT — 446-row CSV plus a report naming every source, rule and drop; archive verified unchanged, rebuild byte-identical. M0 complete (2026-08-30) — see decision-log

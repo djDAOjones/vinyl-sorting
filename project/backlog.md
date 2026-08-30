@@ -8,12 +8,7 @@
 
 ### Current milestone
 
-<!-- Intent: M0 — reconcile the existing spreadsheets into one clean, provenance-tagged dataset. No app required; can start now. -->
-
-- [ ] **M0-RECONCILIATION-REPORT One clean CSV plus a reconciliation
-  report** — Produce the single reconciled CSV and a report stating what
-  came from where and what was dropped — the M0 done-when, and the gate on
-  starting M1.
+<!-- Intent: Empty — M0 shipped 2026-08-30: 446 rows reconciled into data/deep-groove-v1.csv with a reconciliation report, nothing decision-eligible. M1 is ready to promote and needs OPEN-USERS-ACCESS, OPEN-SYSTEM-OF-RECORD and OPEN-DISCOGS-TOKEN answered first; promotion is a maintainer call. -->
 
 ### Next milestone
 
