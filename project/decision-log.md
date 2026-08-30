@@ -2,6 +2,47 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — M0-MERGE-LOAD-FILES: the 83 rows were already merged, so 0 are new
+
+**Decision:** Merge 0 new rows and record 83 duplicate decisions. The
+83 usable rows in `1st load to add.xlsx` and `2nd load to add.xlsx` are
+already present in `Classical Remedial`. The reconciled dataset stays
+at 446 rows, not 529.
+
+**Rationale:** Two independent methods agree. Positionally, the 83 rows
+map in order onto Remedial rows 59-141 — all 83 catalogue strings and
+all 46 titles match exactly, with only the IDs differing because the
+Remedial sheet renumbered them to 1058+. Separately, the merge's own
+key-based de-duplication, which knows nothing about row order, matched
+all 83 and merged none. 2nd load occupies Remedial 59-104 and 1st load
+105-141.
+
+446 is also what the brief already says: "446 already catalogued". The
+~300 new records are the physical backlog that has never been entered,
+not these files.
+
+**De-duplication is by key with multiplicity.** Four rows read
+`RTL2075 MCPS`, and they are four physical copies rather than one row
+counted four times, so a key already present four times absorbs four
+incoming rows and no more. A test asserts each of the four matched a
+different existing copy. Key matches with disagreeing titles are
+treated as ambiguous and kept, per the record — carrying a duplicate a
+person can resolve while holding the disc beats merging on a guess.
+None occurred.
+
+The key folds case, spacing and the Unicode dashes so `TWO-269` and
+`TWO‑269` compare equal. That folding is for comparison only; stored
+values stay faithful, because normalising the data itself is M2's job.
+
+**Consequence for M2:** the re-verification run is 446 rows, and the
+load files need never be read again.
+
+**Alternatives:** Merge all 83 and de-duplicate later — rejected, it
+would put 83 known duplicates into the dataset that M2 would then
+re-verify against Discogs at real cost. Match on catalogue number
+alone — rejected, it cannot distinguish a genuine second copy from a
+re-import, which is exactly what multiplicity handles.
+
 ## 2026-08-30 — M0-IMPORT-REMEDIAL: the placeholder rule is mechanical, and every drop is named
 
 **Decision:** A `Classical Remedial` row is a placeholder when it

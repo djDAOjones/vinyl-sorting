@@ -10,9 +10,6 @@
 
 <!-- Intent: M0 — reconcile the existing spreadsheets into one clean, provenance-tagged dataset. No app required; can start now. -->
 
-- [ ] **M0-MERGE-LOAD-FILES Merge 83 usable rows from the load-to-add
-  files** — Merge the 83 usable rows out of 1st and 2nd load to add.xlsx
-  into the single dataset, de-duplicating against rows already imported.
 - [ ] **M0-IMPORT-AI-WORKS Import AI Works columns as guess provenance
   only** — Import the AI-generated ratings and track listings tagged
   source=guess so they can be displayed but can never feed a cluster,

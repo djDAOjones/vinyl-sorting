@@ -20,6 +20,7 @@ import { pathToFileURL } from 'node:url';
 import { toCsv } from './lib/dataset.mjs';
 import { importEnriched } from './lib/import/enriched.mjs';
 import { importRemedial } from './lib/import/remedial.mjs';
+import { importLoadFiles } from './lib/import/load-files.mjs';
 
 const args = process.argv.slice(2);
 const argOf = (/** @type {string} */ n, /** @type {string} */ d) => {
@@ -38,6 +39,7 @@ const out = argOf('--out', 'data/deep-groove-v1.csv');
 export function buildDataset(archiveDir = archive) {
   /** @type {Record<string, any>} */ const stats = {};
   /** @type {Record<string, string[]>} */ const droppedIds = {};
+  /** @type {any[]} */ const mergeDecisions = [];
 
   const enriched = importEnriched(archiveDir);
   stats['M0-IMPORT-ENRICHED'] = enriched.stats;
@@ -50,7 +52,16 @@ export function buildDataset(archiveDir = archive) {
 
   const rows = [...enriched.rows, ...remedial.rows];
   rows.forEach((r, i) => { r.item_id = `DG-${String(i + 1).padStart(4, '0')}`; });
-  return { rows, stats, droppedIds };
+
+  // De-duplicates against everything imported above, so ids must
+  // already be allocated for a duplicate decision to name its match.
+  const loadFiles = importLoadFiles(archiveDir, enriched.gazetteer, rows);
+  stats['M0-MERGE-LOAD-FILES'] = loadFiles.stats;
+  mergeDecisions.push(...loadFiles.decisions);
+
+  rows.push(...loadFiles.rows);
+  rows.forEach((r, i) => { r.item_id = `DG-${String(i + 1).padStart(4, '0')}`; });
+  return { rows, stats, droppedIds, mergeDecisions };
 }
 
 // pathToFileURL, not string concatenation: this project's path
