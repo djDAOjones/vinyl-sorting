@@ -48,8 +48,24 @@ const dryRun = args.includes('--dry-run');
 const DB = 'deep-groove';
 const BUCKET = 'deep-groove-photos';
 
-const wrangler = (argv, opts = {}) =>
-  execFileSync('npx', ['wrangler', ...argv], { encoding: 'utf8', ...opts });
+/**
+ * `wrangler`, with stdin closed and stderr captured.
+ *
+ * Closing stdin matters: wrangler will sit waiting on a TTY it was
+ * never given. Capturing stderr matters more — without it a failure
+ * surfaces as execFileSync's own "Command failed" and the reason
+ * wrangler gave is thrown away, which is a diagnosis deleted at exactly
+ * the moment it is needed.
+ */
+const wrangler = (argv, opts = {}) => {
+  try {
+    return execFileSync('npx', ['wrangler', ...argv],
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], ...opts });
+  } catch (err) {
+    const detail = [err.stderr, err.stdout].filter(Boolean).join('\n').trim();
+    throw new Error(`wrangler ${argv.join(' ')} failed:\n${detail || err.message}`);
+  }
+};
 
 /**
  * `d1 execute --json` prints an array of result envelopes, but wrangler
@@ -121,8 +137,7 @@ for (const row of rows) {
   // adding ten more discs should cost ten fetches, not two hundred.
   if (existsSync(dest)) { pulled.push(row); continue; }
   try {
-    wrangler(['r2', 'object', 'get', `${BUCKET}/${row.r2_key}`, '--file', dest, remote],
-      { stdio: ['ignore', 'ignore', 'pipe'] });
+    wrangler(['r2', 'object', 'get', `${BUCKET}/${row.r2_key}`, '--file', dest, remote]);
     pulled.push(row);
     console.log(`  ${row.item_id}.jpg`);
   } catch (err) {

@@ -97,8 +97,10 @@ export const NO_INFERENCE = [
  */
 export function chatPrompt(rowIds) {
   return [
-    `Here are ${rowIds.length} photographs of vinyl record centre labels.`,
-    'Read each one and return the printed information as JSON.',
+    rowIds.length === 1
+      ? 'Here is a photograph of a vinyl record centre label.'
+      : `Here are ${rowIds.length} photographs of vinyl record centre labels.`,
+    'Read it and return the printed information as JSON.',
     '',
     NO_INFERENCE,
     '',

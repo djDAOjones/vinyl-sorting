@@ -88,6 +88,7 @@ test('the prompt carries the ids in its text, not only in the filenames', () => 
   assert.match(p, /DG-0001/);
   assert.match(p, /DG-0002/);
   assert.match(p, /Here are 2 photographs/);
+  assert.match(chatPrompt(['A']), /Here is a photograph/, 'and it reads correctly for one');
   assert.match(p, /Report that id in `row_id`/);
 });
 
