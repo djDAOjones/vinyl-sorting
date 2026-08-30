@@ -19,13 +19,12 @@
   photographed labels are now the only thing left, because synthesising
   labels would score the model against its own output.
 - [~] **PHOTOS-TO-DESKTOP Pull captured photos and their row ids out for
-  a chat pack** [detail](records/PHOTOS-TO-DESKTOP.md) [blocked: R2 is not
-  enabled on the Cloudflare account, so no photo has ever reached the
-  bucket] (2026-08-30) — Built and gated — photos.pull reads (item_id,
-  r2_key) pairs from D1 and fetches each object by name, writing
-  data/label-photos plus a ground-truth starter taken from the values a
-  person typed into capture; it cannot run until R2 is switched on in the
-  dashboard, which is why no photograph has ever left a phone.
+  a chat pack** [detail](records/PHOTOS-TO-DESKTOP.md) (2026-08-30) —
+  Built, gated and live — photos-pull reads (item_id, r2_key) pairs from
+  D1 and fetches each object by name, writing data/label-photos plus a
+  ground-truth starter taken from the values a person typed into capture;
+  R2 is now attached and a photo has made the full round trip, so all that
+  is left is photographs being taken.
 - [ ] **M2-FIRST-RUN Run the matcher over all 446 and clear the queue
   once** — The operation, not the code — deploy, let the cron matcher work
   through all 446 rows, then clear the review queue by keyboard.

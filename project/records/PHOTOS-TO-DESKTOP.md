@@ -1,13 +1,13 @@
 ---
 id: PHOTOS-TO-DESKTOP
 name: Pull captured photos and their row ids out for a chat pack
-summary: Built and gated — photos.pull reads (item_id, r2_key) pairs from D1 and fetches each object by name, writing data/label-photos plus a ground-truth starter taken from the values a person typed into capture; it cannot run until R2 is switched on in the dashboard, which is why no photograph has ever left a phone.
+summary: Built, gated and live — photos-pull reads (item_id, r2_key) pairs from D1 and fetches each object by name, writing data/label-photos plus a ground-truth starter taken from the values a person typed into capture; R2 is now attached and a photo has made the full round trip, so all that is left is photographs being taken.
 status: in-progress
 date: 2026-08-30
 milestone: current
 order: 4
-flags: detail, blocked
-blocked-on: R2 is not enabled on the Cloudflare account, so no photo has ever reached the bucket
+flags: detail
+blocked-on: nothing — waiting on photographs being taken through the app
 ---
 # Pull captured photos and their row ids out for a chat pack
 
@@ -45,18 +45,26 @@ enumerates and returns all of them". Unlike the matcher, which runs
 from cron and has no caller, an export route exists to be called. A
 test now asserts the Worker still has a photo PUT and no photo GET.
 
-## Why nothing has come through yet
+## Why nothing had come through — settled 2026-08-30
 
-**R2 is not enabled on the account.** `[[r2_buckets]]` is commented out
-in `wrangler.toml` because a binding to a bucket that cannot exist
-fails the deploy, so the live Worker has no `PHOTOS` binding and every
-photo upload returns 503. The app does the right thing — it keeps them
-queued — but the consequence is that no photograph has ever left a
-phone, and the capture screen gives no sign of it.
+**The `PHOTOS` binding did not exist.** `[[r2_buckets]]` was commented
+out in `wrangler.toml`, because a binding to a bucket that cannot exist
+fails the deploy outright. So the live Worker had no photo storage,
+every upload returned 503, and the app kept them queued — correct
+behaviour with a silent and total consequence: no photograph had ever
+left a phone, and nothing on screen said so.
 
-`tools/deploy.sh` now attaches the binding itself once R2 answers,
-rather than asking for a hand-edit of TOML, and says plainly what is
-lost while it is off.
+R2 turned out to be enabled on the account already; only the binding
+was missing. `tools/deploy.sh` now uncomments the block itself once
+`r2 bucket list` answers, so nobody hand-edits TOML.
+
+**Verified against the live Worker**, not merely deployed: a 785-byte
+JPEG PUT to `/api/photos/` returned 201 where it had always returned
+503, and `wrangler r2 object get` fetched the identical 785 bytes back
+— which is the exact call `photos-pull` makes. The probe object was
+deleted afterwards. Both halves of this tool have now run against real
+infrastructure; what has never run is the D1 query, because no capture
+with a photo exists yet.
 
 **Done when** a photograph taken on the phone appears in
 `data/label-photos/` named by its item id.

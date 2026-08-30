@@ -24,15 +24,21 @@ binding = "DB"
 database_name = "deep-groove"
 database_id = "59862adc-60d8-4207-98e3-c6e9ae55eefd"
 
-# R2 must be enabled once in the Cloudflare dashboard before the API
-# will accept it — `wrangler r2 bucket create` answers "Please enable R2
-# through the Cloudflare Dashboard [code: 10042]" until then, and there
-# is no API route around it. The Worker treats PHOTOS as optional so it
-# can deploy without it; label photos queue on the phone until this is
-# uncommented and `bash tools/deploy.sh` is run again.
-# [[r2_buckets]]
-# binding = "PHOTOS"
-# bucket_name = "deep-groove-photos"
+# Label photos. Attached 2026-08-30 by tools/deploy.sh, which
+# uncomments this block once R2 answers — R2 has to be switched on once
+# in the dashboard before `wrangler r2 bucket create` will work, and it
+# answers "Please enable R2 through the Cloudflare Dashboard
+# [code: 10042]" until it is.
+#
+# Before this existed the Worker had no PHOTOS binding, so every upload
+# returned 503 and the app kept the photo queued on the phone — which
+# it was right to do, but it meant no photograph had ever left a phone
+# and nothing on screen said so. The Worker still treats PHOTOS as
+# optional, so removing this degrades to that behaviour rather than
+# breaking the deploy.
+[[r2_buckets]]
+binding = "PHOTOS"
+bucket_name = "deep-groove-photos"
 
 # API response cache, keyed by normalised query. Unused until M2.
 [[kv_namespaces]]
