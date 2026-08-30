@@ -9,8 +9,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  BULK_CARRIED, PHOTO_LONG_EDGE, bulkFields, markFailed, medianMs, nextBackoffMs,
-  scaleTo, selectDrainable, shouldStopDraining, summarise, toRequestBody,
+  BULK_CARRIED, PHOTO_KINDS, PHOTO_LONG_EDGE, PRIMARY_KIND, bulkFields, markFailed,
+  medianMs, nextBackoffMs, scaleTo, selectDrainable, shouldStopDraining, summarise,
+  toRequestBody, unusedKinds,
 } from '../../src/queue-logic.ts';
 
 const entry = (over = {}) => ({
@@ -175,4 +176,44 @@ test('one bad row does not hold a crate hostage, but offline still stops the pas
   assert.equal(shouldStopDraining(500), true);
   assert.equal(shouldStopDraining(413), false, 'this photo is too large — the next one may not be');
   assert.equal(shouldStopDraining(400), false, 'a malformed body is about this entry alone');
+});
+
+// ── several photos for one disc ───────────────────────────────────
+
+test('the offered kinds are the ones not already taken', () => {
+  // A sleeve back filed as `label_b` would assert something untrue —
+  // the same fault the location fields were just fixed for. Offering
+  // only free kinds makes the wrong answer unreachable rather than
+  // merely discouraged.
+  assert.deepEqual(unusedKinds([]).map((k) => k.kind), ['label_b', 'front', 'back', 'runout'],
+    'the primary label is the big button, never an add-button');
+  assert.deepEqual(unusedKinds(['label_a', 'front']).map((k) => k.kind), ['label_b', 'back', 'runout']);
+  assert.deepEqual(unusedKinds(PHOTO_KINDS.map((k) => k.kind)), [], 'nothing left to offer');
+});
+
+test('every kind the form offers is one the Worker accepts', () => {
+  // The Worker rejects an unknown kind outright, so a typo here would
+  // queue photos that can never sync — and the queue never drops an
+  // entry, so they would retry for ever.
+  const accepted = ['label_a', 'label_b', 'front', 'back', 'runout'];
+  for (const k of PHOTO_KINDS) assert.ok(accepted.includes(k.kind), `${k.kind} is not a schema kind`);
+  assert.ok(accepted.includes(PRIMARY_KIND));
+  assert.equal(new Set(PHOTO_KINDS.map((k) => k.kind)).size, PHOTO_KINDS.length, 'no duplicates');
+});
+
+test('several photos on one capture keep distinct keys', () => {
+  // One capture now carries several photos, so the key cannot be the
+  // clientId alone or the second upload would overwrite the first.
+  const body = toRequestBody({
+    clientId: 'c1', createdAt: 1, msToCapture: 100, fields: { catnoRaw: 'SXL 6113' },
+    photos: [
+      { kind: 'label_a', blob: new Blob(), key: 'c1-label_a.jpg' },
+      { kind: 'front', blob: new Blob(), key: 'c1-front.jpg' },
+    ],
+    state: 'pending', attempts: 0, nextAttemptAt: 0,
+  });
+  assert.deepEqual(body.photos, [
+    { kind: 'label_a', r2Key: 'labels/c1-label_a.jpg' },
+    { kind: 'front', r2Key: 'labels/c1-front.jpg' },
+  ]);
 });

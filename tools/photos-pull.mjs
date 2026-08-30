@@ -28,7 +28,7 @@
  * to it even by accident.
  *
  * Usage:
- *   node tools/photos-pull.mjs [--out data/label-photos] [--kind label_a]
+ *   node tools/photos-pull.mjs [--out data/label-photos] [--kind label_a|all]
  *                              [--limit 20] [--local] [--dry-run]
  */
 
@@ -68,15 +68,29 @@ function query(sql) {
 
 console.log(`Reading photo rows from D1 (${remote})…`);
 
+/**
+ * What exists, by kind, before anything is filtered.
+ *
+ * A capture may now carry several photographs — the catalogue number is
+ * on the centre label and the title is often on the sleeve — so a pull
+ * that quietly takes `label_a` and drops the rest would hand the reader
+ * half a record and call it whole. Counting first means a skip is
+ * always stated.
+ */
+const byKind = query('SELECT kind, COUNT(*) n FROM item_photo GROUP BY kind');
+if (byKind.length) {
+  console.log(`In the store: ${byKind.map((k) => `${k.n} ${k.kind}`).join(', ')}`);
+}
+
 // One row per photo of the requested kind, newest first, with the typed
 // capture beside it — the two halves the spike needs, from one query.
 const rows = query(`
   SELECT ip.item_id, ip.r2_key, i.crate, i.position,
-         c.catno_raw, c.label_raw, c.name_raw, c.title_raw, c.year_raw
+         ip.kind, c.catno_raw, c.label_raw, c.name_raw, c.title_raw, c.year_raw
   FROM item_photo ip
   JOIN item i ON i.id = ip.item_id
   LEFT JOIN capture c ON c.item_id = ip.item_id
-  WHERE ip.kind = '${kind}'
+  ${kind === 'all' ? '' : `WHERE ip.kind = '${kind}'`}
   ORDER BY ip.id DESC
   ${limit > 0 ? `LIMIT ${limit}` : ''}
 `.trim());
@@ -99,7 +113,10 @@ mkdirSync(outDir, { recursive: true });
 const pulled = [];
 const failed = [];
 for (const row of rows) {
-  const dest = join(outDir, `${row.item_id}.jpg`);
+  // Named by kind only when more than one kind is being pulled, so the
+  // one-photo case keeps the plain `<item_id>.jpg` that photo-pack
+  // expects as a row id.
+  const dest = join(outDir, kind === 'all' ? `${row.item_id}-${row.kind}.jpg` : `${row.item_id}.jpg`);
   // Already on disk is a skip, not a re-download: a second run after
   // adding ten more discs should cost ten fetches, not two hundred.
   if (existsSync(dest)) { pulled.push(row); continue; }
@@ -155,6 +172,13 @@ if (failed.length) {
   console.log(`\n${failed.length} had no object in R2 (captured before it was enabled?):`);
   for (const f of failed) console.log(`  item ${f.item_id} — ${f.r2_key}`);
 }
+const skipped = byKind.filter((k) => k.kind !== kind).reduce((n, k) => n + k.n, 0);
+if (kind !== 'all' && skipped) {
+  console.log(`\nNOT pulled: ${skipped} photo(s) of other kinds. A record whose title is`);
+  console.log('on the sleeve cannot be read from its label alone — use --kind all to');
+  console.log('take them too. Note that photo-pack still treats one image as one row.');
+}
+
 console.log('\nStill to do by hand: the `decoy_numbers` column — every OTHER number');
 console.log('on each label. It is what catches a matrix number reported as a');
 console.log('catalogue number, and capture never asks for it.');

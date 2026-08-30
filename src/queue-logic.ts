@@ -16,6 +16,38 @@ export interface QueuedPhoto {
   key: string;
 }
 
+/**
+ * The photo kinds, in the order a person meets them, with the words the
+ * interface uses for each.
+ *
+ * One frame often cannot hold what a record needs to say: the
+ * catalogue number is on the centre label and the title is on the
+ * sleeve, and on a boxed set they may be three surfaces apart. The
+ * schema always allowed many photos per item — `item_photo` is a table,
+ * not a column — and the Worker always stored an array. Only the form
+ * insisted on exactly one.
+ *
+ * Each kind is used at most once per item, which keeps the R2 keys
+ * unique without inventing a counter, and keeps the labels honest: a
+ * sleeve back photographed as `label_b` would assert something untrue,
+ * which is the fault the location fields were just fixed for.
+ */
+export const PHOTO_KINDS = [
+  { kind: 'label_a', label: 'Label' },
+  { kind: 'label_b', label: 'Label B' },
+  { kind: 'front', label: 'Sleeve front' },
+  { kind: 'back', label: 'Sleeve back' },
+  { kind: 'runout', label: 'Runout' },
+] as const;
+
+/** The kind the big button always takes or retakes. */
+export const PRIMARY_KIND = 'label_a';
+
+/** Kinds not yet photographed, in order — what the add-buttons offer. */
+export function unusedKinds(taken: readonly string[]): { kind: string; label: string }[] {
+  return PHOTO_KINDS.filter((k) => k.kind !== PRIMARY_KIND && !taken.includes(k.kind));
+}
+
 export interface QueuedCapture {
   clientId: string;
   createdAt: number;

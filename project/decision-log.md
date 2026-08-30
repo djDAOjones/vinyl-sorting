@@ -2,6 +2,45 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — CAPTURE-MANY-PHOTOS: one frame is not one record
+
+**Decision:** A capture carries several photographs, at most one of
+each kind. The big button is always the centre label; add-buttons offer
+only the kinds not yet taken — Label B, Sleeve front, Sleeve back,
+Runout — and each extra appears as a removable thumbnail.
+
+**Rationale:** Maintainer, from the shelf: "the catalogue and title
+sometimes aren't in the same frame". That is true of most classical
+LPs — the catalogue number is on the centre label, the title and
+performers are often only complete on the sleeve, and on a boxed set
+they can be three surfaces apart. A form that allowed one photograph
+was quietly forcing a choice between them.
+
+**Nothing below the form had to change.** `item_photo` has always been
+a table rather than a column, `parseCapture` has always taken an array,
+and the Worker has always written one row per photo. The constraint was
+entirely in the capture screen. That is worth recording as a mark in
+favour of the M1 schema: the first real product request arrived and the
+data model already answered it.
+
+**Only free kinds are offered.** A sleeve back filed as `label_b` would
+assert something untrue, which is the fault crate and position were
+fixed for hours earlier. Offering only the kinds not yet used makes the
+wrong answer unreachable rather than merely discouraged, and it keeps
+one photo per kind — which is what lets the R2 key be
+`clientId-kind.jpg` without inventing a counter that a retry could
+disagree with.
+
+**The consequence lands downstream, and is stated rather than fixed.**
+`photo-pack.mjs` treats one image as one row id, which no longer
+matches a record that has three. `photos-pull.mjs` now counts what is
+in the store by kind and says plainly how many photographs it is NOT
+pulling, so a record whose title is on its sleeve cannot be read from
+its label alone without someone being told. Making the pack carry
+several images per row is the real fix and is deliberately not done
+here — the spike has never been run, and changing what it sends before
+it has a baseline would be tuning a measurement nobody has taken.
+
 ## 2026-08-30 — CAPTURE-LOCATION: a required location gets answered with filler
 
 **Decision:** Crate stops being required, and both crate and position
