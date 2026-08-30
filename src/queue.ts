@@ -9,6 +9,11 @@
 
 import type { QueuedCapture } from './queue-logic.ts';
 
+// Stays `deep-groove` after the 2026-08-30 rename, and must. This names
+// the IndexedDB store on the phone: change it and every capture already
+// queued on a device becomes unreachable — photographs taken in a loft
+// with no signal, silently orphaned by a cosmetic edit. It is invisible
+// to everyone.
 const DB_NAME = 'deep-groove';
 const STORE = 'captures';
 const VERSION = 1;

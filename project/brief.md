@@ -2,7 +2,7 @@
 
 <!-- What, for whom, out of scope. Identity document: import into the rules position where supported. -->
 
-**Product name:** Deep Groove. Full development brief (v1, classical,
+**Product name:** Vinyl sorter. Full development brief (v1, classical,
 28 August 2026): <https://claude.ai/code/artifact/f1939d24-b221-4ed9-8948-8b193bd64e35>
 — that artifact is the spec; this file is the identity summary.
 

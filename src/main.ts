@@ -61,7 +61,7 @@ const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice
 function render(): void {
   app.innerHTML = `
     <div class="top">
-      <h1>Deep Groove</h1>
+      <h1>Vinyl sorter</h1>
       <div class="status" id="status">queue…</div>
     </div>
 

@@ -13,7 +13,7 @@ import type { RateLimiter } from './rate-limit.ts';
 const BASE = 'https://api.discogs.com';
 
 /** Discogs requires a descriptive user-agent and blocks generic ones. */
-export const USER_AGENT = 'DeepGroove/0.1 +https://github.com/djDAOjones/vinyl-sorting';
+export const USER_AGENT = 'VinylSorter/0.1 +https://github.com/djDAOjones/vinyl-sorting';
 
 export interface SearchResult {
   id: number;

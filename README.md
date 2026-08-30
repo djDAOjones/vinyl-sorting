@@ -1,4 +1,4 @@
-# Deep Groove
+# Vinyl sorter
 
 Catalogue a classical vinyl collection, verify each record against
 Discogs and MusicBrainz, and turn overlapping copies into a finite
@@ -7,6 +7,13 @@ queue of listening decisions.
 **Live:** <https://deep-groove.joe-2d2.workers.dev>
 — capture at `/`, the review queue at `/review`.
 The Worker serves both, so the API is same-origin.
+
+The app was called Deep Groove until 2026-08-30. The URL, the D1
+database, the R2 bucket and the phone's offline store still carry that
+name on purpose — they are identities rather than labels, none of them
+is visible in the app, and renaming them would change the URL, orphan
+the photographs, or discard captures queued on a phone. `wrangler.toml`
+and `src/queue.ts` say so at the point it matters.
 
 `project/brief.md` is the identity document; `AGENTS.md` is the working
 contract; `project/backlog.md` is generated — edit `project/records/`

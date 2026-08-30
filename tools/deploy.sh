@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deep Groove — first deployment.
+# Vinyl sorter — first deployment.
 #
 # Everything here needs a Cloudflare account, which is why it is a
 # script for the maintainer to run rather than something already done.

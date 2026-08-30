@@ -7,7 +7,7 @@ import { matchRow, pendingRows, persistRun } from './match/run.ts';
 import { parseResolve, resolveRun } from './review.ts';
 
 /**
- * Deep Groove Worker.
+ * Vinyl sorter Worker.
  *
  * NAMED OPERATIONS ONLY. v1 has no sign-in (OPEN-USERS-ACCESS,
  * 2026-08-30), so the shape of this Worker is what carries the safety:

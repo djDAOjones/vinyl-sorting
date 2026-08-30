@@ -1,4 +1,4 @@
-# Deep Groove Worker.
+# Vinyl sorter Worker.
 #
 # No sign-in for v1 (OPEN-USERS-ACCESS, 2026-08-30), so the SHAPE of
 # this Worker carries the safety: it exposes named operations only and
@@ -6,6 +6,21 @@
 # `wrangler secret put DISCOGS_TOKEN` — never in this file, never in
 # the repo. In M1 no route reads it at all; a test enforces that.
 
+# THE RESOURCE NAMES BELOW STAY `deep-groove` DELIBERATELY. The product
+# was renamed to Vinyl sorter on 2026-08-30; these are not display
+# names, they are identities, and renaming each one costs something
+# real:
+#
+#   name           the live URL. Changing it deploys a SECOND Worker at
+#                  vinyl-sorter.*.workers.dev and orphans the first,
+#                  along with every bookmark and home-screen icon.
+#   database_name  D1 has no rename. It means a new database and moving
+#                  448 items and 446 match runs into it.
+#   bucket_name    R2 has no rename either, and the photographs are in
+#                  the existing bucket.
+#
+# None of that is visible to anyone using the app. If the URL should
+# change, that is a deliberate migration, not a find-and-replace.
 name = "deep-groove"
 main = "worker/index.ts"
 compatibility_date = "2026-08-01"
