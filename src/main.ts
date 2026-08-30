@@ -24,10 +24,19 @@ import { startSync, drain } from './sync.ts';
 
 const app = document.getElementById('app')!;
 
-/** Sticky between discs: you work through one crate at a time. */
+/**
+ * Sticky between discs. Only `who`, deliberately.
+ *
+ * Crate used to stick too, which was right while it was a required
+ * field you could see. Now that it is optional and folded into "More",
+ * a remembered value would attach itself to every future capture
+ * unseen — so one placeholder typed once ("1", on item 448) would go on
+ * asserting a location nobody has confirmed. An invisible field that
+ * fills itself in is the same fault as a required field answered with
+ * filler, and this project's rule is the same either way: refuse rather
+ * than guess. Type a crate when you mean one.
+ */
 const sticky = {
-  get crate() { return localStorage.getItem('dg.crate') ?? ''; },
-  set crate(v: string) { localStorage.setItem('dg.crate', v); },
   get who() { return localStorage.getItem('dg.who') ?? ''; },
   set who(v: string) { localStorage.setItem('dg.who', v); },
 };
@@ -54,17 +63,9 @@ function render(): void {
 
     <button class="bulk" id="bulkBtn" type="button">📚 Photograph a whole crate</button>
     <input id="bulkFile" type="file" accept="image/*" multiple hidden>
-    <p class="note">One row per photo, nothing typed. Only crate, position and who is
-      capturing carry over — a catalogue number belongs to one disc, so copying one
-      across twenty rows would invent nineteen wrong ones.</p>
-
-    <fieldset>
-      <legend>Where it lives</legend>
-      <div class="pair">
-        <label><span>Crate *</span><input id="crate" inputmode="text" autocomplete="off" placeholder="B4"></label>
-        <label><span>Position</span><input id="position" inputmode="numeric" autocomplete="off" placeholder="12"></label>
-      </div>
-    </fieldset>
+    <p class="note">One row per photo, nothing typed. Nothing you have typed above
+      carries over — a catalogue number belongs to one disc, so copying one across
+      twenty rows would invent nineteen wrong ones.</p>
 
     <fieldset>
       <legend>Off the label</legend>
@@ -87,13 +88,20 @@ function render(): void {
     </fieldset>
 
     <details>
-      <summary>More — title, matrix/runout, year, who is capturing</summary>
+      <summary>More — title, matrix/runout, year, where it lives</summary>
       <label><span>Title</span><input id="titleRaw" autocomplete="off"></label>
       <label><span>Matrix / runout</span><input id="matrixRunout" autocomplete="off" spellcheck="false"
         placeholder="ZAL-6113-1W"></label>
       <p class="note">The only truly unique pressing identifier — it tells an original from a repress.</p>
       <label><span>Year</span><input id="yearRaw" inputmode="numeric" autocomplete="off"></label>
       <label><span>Captured by</span><input id="capturedBy" autocomplete="off"></label>
+      <div class="pair">
+        <label><span>Crate</span><input id="crate" inputmode="text" autocomplete="off" placeholder="B4"></label>
+        <label><span>Position</span><input id="position" inputmode="numeric" autocomplete="off" placeholder="12"></label>
+      </div>
+      <p class="note">Optional, and down here on purpose. A location is only worth
+        recording if the storage is stable — otherwise the record asserts something
+        untrue, which costs more than saying nothing.</p>
     </details>
 
     <div id="flash"></div>
@@ -104,8 +112,10 @@ function render(): void {
     </div></div>`;
 
   const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-  $<HTMLInputElement>('crate').value = sticky.crate;
   $<HTMLInputElement>('capturedBy').value = sticky.who;
+  // Clear anything a previous build remembered, so a placeholder typed
+  // once cannot keep attaching itself to new captures.
+  localStorage.removeItem('dg.crate');
 
   const file = $<HTMLInputElement>('file');
   $('shot').addEventListener('click', () => file.click());
@@ -151,7 +161,6 @@ function readFields(): Record<string, string> {
 
 async function save(): Promise<void> {
   const fields = readFields();
-  if (!fields.crate?.trim()) return flash('Crate is needed, so a session card can say where to find it.', 'err');
   if (!photoBlob && !fields.catnoRaw?.trim()) {
     return flash('Photograph the label, or type a catalogue number.', 'err');
   }
@@ -162,7 +171,7 @@ async function save(): Promise<void> {
     createdAt: Date.now(),
     msToCapture: Date.now() - startedAt,
     fields,
-    photos: photoBlob ? [{ kind: 'label_a', blob: photoBlob, key: `${clientId}.jpg` }] : [],
+    photos: photoBlob ? [{ kind: 'label_a', blob: await downscale(photoBlob), key: `${clientId}.jpg` }] : [],
     state: 'pending',
     attempts: 0,
     nextAttemptAt: 0,
@@ -172,7 +181,6 @@ async function save(): Promise<void> {
   // this is the whole offline guarantee, and it is why a hard refresh
   // in a loft loses nothing.
   await putEntry(entry);
-  sticky.crate = fields.crate ?? '';
   sticky.who = fields.capturedBy ?? '';
 
   flash(`Queued — ${Math.round(entry.msToCapture / 1000)}s. Next disc.`);
@@ -190,7 +198,7 @@ async function save(): Promise<void> {
  * is queued unchanged: a large photo is worth having, and losing the
  * capture to a resize is not a trade this app should ever make.
  */
-async function downscale(file: File): Promise<Blob> {
+async function downscale(file: Blob): Promise<Blob> {
   try {
     if (typeof createImageBitmap !== 'function' || typeof OffscreenCanvas !== 'function') return file;
     const bitmap = await createImageBitmap(file);
@@ -217,10 +225,6 @@ async function downscale(file: File): Promise<Blob> {
 async function saveBulk(files: File[]): Promise<void> {
   if (!files.length) return;
   const base = readFields();
-  if (!base.crate?.trim()) {
-    return flash('Crate is needed, so a session card can say where to find it.', 'err');
-  }
-
   const started = Date.now();
   flash(`Queueing ${files.length} photo${files.length > 1 ? 's' : ''}…`);
 
@@ -245,7 +249,6 @@ async function saveBulk(files: File[]): Promise<void> {
     if (queued % 5 === 0) void refreshStatus();
   }
 
-  sticky.crate = base.crate ?? '';
   sticky.who = base.capturedBy ?? '';
 
   // Move the position box on, so the next crateful continues the count
@@ -260,7 +263,8 @@ async function saveBulk(files: File[]): Promise<void> {
 }
 
 function resetForm(): void {
-  for (const id of ['catnoRaw', 'labelRaw', 'nameRaw', 'titleRaw', 'matrixRunout', 'yearRaw', 'position']) {
+  for (const id of ['catnoRaw', 'labelRaw', 'nameRaw', 'titleRaw', 'matrixRunout', 'yearRaw',
+    'position', 'crate']) {
     const el = document.getElementById(id) as HTMLInputElement | null;
     if (el) el.value = '';
   }

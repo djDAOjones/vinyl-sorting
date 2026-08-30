@@ -16,7 +16,7 @@ export type PhotoKind = (typeof PHOTO_KINDS)[number];
 export interface CaptureInput {
   /** Client-generated, so a retry of a queued entry cannot double-write. */
   clientId: string;
-  crate: string;
+  crate: string | null;
   position?: string;
   catnoRaw?: string;
   labelRaw?: string;
@@ -39,10 +39,18 @@ const trimmed = (v: unknown): string | undefined => {
 };
 
 /**
- * Validate a queued entry. Deliberately permissive about WHAT was
- * typed and strict about whether the disc can be found again:
- * photo-first capture means walking a crate photographing labels and
- * typing nothing, so a capture with only a photo is valid and common.
+ * Validate a queued entry. Deliberately permissive: photo-first capture
+ * means walking a crate photographing labels and typing nothing, so a
+ * capture with only a photo is valid and common.
+ *
+ * CRATE IS NOT REQUIRED (maintainer, 2026-08-30). It was, on the
+ * reasoning that a session card has to say where to find the disc. That
+ * assumed the storage is stable, and it is not — so the field was being
+ * filled with placeholders, and item 448 arrived as crate "1",
+ * position "1". A required field answered with filler is worse than an
+ * absent one: the database then asserts a location that is untrue, and
+ * nothing downstream can tell it from a real one. Same rule as
+ * everywhere else here — refuse rather than guess.
  */
 export function parseCapture(body: unknown): { ok: true; value: CaptureInput } | { ok: false; error: string } {
   if (typeof body !== 'object' || body === null) return { ok: false, error: 'body must be an object' };
@@ -52,7 +60,6 @@ export function parseCapture(body: unknown): { ok: true; value: CaptureInput } |
   if (!clientId) return { ok: false, error: 'clientId is required so a retried queue entry cannot double-write' };
 
   const crate = trimmed(b.crate);
-  if (!crate) return { ok: false, error: 'crate is required — a session card has to say where to find the disc' };
 
   const photos: { kind: PhotoKind; r2Key: string }[] = [];
   if (b.photos !== undefined) {
@@ -83,7 +90,7 @@ export function parseCapture(body: unknown): { ok: true; value: CaptureInput } |
   return {
     ok: true,
     value: {
-      clientId, crate, catnoRaw, photos,
+      clientId, crate: crate || null, catnoRaw, photos,
       position: trimmed(b.position),
       labelRaw: trimmed(b.labelRaw),
       nameRaw: trimmed(b.nameRaw),
@@ -116,7 +123,7 @@ export async function insertCapture(env: Env, input: CaptureInput): Promise<{ it
     `INSERT INTO item (crate, position, media_grade, sleeve_grade, captured_by, captured_at, notes, import_ref)
      VALUES (?, ?, ?, ?, ?, datetime('now'), ?, ?) RETURNING id`,
   ).bind(
-    input.crate, input.position ?? null, input.mediaGrade ?? null, input.sleeveGrade ?? null,
+    input.crate ?? null, input.position ?? null, input.mediaGrade ?? null, input.sleeveGrade ?? null,
     input.capturedBy ?? null, input.notes ?? null, `capture:${input.clientId}`,
   ).first<{ id: number }>();
   if (!item) throw new Error('item insert returned no id');

@@ -21,3 +21,4 @@
 - OPEN-SELL-THRESHOLD — value never earns a keep; sell only above £10, keep only for musical reasons (2026-08-30) — see decision-log
 - OPS-SPEND-GUARD — Free plan confirmed, so D1's 100k/day refusal is the real wall; per-tick write budget and query accounting shipped as redundancy, and a cpu_ms limit that made the Worker undeployable was found and removed (2026-08-30) — see decision-log
 - CAPTURE-BULK-PHOTOS — a crate photographs in one pass, one row per photo, nothing typed; bulk rows carry only crate, position and capturer, so no disc's catalogue number can reach another's row, and a rejected photo no longer blocks the crate behind it (2026-08-30) — see decision-log
+- CAPTURE-LOCATION — crate no longer required, no longer sticky and folded into More, after the first real capture arrived as crate "1" position "1"; a downscale that ran only on the bulk path found and fixed, so one photo queues at 370 KB rather than 6.45 MB (2026-08-30) — see decision-log

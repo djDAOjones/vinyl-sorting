@@ -99,10 +99,16 @@ test('a capture with neither photo nor catalogue number is refused', () => {
   assert.match(r.error, /photo or a catalogue number/);
 });
 
-test('crate is required so the disc can be found again', () => {
+test('crate is optional, because a required location gets filled with filler', () => {
+  // It WAS required, on the reasoning that a session card has to say
+  // where to find the disc. That assumed stable storage; the collection
+  // does not have any, so the box was answered with placeholders — item
+  // 448 arrived as crate "1", position "1". A database asserting a
+  // location that is untrue is worse than one admitting it does not
+  // know, and nothing downstream can tell the two apart.
   const r = parseCapture({ clientId: 'c1', catnoRaw: 'SXL 6113' });
-  assert.equal(r.ok, false);
-  assert.match(r.error, /crate is required/);
+  assert.equal(r.ok, true);
+  assert.equal(r.value.crate, null, 'absent, not an empty string');
 });
 
 test('clientId is required so a retried queue entry cannot double-write', () => {

@@ -2,6 +2,46 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — CAPTURE-LOCATION: a required location gets answered with filler
+
+**Decision:** Crate stops being required, and both crate and position
+move into the collapsed "More" section. Crate also stops being sticky.
+Nothing is removed from the schema, and the review queue still shows a
+location when one exists.
+
+**Rationale:** Maintainer, on the evidence of the first real capture
+through the photo path. Item 448 arrived as crate "1", position "1" —
+placeholders, because the storage is neither permanent nor organised
+and there was no honest answer to give. The reasoning for requiring it
+("a session card has to say where to find the disc") assumed a stable
+shelf order that does not exist; the maintainer would rather look for a
+disc than maintain a map of where it was last seen.
+
+A required field answered with filler is the worst of the three
+options. The database then asserts a location that is untrue, and
+nothing downstream can distinguish it from a real one — the same shape
+as the M0 failure, where a catalogue number was recorded as a verdict
+and 16 wrong matches were labelled "Exact". Absent is honest; typed is
+useful; invented is expensive. This project's rule has been consistent
+about which to prefer, and it applies to its own form.
+
+**Stickiness had to go with it.** Crate persisted between discs, which
+was right while the field was required and visible. Folded into "More"
+it becomes an invisible field that fills itself in, so one placeholder
+typed once would attach itself to every future capture unseen — the
+same fault by a quieter route. The remembered value is now cleared on
+load, so the "1" already stored stops propagating. `capturedBy` stays
+sticky: it is a fact about who is holding the phone, not a claim about
+the disc.
+
+**A bug found while verifying this.** The downscale shipped with
+CAPTURE-BULK-PHOTOS ran only on the bulk path, so a single capture
+still queued a full phone frame — which is how item 448 reached R2 at
+4.4 MB. Twenty spike photographs taken the way they were about to be
+taken would have been ~130 MB in IndexedDB, on a phone, which is the
+exact failure the downscale existed to prevent. It now runs on both
+paths: a 6.45 MB frame queues at 370 KB.
+
 ## 2026-08-30 — CAPTURE-BULK-PHOTOS: a bulk row carries the crate and nothing else
 
 **Decision:** Bulk capture writes one row per photo and carries exactly
