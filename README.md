@@ -61,6 +61,31 @@ the life of the project and is never modified.
 node tools/freeze-archive.mjs --check && node tools/build-report.mjs
 ```
 
+## Read the labels from photographs — SPIKE-PHOTO-TO-FIELDS
+
+Capture already stores a photo of every label and reads nothing from
+it. This asks a vision model what is printed there, and scores the
+answers against what a person typed off the same records.
+
+```bash
+ANTHROPIC_API_KEY=... node tools/photo-extract.mjs
+```
+
+```bash
+node tools/photo-score.mjs
+```
+
+It needs ~20 photographed labels first — `data/label-photos/README.md`.
+Neither tool touches the database, and a test asserts they cannot: a
+spike measures, and promoting a reading into the store is the decision
+the measurement exists to inform.
+
+The scorer keeps **refused** and **wrong** apart rather than averaging
+them. A blank costs a re-read of a photo you already have; a confident
+wrong catalogue number is the 9% error M0 measured, arriving by a new
+route. A run reporting a decoy number — matrix, stamper, side — as the
+catalogue number fails on one occurrence.
+
 ## Deploying — needs your Cloudflare account
 
 Everything that can be automated is. Two commands are yours because

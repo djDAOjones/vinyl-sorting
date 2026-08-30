@@ -31,12 +31,13 @@
   passage?** [sign-off] (2026-08-30) — Whether the app proposes the
   two-to-three-minute comparison passage from the track listing, or the
   listener always chooses it themselves.
-- [ ] **SPIKE-PHOTO-TO-FIELDS Can a label photograph populate the
-  capture fields?** [spike] (2026-08-30) — Measure whether reading the
-  stored label photo with a vision model yields usable leads for catno,
-  label, composer, title and year — the cost question is settled at
-  pennies and the provenance question is settled by the existing schema,
-  but accuracy cannot be measured until real labels are photographed.
+- [~] **SPIKE-PHOTO-TO-FIELDS Can a label photograph populate the
+  capture fields?** [spike] [blocked: twenty photographed labels with
+  typed ground truth] (2026-08-30) — The harness is built, tested and in
+  the gate, and the cost and provenance questions are settled — twenty
+  photographed labels are now the only thing between here and an answer,
+  because synthesising labels would score the model against its own
+  output.
 - [ ] **M3-WORKS-PERFORMANCES MusicBrainz works, performances and
   per-track completeness** — Resolve work and recording identity from
   MusicBrainz, resolve composers for the 131 Various/Unknown rows, and

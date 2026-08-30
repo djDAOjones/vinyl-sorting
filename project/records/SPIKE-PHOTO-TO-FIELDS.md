@@ -1,12 +1,13 @@
 ---
 id: SPIKE-PHOTO-TO-FIELDS
 name: Can a label photograph populate the capture fields?
-summary: Measure whether reading the stored label photo with a vision model yields usable leads for catno, label, composer, title and year — the cost question is settled at pennies and the provenance question is settled by the existing schema, but accuracy cannot be measured until real labels are photographed.
-status: open
+summary: The harness is built, tested and in the gate, and the cost and provenance questions are settled — twenty photographed labels are now the only thing between here and an answer, because synthesising labels would score the model against its own output.
+status: in-progress
 date: 2026-08-30
 milestone: icebox
 order: 3
-flags: spike
+flags: spike, blocked
+blocked-on: twenty photographed labels with typed ground truth
 ---
 # Can a label photograph populate the capture fields?
 
@@ -14,43 +15,58 @@ Every capture already stores a `label_a` photo in R2 and reads nothing
 from it. That photo carries five of the six `capture` columns —
 `catno_raw`, `label_raw`, `name_raw`, `title_raw`, `year_raw`. Not
 `matrix_runout`: that is etched in the deadwax, which is why `runout`
-is its own photo kind, and why it is the one field a label shot cannot
-answer.
+is its own photo kind, and the one field a label shot cannot answer.
 
-## Settled without the spike (2026-08-30)
+## Built and green (2026-08-30)
 
-**Cost is not the constraint.** An image costs `ceil(w/28) x ceil(h/28)`
-visual tokens, capped at 1568 on a standard-tier model. All 750
-records, one photo each, one JSON object out: **~$2.30 on Haiku 4.5**,
-~$23 on Opus 5 at full phone resolution, halved again by the Batch API.
-Cropping to the label before upload keeps both ends cheap. The whole
-collection costs less than one record.
+`tools/photo-extract.mjs` reads photos and asks a vision model what is
+printed on them; `tools/photo-score.mjs` scores the answers against
+typed ground truth. Nineteen tests, in the gate. Two commands to run —
+`data/label-photos/README.md`.
 
-**Where a reading may land is already decided by the schema.** A
-machine reading a photo is not `shelf`, and the hard rule forbids
-writing back over `capture` — that boundary exists so duplicate
-detection runs on what a person read. `raw_value` with source `guess`
-is the pre-built home for exactly this, unreachable through every
-decision view, and needs no migration. The review queue then promotes a
-value when a person confirms it, which is the gesture M2 is already
-building.
+**The harness touches no database.** Not the schema, not `capture`, not
+`raw_value`, and a test asserts it cannot reach sqlite. A spike
+measures; promoting a reading into the store is the decision the
+measurement exists to inform.
 
-## What the spike must measure
+Two design moves carry the rule inherited from split-label-catno —
+refuse rather than guess:
 
-Per field, over ~20 real labels with typed ground truth: exact match,
-wrong, refused. **Refused must beat wrong.** A blank is a non-event; a
-confident wrong catalogue number is the 9% error M0 measured, recreated
-by a new route.
+- **`other_numbers`** gives a number the model can see but cannot
+  assign somewhere to go that is not `catno_raw`. A classical label is
+  littered with them: matrix and stamper codes, side numbers, opus and
+  K. numbers, timings, (P) years.
+- **The prompt forbids inference from knowledge of the recording**, so
+  a recognised Karajan cannot supply a catalogue number from memory. A
+  test asserts that clause survives editing — it is the only thing
+  standing between this tool and an invented value, and one careless
+  rewrite from being lost.
 
-Run it from `tools/`, laptop-side, the way `match-run.mjs` already
-does. That needs no second Worker secret, no test change, and no spend
-a stranger can trigger.
+Scoring holds `refused` and `wrong` apart instead of averaging them
+into an accuracy figure that would hide the only question worth asking.
+A ground-truth decoy reported as the catalogue number fails the run on
+a single occurrence: that is the M0 error recreated, a number treated
+as a verdict rather than a lead.
 
-## Blocked on
+## Settled without photographs
 
-Twenty photographed labels. None exist — the archive holds six crate
-shots and no label. Synthesising labels would score the model against
-its own output, the same fault as verifying Discogs with Discogs.
+Cost is not the constraint: **~$2.30 on Haiku 4.5 for all 750**, ~$23
+on Opus 5 at full phone resolution, halved again by the Batch API. The
+scorer prices from usage the API actually reports, so a run corrects
+this arithmetic rather than inheriting it.
+
+Provenance needs no migration. `raw_value` with source `guess` is the
+schema's pre-built home for a machine reading, unreachable through
+every decision view; the review queue promotes on confirmation.
+
+## What is left
+
+Twenty photographed labels and their typed ground truth, taken the way
+capture will get them and including the awkward ones on purpose.
+`data/label-photos/README.md` says which, and why twenty.
+
+Synthesising labels instead would score the model against its own
+output, the same fault as verifying Discogs with Discogs.
 
 ## Decisions it feeds
 

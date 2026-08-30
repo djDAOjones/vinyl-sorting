@@ -37,3 +37,11 @@ data/reverify.json
 # Local match database and its report inputs
 data/deep-groove.sqlite
 data/match-run.json
+
+# Label photographs for SPIKE-PHOTO-TO-FIELDS — Joe's own photos, large
+# and numerous. The typed ground truth beside them IS committed: it is
+# the evidence, and it is what makes a re-run a comparison.
+data/label-photos/*.jpg
+data/label-photos/*.jpeg
+data/label-photos/*.png
+data/label-photos/*.webp
