@@ -45,3 +45,6 @@ data/label-photos/*.jpg
 data/label-photos/*.jpeg
 data/label-photos/*.png
 data/label-photos/*.webp
+
+# Chat upload packs — regenerated from the photos by tools/photo-pack.mjs
+data/photo-packs/

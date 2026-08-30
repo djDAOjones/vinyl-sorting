@@ -64,27 +64,48 @@ node tools/freeze-archive.mjs --check && node tools/build-report.mjs
 ## Read the labels from photographs — SPIKE-PHOTO-TO-FIELDS
 
 Capture already stores a photo of every label and reads nothing from
-it. This asks a vision model what is printed there, and scores the
-answers against what a person typed off the same records.
+it. This packs those photos for a chat window, imports the reply, and
+scores it against what a person typed off the same records.
+
+**No API key, by your decision on 2026-08-30.** The reading happens in
+a chat you are already paying for, so nothing metered sits behind the
+Cloudflare Free plan and OPS-SPEND-GUARD's wall still holds.
 
 ```bash
-ANTHROPIC_API_KEY=... node tools/photo-extract.mjs
+node tools/photo-pack.mjs
+```
+
+That writes `data/photo-packs/pack-NN.zip`, batched to 20 images
+because that is the per-message cap on claude.ai and other clients are
+lower. Each zip holds the images named after their row ids, a
+`PROMPT.txt` to paste above them, and a manifest. Upload a pack, paste
+the prompt, save the reply as a text file, then:
+
+```bash
+node tools/photo-import.mjs data/photo-packs/reply-01.txt
 ```
 
 ```bash
 node tools/photo-score.mjs
 ```
 
-It needs ~20 photographed labels first — `data/label-photos/README.md`.
-Neither tool touches the database, and a test asserts they cannot: a
-spike measures, and promoting a reading into the store is the decision
-the measurement exists to inform.
+Every row carries its own `row_id`, and the importer refuses an id it
+did not send. That is the whole point of the ids: twenty images up and
+eighteen objects back would otherwise attribute every row after the gap
+to its neighbour — nineteen plausible readings, all shifted by one, and
+indistinguishable from good data.
 
 The scorer keeps **refused** and **wrong** apart rather than averaging
 them. A blank costs a re-read of a photo you already have; a confident
 wrong catalogue number is the 9% error M0 measured, arriving by a new
 route. A run reporting a decoy number — matrix, stamper, side — as the
 catalogue number fails on one occurrence.
+
+Neither tool touches the database, and a test asserts they cannot: a
+spike measures, and promoting a reading into the store is the decision
+the measurement exists to inform.
+
+It needs ~20 photographed labels first — `data/label-photos/README.md`.
 
 ## Deploying — needs your Cloudflare account
 

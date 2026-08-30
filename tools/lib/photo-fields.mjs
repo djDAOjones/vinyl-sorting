@@ -3,8 +3,16 @@
 /**
  * photo-fields.mjs — SPIKE-PHOTO-TO-FIELDS.
  *
- * The extraction contract and the scorer, with no I/O and no network,
- * so the measurement can be tested without spending anything.
+ * The extraction contract, the paste-in prompt, the reply parser and
+ * the scorer. No I/O and no network, so the whole round trip can be
+ * tested without uploading anything.
+ *
+ * NO API KEY, by maintainer decision (2026-08-30). The reading happens
+ * in a chat window: photos go up as a zip, an answer comes back as
+ * text, and that text is imported here. That keeps OPS-SPEND-GUARD
+ * intact — the Cloudflare Free plan stays the wall, because nothing
+ * metered was added behind it — and leaves the Worker's one-outbound-
+ * file invariant untouched.
  *
  * THE GOVERNING RULE, inherited from split-label-catno: a wrong value
  * is worse than an absent one, so the contract refuses rather than
@@ -13,20 +21,12 @@
  * measured — 26 of 277 rows pointing at a different record, 16 of them
  * labelled "Exact" — recreated by a new route.
  *
- * Two design moves carry that rule:
- *
- *  1. `other_numbers` exists so a number the model can SEE but cannot
- *     ASSIGN has somewhere to go that is not `catno_raw`. A classical
- *     label is littered with numbers — matrix and stamper codes, side
- *     numbers, opus and K. numbers, timings, (P) and (C) years. Picking
- *     the wrong one is a field-assignment failure, not a legibility
- *     failure, and it is the failure that matters here.
- *  2. The prompt forbids inference from knowledge of the recording.
- *     The model knows the repertoire, so it could confabulate a
- *     plausible catalogue number for a famous Karajan Beethoven
- *     without reading one. That would be an AI-invented value sitting
- *     indistinguishably beside a sourced one — the exact fault the
- *     brief says nine schema generations were spent undoing.
+ * A hand-run round trip has one failure mode an API call does not:
+ * the answer can come back for the wrong photo. Twenty images go up,
+ * eighteen objects come back, and everything after the gap is silently
+ * attributed to its neighbour. Every row therefore carries its own
+ * `row_id`, and the parser refuses an id it did not send rather than
+ * trusting position.
  */
 
 import { compactCatno, compactText } from '../../worker/match/normalise.ts';
@@ -51,70 +51,30 @@ export const PHOTO_FIELDS = /** @type {const} */ ([
 const CATNO_FIELDS = new Set(['catno_raw']);
 
 /**
- * The tool the model is forced to call. `strict: true` with
- * `additionalProperties: false` means the API validates the shape, so
- * the harness never parses a half-formed object.
+ * One source of truth for the shape: it writes the prompt and it
+ * validates what comes back, so the two cannot drift apart.
  */
-export const EXTRACTION_TOOL = {
-  name: 'record_label',
-  description: 'Report only what is printed on this record label.',
-  strict: true,
-  input_schema: {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      catno_raw: {
-        type: ['string', 'null'],
-        description:
-          'The catalogue number as printed. Null unless you can point at it on the label.',
-      },
-      label_raw: {
-        type: ['string', 'null'],
-        description: 'The record label or company name as printed, e.g. Deutsche Grammophon.',
-      },
-      name_raw: {
-        type: ['string', 'null'],
-        description:
-          'Composer and performers as printed, in the order printed, separated by semicolons.',
-      },
-      title_raw: {
-        type: ['string', 'null'],
-        description: 'The work or works as printed.',
-      },
-      year_raw: {
-        type: ['string', 'null'],
-        description: 'A year as printed, including any (P) or (C) marker that qualifies it.',
-      },
-      side: { type: ['string', 'null'], description: 'The side, if printed.' },
-      other_numbers: {
-        type: 'array',
-        items: { type: 'string' },
-        description:
-          'EVERY other number or code visible on the label that you did not assign to a field above. Put a number here rather than guessing which field it belongs to.',
-      },
-      unreadable: {
-        type: 'array',
-        items: { type: 'string' },
-        description:
-          'Names of fields above you left null because the label was illegible there, as opposed to the label not carrying that information.',
-      },
-    },
-    required: [
-      'catno_raw', 'label_raw', 'name_raw', 'title_raw',
-      'year_raw', 'side', 'other_numbers', 'unreadable',
-    ],
-  },
-};
+export const FIELD_SPEC = [
+  ['row_id', 'the id printed in the filename of the image this row describes'],
+  ['catno_raw', 'the catalogue number as printed — null unless you can point at it'],
+  ['label_raw', 'the record label or company as printed, e.g. Deutsche Grammophon'],
+  ['name_raw', 'composer and performers as printed, in the order printed, separated by semicolons'],
+  ['title_raw', 'the work or works as printed'],
+  ['year_raw', 'a year as printed, including any (P) or (C) marker that qualifies it'],
+  ['side', 'the side, if printed'],
+  ['other_numbers', 'an array of EVERY other number or code visible that you did not assign above'],
+  ['unreadable', 'an array naming the fields you left null because the label was illegible there'],
+];
 
 /**
- * The system prompt. Kept in one exported constant because a test
- * asserts the no-inference clause survives editing: it is the only
- * thing standing between this tool and an invented catalogue number,
- * and it is one careless rewrite away from being lost.
+ * The clause that keeps an invented value out of the data, kept in its
+ * own constant because a test asserts it survives editing. It is the
+ * only thing standing between this and a plausible catalogue number
+ * recalled from the repertoire rather than read off the disc — and in
+ * a chat window there is no strict schema behind it, so the words are
+ * the whole guard.
  */
-export const SYSTEM_PROMPT = [
-  'You are reading the centre label of a vinyl record, photographed on a phone.',
-  '',
+export const NO_INFERENCE = [
   'Report ONLY what is printed on the label in front of you.',
   '',
   'Never infer a value from your knowledge of the recording, the',
@@ -122,39 +82,106 @@ export const SYSTEM_PROMPT = [
   'record, that is not evidence about what this label says. A value you',
   'supplied from memory rather than from the image is worse than no',
   'value at all, because nothing downstream can tell the two apart.',
-  '',
-  'Use null for anything you cannot read directly off the image, and',
-  'name that field in `unreadable` if the reason was legibility rather',
-  'than the label simply not carrying it.',
-  '',
-  'A record label carries many numbers. Assign one to `catno_raw` only',
-  'if it is presented as the catalogue number. Every other number goes',
-  'in `other_numbers`, unassigned. Leaving a number unassigned is a',
-  'correct answer; guessing which field it belongs to is not.',
 ].join('\n');
 
-/** The request body for one photo. Pure, so a test can inspect it. */
-export function buildRequest({ model, base64, mediaType = 'image/jpeg', effort = 'low' }) {
-  return {
-    model,
-    max_tokens: 2048,
-    system: SYSTEM_PROMPT,
-    output_config: { effort },
-    tools: [EXTRACTION_TOOL],
-    tool_choice: { type: 'tool', name: EXTRACTION_TOOL.name },
-    messages: [{
-      role: 'user',
-      // Image before text: the docs are explicit that Claude works best
-      // with the image first.
-      content: [
-        { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-        { type: 'text', text: 'Read this record label.' },
-      ],
-    }],
-  };
+/**
+ * The message to paste into the chat above the uploaded images.
+ *
+ * The id list is included in the text as well as in the filenames.
+ * Some chat interfaces do not show a model the filename of an upload,
+ * and a prompt that silently depends on one would fail in a way that
+ * looks like bad extraction rather than a plumbing fault.
+ */
+export function chatPrompt(rowIds) {
+  return [
+    `I am uploading ${rowIds.length} photographs of vinyl record centre labels.`,
+    'Read each one and return the printed information as JSON.',
+    '',
+    NO_INFERENCE,
+    '',
+    'Use null for anything you cannot read directly off the image, and',
+    'name that field in `unreadable` if the reason was legibility rather',
+    'than the label simply not carrying it.',
+    '',
+    'A record label carries many numbers — matrix and stamper codes, side',
+    'numbers, opus and K. numbers, timings, (P) and (C) years. Assign one',
+    'to `catno_raw` ONLY if it is presented as the catalogue number. Every',
+    'other number goes in `other_numbers`, unassigned. Leaving a number',
+    'unassigned is a correct answer; guessing which field it belongs to is',
+    'not.',
+    '',
+    'Return a JSON array with one object per image, each having exactly',
+    'these keys:',
+    '',
+    ...FIELD_SPEC.map(([k, d]) => `  ${k} — ${d}`),
+    '',
+    'Each image is named after its row id. Report that id in `row_id`, so',
+    'a row can never be attributed to the wrong record. The ids in this',
+    'batch, in upload order, are:',
+    '',
+    ...rowIds.map((id) => `  ${id}`),
+    '',
+    'Return the JSON array and nothing else.',
+  ].join('\n');
 }
 
 const blank = (v) => v === null || v === undefined || String(v).trim() === '';
+
+/**
+ * Pull the JSON array out of a chat reply.
+ *
+ * Chats wrap answers in prose and fences however firmly you ask them
+ * not to, so this is forgiving about the packaging and unforgiving
+ * about the contents.
+ */
+export function parseChatReply(text, expectedIds) {
+  const fenced = /```(?:json)?\s*([\s\S]*?)```/i.exec(text ?? '');
+  let body = (fenced?.[1] ?? text ?? '').trim();
+  // Fall back to the outermost bracket pair when there is no fence and
+  // the model wrote a sentence before its JSON.
+  if (!body.startsWith('[')) {
+    const start = body.indexOf('[');
+    const end = body.lastIndexOf(']');
+    if (start < 0 || end <= start) throw new Error('no JSON array found in the reply');
+    body = body.slice(start, end + 1);
+  }
+
+  let rows;
+  try {
+    rows = JSON.parse(body);
+  } catch (err) {
+    throw new Error(`the reply is not valid JSON: ${err instanceof Error ? err.message : err}`);
+  }
+  if (!Array.isArray(rows)) throw new Error('the reply is not a JSON array');
+
+  const expected = new Set(expectedIds);
+  const seen = new Set();
+  const results = {};
+  const unknown = [];
+  const duplicated = [];
+
+  for (const row of rows) {
+    const id = row?.row_id === undefined || row?.row_id === null ? '' : String(row.row_id).trim();
+    // No id means no way to know which record this describes. Position
+    // is not a fallback: it is exactly what goes wrong here.
+    if (!id) { unknown.push('(missing row_id)'); continue; }
+    if (!expected.has(id)) { unknown.push(id); continue; }
+    if (seen.has(id)) { duplicated.push(id); continue; }
+    seen.add(id);
+    results[id] = {
+      fields: Object.fromEntries(FIELD_SPEC
+        .filter(([k]) => k !== 'row_id')
+        .map(([k]) => [k, row[k] ?? null])),
+    };
+  }
+
+  return {
+    results,
+    unknown,
+    duplicated,
+    missing: expectedIds.filter((id) => !seen.has(id)),
+  };
+}
 
 /** Comparison form for one field: catalogue numbers fold harder than prose. */
 const comparable = (field, value) =>
@@ -199,9 +226,9 @@ export function trapSprung(extracted, truth) {
 /**
  * Roll individual verdicts into the report the record asks for.
  *
- * The bar is stated as a ratio rather than a percentage on purpose:
- * "refused must beat wrong" is a comparison, and a single accuracy
- * figure hides it.
+ * The bar is stated as a comparison rather than a percentage on
+ * purpose: "refused must beat wrong" is a comparison, and a single
+ * accuracy figure hides it.
  */
 export function summarise(rows) {
   const per = {};
@@ -233,33 +260,5 @@ export function summarise(rows) {
     // refused — clears it outright. Writing it as `wrong < refused`
     // alone failed a flawless run, because zero does not beat zero.
     passes: traps === 0 && (wrong === 0 || wrong < refused),
-  };
-}
-
-/**
- * What the run cost, from the usage the API actually reported, and what
- * the whole collection would cost at that rate.
- *
- * Priced from reported usage rather than from the token estimate in the
- * record, so the spike can correct its own arithmetic.
- */
-export const PRICES = {
-  'claude-opus-5': { in: 5, out: 25 },
-  'claude-sonnet-5': { in: 2, out: 10 },
-  'claude-haiku-4-5': { in: 1, out: 5 },
-};
-
-export function costOf(usages, model, collectionSize = 750) {
-  const price = PRICES[model];
-  if (!price) return null;
-  const inTok = usages.reduce((n, u) => n + (u?.input_tokens ?? 0), 0);
-  const outTok = usages.reduce((n, u) => n + (u?.output_tokens ?? 0), 0);
-  const spent = (inTok * price.in + outTok * price.out) / 1e6;
-  const perPhoto = usages.length ? spent / usages.length : 0;
-  return {
-    model, photos: usages.length, inputTokens: inTok, outputTokens: outTok,
-    spentUsd: spent, perPhotoUsd: perPhoto,
-    collectionUsd: perPhoto * collectionSize,
-    collectionBatchedUsd: (perPhoto * collectionSize) / 2,
   };
 }

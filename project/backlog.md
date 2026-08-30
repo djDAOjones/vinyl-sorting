@@ -33,11 +33,11 @@
   listener always chooses it themselves.
 - [~] **SPIKE-PHOTO-TO-FIELDS Can a label photograph populate the
   capture fields?** [spike] [blocked: twenty photographed labels with
-  typed ground truth] (2026-08-30) — The harness is built, tested and in
-  the gate, and the cost and provenance questions are settled — twenty
-  photographed labels are now the only thing between here and an answer,
-  because synthesising labels would score the model against its own
-  output.
+  typed ground truth] (2026-08-30) — The round trip is built, tested and
+  in the gate — photos pack into chat-sized zips, the reply imports under
+  id checks, and the scorer keeps refusals apart from wrong answers;
+  twenty photographed labels are now the only thing left, because
+  synthesising labels would score the model against its own output.
 - [ ] **M3-WORKS-PERFORMANCES MusicBrainz works, performances and
   per-track completeness** — Resolve work and recording identity from
   MusicBrainz, resolve composers for the 131 Various/Unknown rows, and

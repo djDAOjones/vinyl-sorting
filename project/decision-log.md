@@ -2,6 +2,48 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — SPIKE-PHOTO-TO-FIELDS: no API keys; the label reading goes through a chat window
+
+**Decision:** No API keys, anywhere in this project. Reading a label
+photograph happens by uploading a zip of images to a chat the
+maintainer already pays for, and importing the reply. The metered path
+— a vision API called from `tools/`, then perhaps from the Worker — is
+ruled out, and the tool that implemented it is deleted rather than
+parked.
+
+**Rationale:** Maintainer's ruling, given as "no API keys to be used"
+alongside the observation that a zip export of images with row ids
+would be useful. It is a better fit than the design it replaced, on
+three counts the spike had already flagged as costs:
+
+- **OPS-SPEND-GUARD stays intact.** That decision rests on the
+  Cloudflare Free plan being a hard wall — D1 refuses writes past
+  100k/day rather than charging. A metered API key has no wall, and
+  adding one would have reopened a question that is currently closed.
+- **The Worker's one-outbound-file invariant survives.** A vision
+  client would have been the second file in `worker/` making an
+  outbound `fetch(`, against an exact-equality assertion in
+  `worker.test.mjs`. Nothing now needs that test generalised.
+- **No second secret**, in a v1 that has no sign-in.
+
+**The cost it carries, recorded:** a hand-run round trip has a failure
+mode an API call does not. Twenty images go up and eighteen objects
+come back, and without ids every row after the gap is attributed to its
+neighbour — nineteen plausible readings, all shifted by one, and
+indistinguishable from good data. That is why every image is named
+after its row id, why the id is repeated in the prompt text, why the
+importer refuses an id it never sent, and why it exits non-zero when a
+reply names one. The mitigation is not incidental to the design; it is
+most of it.
+
+Also uncosted but real: a person now does the uploading, 750 records at
+20 per batch. If the readings turn out good, whether that is tolerable
+is the next question — and it is the one thing that could argue for
+revisiting the metered path.
+
+**Trigger to revisit:** a scored run that passes the bar, plus the
+maintainer finding the manual loop tedious enough to price again.
+
 ## 2026-08-30 — OPEN-SELL-THRESHOLD: value is never a reason to keep
 
 **Decision:** A copy is kept for musical reasons only. Market value
