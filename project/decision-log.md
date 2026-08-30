@@ -2,46 +2,52 @@
 
 <!-- Append-only, newest first. -->
 
-## 2026-08-30 — DEPLOY: five faults that only the real platform could show
+## 2026-08-30 — DEPLOY: six faults only the real platform could show, and one wrong conclusion
 
-**Decision:** Ship to a Worker serving its own static assets, with the
-matcher run from the maintainer's machine rather than from cron.
+**Decision:** Ship to a Worker serving its own static assets. The
+matcher runs from cron, pacing Discogs requests at least 2 s apart.
 
-The app is live at `deep-groove.joe-2d2.workers.dev` with 446 items,
-446 match runs and 2,045 candidates. Every one of the following passed
-locally and failed in production:
+Live at `deep-groove.joe-2d2.workers.dev` with 446 items, 446 match
+runs and 2,045 candidates. Every fault below passed locally:
 
 1. **Remote D1 rejects explicit transactions.** The seed wrapped itself
-   in `BEGIN`/`COMMIT`; miniflare accepted it, D1 refused. Removed —
-   safe because the dump is already in dependency order.
+   in `BEGIN`/`COMMIT`; miniflare accepted it, D1 refused.
 2. **`d1 info <name>` resolves through wrangler.toml**, which holds a
-   placeholder on a first run. This is what made the maintainer's first
-   deploy appear to do nothing: it created the database, failed to read
-   the id back, and exited. Ids now come from `d1 list --json`.
+   placeholder on a first run — which is why the maintainer's first
+   deploy appeared to do nothing. Ids now come from `d1 list --json`.
 3. **D1 caps a query at 100 bound parameters.** The review queue bound
-   one per run id, so a 200-row page returned 500 in production and
-   passed locally. Chunked.
-4. **A stored global `fetch` is detached in Workers.** Calling
-   `this.#fetch(...)` raised "Illegal invocation" and failed all 12
-   queries on the first real row. Node tolerates it. The default is now
-   a wrapper.
-5. **Discogs throttles Cloudflare's shared egress IPs.** The Worker got
-   429s while the same token from a laptop returned 200 with 59
-   requests remaining. Not fixable by rate limiting, because the budget
-   is being spent by strangers sharing the IP. Split out as
-   M2-EGRESS-IP.
+   one per run id, so a 200-row page returned 500 in production.
+4. **A stored global `fetch` is detached in Workers**, raising "Illegal
+   invocation". Node tolerates it; the default is now a wrapper.
+5. **KV refuses a TTL below 60 s.** The spacing key wanted 8. The fake
+   KV ignored TTLs entirely, so it shipped — a double more permissive
+   than the real thing is worse than none, and it now enforces the floor.
+6. **The rate limiter had no minimum spacing.** A per-minute budget is
+   spent as an instantaneous burst, and Discogs enforces a lower rate
+   than it publishes while caring about burstiness.
 
-**The pattern is the point.** Every one was invisible to a suite of 166
-tests and to a local emulator. Two of them — 4 and 5 — would have
-silently mis-reported records as unmatchable had the error state built
-in M2-MATCHER not existed to catch them. Building that turned out to
-be the difference between finding this in an afternoon and finding it
-in a loft.
+**A wrong conclusion, corrected.** On seeing 429s from the Worker while
+the same token returned 200 from a laptop with 59 requests remaining, I
+concluded Discogs was throttling Cloudflare's shared egress IPs and
+that no amount of rate limiting could help. The maintainer said the
+real limit is lower than published and needs about one request every
+two seconds. That was right, and it was my bug: the fixed-window
+counter permitted the entire budget instantly. The laptop looked
+healthy precisely because its round-trip time paced it.
+
+Both factors are real — the shared IP does make Discogs stricter, since
+7 of 12 queries still fail at 2 s where the laptop managed 446 rows
+with zero failures — but the dominant cause was mine. Tuning continues
+in M2-DISCOGS-PACING.
+
+**The pattern worth keeping:** a suite of 167 tests and a local
+emulator caught none of these. Faults 4, 5 and 6 would each have
+silently mis-reported records as unmatchable, had the error state built
+in M2-MATCHER not refused to call a failed search a negative result.
 
 **R2 stays off.** Enabling it needs a dashboard action the API refuses
-to perform and which may ask for payment details, so the Worker treats
-the binding as optional: photo uploads answer a retryable 503 and the
-phone keeps them queued.
+and which may ask for payment details, so the binding is optional:
+photo uploads answer a retryable 503 and the phone keeps them queued.
 
 ## 2026-08-30 — M2-REVIEW-QUEUE: two bugs that only a real browser was going to find
 

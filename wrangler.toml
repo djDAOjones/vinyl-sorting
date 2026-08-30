@@ -45,5 +45,15 @@ id = "3f62537511354c4fad11caba49fd2235"
 [triggers]
 crons = ["*/5 * * * *"]
 
+# A tick is four rows of JSON parsing and scoring — milliseconds of CPU,
+# with the rest of its wall time spent waiting on the two-second Discogs
+# spacing, which costs no CPU. The 30s default is therefore 30s of room
+# a runaway loop could use; 10s is still ~100x what a healthy tick needs
+# and turns "spins until the platform stops it" into "dies quickly and
+# visibly". Cloudflare sells no hard spend cap, so ceilings are ours to
+# build (OPS-SPEND-GUARD).
+[limits]
+cpu_ms = 10000
+
 [observability]
 enabled = true

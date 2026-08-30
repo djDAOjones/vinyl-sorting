@@ -96,25 +96,23 @@ apply through wrangler's own D1 (18 tables, 4 views), and the seed
 loads into it — 267 releases, 4,681 provenance rows, 0 decision
 eligible. What is untested is only what needs a real account.
 
-## Matching runs from your machine, not from cron
+## Discogs pacing
 
-Discogs rate-limits by source IP, and Cloudflare Workers egress from
-addresses shared with other customers, so the deployed cron matcher
-gets 429s while the same token from a laptop returns 200 with 59
-requests remaining. The central rate limiter cannot help — the budget
-is being spent by strangers.
+Discogs enforces a lower rate than it publishes, and cares how bursty
+the traffic is. The limiter therefore spaces requests **at least 2 s
+apart** as well as capping them at 30/min — a per-minute budget alone
+is spent as an instant burst, which is what a Worker does and what a
+laptop hides, because the round-trip paces the calls for you.
 
-So run the matcher here:
+The cron matcher works with that pacing, though 7 of 12 queries still
+failed on its first live row; tuning is `M2-DISCOGS-PACING`. To match a
+batch from here instead, which is faster and currently more reliable:
 
 ```bash
 node tools/match-run.mjs
 ```
 
-It is resumable (only rows with no `match_run` are selected) and
-completed all 446 rows with zero failed queries. Getting those results
-into the live database is the open question in `M2-EGRESS-IP`; the
-cron stays deployed and harmless in the meantime, recording an `error`
-state rather than a false "nothing found" whenever it is throttled.
+Resumable — only rows with no `match_run` are selected.
 
 ## How no-sign-in stays safe now the matcher exists
 

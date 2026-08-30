@@ -125,12 +125,18 @@ export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
   };
 }
 
-/** Persist a run: the verdict, the top five candidates and the queries used. */
+/**
+ * Persist a run: the verdict, the top five candidates and the queries
+ * used. Returns the number of D1 rows written, because rows written is
+ * the only metered line the matcher can move far enough to cost money
+ * (OPS-SPEND-GUARD) — the caller keeps a per-tick budget against it.
+ */
 export async function persistRun(
   env: Env,
   row: MatchRow,
   result: Awaited<ReturnType<typeof matchRow>>,
-): Promise<void> {
+): Promise<number> {
+  let written = 0;
   const state = result.outcome.verdict === 'verified' ? 'auto-accepted'
     : result.outcome.verdict === 'error' ? 'error'
       : result.outcome.verdict === 'rejected' ? 'rejected'
@@ -138,7 +144,9 @@ export async function persistRun(
 
   let releaseId: number | null = null;
   if (result.outcome.chosenDiscogsId !== null) {
-    releaseId = await upsertRelease(env, result.outcome.chosenDiscogsId, result.gate);
+    const up = await upsertRelease(env, result.outcome.chosenDiscogsId, result.gate);
+    releaseId = up.id;
+    written += up.written;
   }
 
   const run = await env.DB.prepare(
@@ -150,12 +158,14 @@ export async function persistRun(
     releaseId,
   ).first<{ id: number }>();
   if (!run) throw new Error('match_run insert returned no id');
+  written += 1;
 
   const top5 = (result.gate?.ranked ?? []).slice(0, 5);
   if (top5.length) {
     await env.DB.batch(top5.map((c, i) => env.DB.prepare(
       'INSERT INTO match_candidate (match_run_id, rank, discogs_id, score, signals_json) VALUES (?, ?, ?, ?, ?)',
     ).bind(run.id, i + 1, c.id, c.score, JSON.stringify({ families: c.families, signals: c.signals }))));
+    written += top5.length;
   }
 
   if (releaseId !== null) {
@@ -169,13 +179,18 @@ export async function persistRun(
        DO UPDATE SET source = 'discogs', confidence = excluded.confidence,
                      confirmed_by = NULL, confirmed_at = NULL`,
     ).bind(row.itemId, result.gate?.chosen?.score ?? null).run();
+    written += 2;
   }
+
+  return written;
 }
 
-async function upsertRelease(env: Env, discogsId: number, gate: GateResult | null): Promise<number> {
+async function upsertRelease(
+  env: Env, discogsId: number, gate: GateResult | null,
+): Promise<{ id: number; written: number }> {
   const existing = await env.DB.prepare('SELECT id FROM release WHERE discogs_id = ?')
     .bind(discogsId).first<{ id: number }>();
-  if (existing) return existing.id;
+  if (existing) return { id: existing.id, written: 0 };
 
   const created = await env.DB.prepare('INSERT INTO release (discogs_id) VALUES (?) RETURNING id')
     .bind(discogsId).first<{ id: number }>();
@@ -183,7 +198,7 @@ async function upsertRelease(env: Env, discogsId: number, gate: GateResult | nul
   await env.DB.prepare(
     "INSERT INTO field_source (entity, entity_id, field, source, confidence) VALUES ('release', ?, 'discogs_id', 'discogs', ?)",
   ).bind(created.id, gate?.chosen?.score ?? null).run();
-  return created.id;
+  return { id: created.id, written: 2 };
 }
 
 /** Rows awaiting a first match, oldest first. */

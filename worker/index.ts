@@ -232,10 +232,30 @@ export function createApp() {
  * pacing rather than to a round number is what keeps an invocation
  * from running past its limit.
  */
-export async function runMatchBatch(env: Env, batchSize = 4): Promise<{ processed: number }> {
+/**
+ * Rows the matcher may write in one tick before it stops.
+ *
+ * PROVISIONAL. OPS-SPEND-GUARD asks for this number to be set from the
+ * measured write volume of the first full run, not guessed, and that
+ * run has not happened yet. 200 is the shape argument until it does: a
+ * row costs at most ~10 writes (release + its provenance, the run, five
+ * candidates, the item update and its provenance) and a tick takes four
+ * rows, so a healthy tick writes ~40 and this leaves 5x headroom. It is
+ * a runaway-loop backstop, not a throttle — a normal tick must never
+ * reach it, and if one ever does, that is the bug it exists to catch.
+ *
+ * Cloudflare sells no hard spend cap, so this is the wall.
+ */
+export const WRITE_BUDGET_PER_TICK = 200;
+
+export async function runMatchBatch(
+  env: Env,
+  batchSize = 4,
+  writeBudget = WRITE_BUDGET_PER_TICK,
+): Promise<{ processed: number; rowsWritten: number; stoppedShort: boolean }> {
   if (!env.DISCOGS_TOKEN) {
     console.warn('match: DISCOGS_TOKEN is not set; nothing to do');
-    return { processed: 0 };
+    return { processed: 0, rowsWritten: 0, stoppedShort: false };
   }
   const limiter = new RateLimiter({
     get: (k) => env.CACHE.get(k),
@@ -244,18 +264,40 @@ export async function runMatchBatch(env: Env, batchSize = 4): Promise<{ processe
   const client = new DiscogsClient(env.DISCOGS_TOKEN, limiter);
 
   const rows = await pendingRows(env, batchSize);
+  let rowsWritten = 0;
+  let processed = 0;
+  let stoppedShort = false;
+
   for (const row of rows) {
+    // Checked BEFORE the row, not after: a row costs at most ~10 writes
+    // and the budget has multiples of that in headroom, so stopping on
+    // the way in keeps every persisted run whole. A half-written run
+    // would be worse than a short tick — the next tick would see the
+    // item as still pending and search it again, paying the rate limit
+    // twice for one row.
+    if (rowsWritten >= writeBudget) {
+      stoppedShort = true;
+      break;
+    }
     const result = await matchRow(row, client);
-    await persistRun(env, row, result);
+    rowsWritten += await persistRun(env, row, result);
+    processed += 1;
   }
-  return { processed: rows.length };
+
+  return { processed, rowsWritten, stoppedShort };
 }
 
 export default {
   fetch: (req: Request, env: Env, ctx: ExecutionContext) => createApp().fetch(req, env, ctx),
   scheduled: async (_event: ScheduledController, env: Env, ctx: ExecutionContext) => {
-    ctx.waitUntil(runMatchBatch(env).then(({ processed }) => {
-      console.log(`match: processed ${processed} row(s)`);
+    ctx.waitUntil(runMatchBatch(env).then(({ processed, rowsWritten, stoppedShort }) => {
+      // Say when it stopped short. A tick that quietly did less than it
+      // was asked to looks identical to a quiet night in the logs, and
+      // the whole point of the budget is that someone notices.
+      console.log(
+        `match: processed ${processed} row(s), ${rowsWritten} row(s) written`
+        + (stoppedShort ? ` — STOPPED SHORT at the ${WRITE_BUDGET_PER_TICK}-write budget` : ''),
+      );
     }));
   },
 };

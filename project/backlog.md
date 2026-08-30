@@ -13,11 +13,10 @@
 - [ ] **M2-FIRST-RUN Run the matcher over all 446 and clear the queue
   once** — The operation, not the code — deploy, let the cron matcher work
   through all 446 rows, then clear the review queue by keyboard.
-- [ ] **M2-EGRESS-IP Discogs throttles Cloudflare's shared egress, so
-  matching cannot run in the Worker** [sign-off] (2026-08-30) — The cron
-  matcher gets 429s from Discogs because Workers egress from shared IPs;
-  matching runs from the maintainer's machine instead, and needs a way to
-  write results back to the live database.
+- [ ] **M2-DISCOGS-PACING Tune Discogs pacing — 7 of 12 queries still
+  fail in the Worker** (2026-08-30) — Spacing requests 2s apart made the
+  deployed matcher work, but a majority of queries still fail, which costs
+  recall; find the rate that holds from Cloudflare's shared egress.
 
 ### Next milestone
 
