@@ -23,7 +23,7 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { readCsv } from './lib/csv.mjs';
-import { scoreOne, trapSprung, summarise, PHOTO_FIELDS } from './lib/photo-fields.mjs';
+import { scoreOne, trapSprung, summarise, PHOTO_FIELDS, ORIENTATIONS } from './lib/photo-fields.mjs';
 
 const args = process.argv.slice(2);
 const argOf = (n, d) => { const i = args.indexOf(n); return i >= 0 && args[i + 1] ? args[i + 1] : d; };
@@ -70,6 +70,7 @@ for (const [rowId, result] of Object.entries(run.results ?? {})) {
     verdicts: scoreOne(result.fields, want),
     trap: trapSprung(result.fields, want),
     fields: result.fields,
+    orientation: result.fields?.orientation ?? null,
   };
   (result.truthPreexisting ? notIndependent : rows).push(row);
 }
@@ -143,6 +144,39 @@ if (notIndependent.length) {
   if (bad.length) {
     lines.push('Worth looking at anyway — a wrong value is a wrong value:', '',
       ...bad.map((r) => `- \`${r.rowId}\``), '');
+  }
+}
+
+/**
+ * How the writing sat, and whether it cost anything.
+ *
+ * The question behind this is whether a rotation-detector is worth
+ * building. It only is if photographs arrive rotated AND rotated ones
+ * read worse — two facts, both cheap to read off a run and neither
+ * worth guessing at. A table beats an opinion.
+ */
+const oriented = [...rows, ...notIndependent].filter((r) => r.orientation);
+if (oriented.length) {
+  const buckets = new Map();
+  for (const r of oriented) {
+    const key = ORIENTATIONS.includes(r.orientation) ? r.orientation : 'other';
+    const b = buckets.get(key) ?? { n: 0, wrong: 0 };
+    b.n += 1;
+    b.wrong += PHOTO_FIELDS.filter((f) => r.verdicts[f] === 'wrong' || r.verdicts[f] === 'invented').length;
+    buckets.set(key, b);
+  }
+  lines.push('## How the writing sat', '',
+    'Reported by the reader, not detected. A rotation-detector is worth',
+    'building only if photographs arrive rotated **and** rotated ones read',
+    'worse — this says whether either is true.', '',
+    '| orientation | photos | wrong values | wrong per photo |',
+    '| --- | ---: | ---: | ---: |',
+    ...[...buckets.entries()].sort((a, b) => b[1].n - a[1].n).map(([k, b]) =>
+      `| ${k} | ${b.n} | ${b.wrong} | ${(b.wrong / b.n).toFixed(2)} |`),
+    '');
+  const upright = buckets.get('upright')?.n ?? 0;
+  if (upright === oriented.length) {
+    lines.push('Every photograph arrived upright, so there is nothing to detect.', '');
   }
 }
 

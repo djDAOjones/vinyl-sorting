@@ -64,7 +64,24 @@ export const FIELD_SPEC = [
   ['side', 'the side, if printed'],
   ['other_numbers', 'an array of EVERY other number or code visible that you did not assign above'],
   ['unreadable', 'an array naming the fields you left null because the label was illegible there'],
+  ['orientation', 'how the writing sat in the frame: upright, left, right, upside-down, or mixed'],
 ];
+
+/**
+ * The orientations a reading may report, and what each means.
+ *
+ * Asked rather than detected, and asked BEFORE anything is built to fix
+ * it. A record label is round and its text runs in arcs, so "which way
+ * up" is not obviously a well-formed question — and nobody yet knows
+ * whether photographs arrive rotated often enough to matter, or whether
+ * a rotated one even reads worse. One field in a reply answers both,
+ * and costs nothing.
+ *
+ * `mixed` is a real answer, not a refusal: a label with its company
+ * name curved over the top and the title straight across the middle
+ * genuinely has no single orientation.
+ */
+export const ORIENTATIONS = ['upright', 'left', 'right', 'upside-down', 'mixed'];
 
 /**
  * The clause that keeps an invented value out of the data, kept in its
@@ -128,6 +145,13 @@ export function chatPrompt(rows) {
     'Use null for anything you cannot read directly off the images, and',
     'name that field in `unreadable` if the reason was legibility rather',
     'than the record simply not carrying it.',
+    '',
+    'Read the record whichever way up it arrives — a rotated photograph',
+    `is still readable. Report in \`orientation\` how the writing sat: one of`,
+    `${ORIENTATIONS.map((o) => `\`${o}\``).join(', ')}. \`mixed\` is a correct`,
+    'answer for a label whose company name curves over the top while the',
+    'title runs straight across, which is most of them. This is being',
+    'measured, not corrected: say what you saw.',
     '',
     'A record carries many numbers — matrix and stamper codes, side',
     'numbers, opus and K. numbers, timings, (P) and (C) years. Assign one',

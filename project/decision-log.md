@@ -2,6 +2,45 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-30 — PHOTO-ORIENTATION: ask before building a detector
+
+**Decision:** The reading contract gains an `orientation` field —
+`upright`, `left`, `right`, `upside-down` or `mixed` — reported by the
+reader and shown in the score against how many values that photograph
+got wrong. Nothing detects or corrects rotation. `orientation` is not a
+scored field: it describes the photograph, not the record.
+
+**Rationale:** Asked whether there could be "a viably light process to
+identify the orientation of the writing". There could — a projection-
+profile pass over the ink density is maybe sixty lines and no
+dependency. But it would answer a question nobody has established is
+being asked. No photograph has been read yet, so two things are unknown
+and both are cheap to find out:
+
+1. **Do photographs arrive rotated at all?** The live camera takes the
+   frame as held, and a label is round, so the answer is not obvious in
+   either direction.
+2. **Does a rotated one read worse?** Vision models are largely robust
+   to rotation. If a sideways label reads as well as an upright one,
+   the whole question is moot however cheap the detector.
+
+A detector is worth building only if both are true. One field in the
+reply establishes both, costs nothing, and cannot be wrong in a way
+that damages the data — it is never scored against a label.
+
+**`mixed` is a correct answer, not a refusal.** A centre label with the
+company name curved over the top and the title straight across the
+middle genuinely has no single orientation, and forcing a choice would
+manufacture a fact — the failure this project keeps returning to.
+
+**If it turns out to matter, the cheap fix is not a detector.** The
+phone knows how it is being held: `screen.orientation.angle` at shutter
+time is deterministic where image analysis is a heuristic. That was not
+built either, because whether the stream is already display-oriented
+varies by browser and could not be tested on the maintainer's device
+from here — building it blind risked rotating correct photographs into
+wrong ones.
+
 ## 2026-08-30 — CAPTURE-VIEWFINDER: the camera takes the whole screen
 
 **Decision:** While the camera is open it is fullscreen — fixed to the

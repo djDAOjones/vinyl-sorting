@@ -19,7 +19,7 @@ import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
-  FIELD_SPEC, NO_INFERENCE, BLIND_READ, PHOTO_FIELDS,
+  FIELD_SPEC, NO_INFERENCE, BLIND_READ, ORIENTATIONS, PHOTO_FIELDS,
   chatPrompt, packInstructions, parseChatReply, scoreOne, trapSprung, summarise,
 } from '../lib/photo-fields.mjs';
 
@@ -109,6 +109,24 @@ test('several photographs of one record are asked for as one object', () => {
   const single = chatPrompt([{ rowId: 'A', photos: 1 }, { rowId: 'B', photos: 1 }]);
   assert.ok(!single.includes('SEVERAL PHOTOGRAPHS'), 'no instruction nobody needs');
   assert.match(single, /^  A$/m);
+});
+
+test('orientation is asked for, and is not one of the scored fields', () => {
+  // Asked rather than detected, and BEFORE anything is built to correct
+  // it: a detector is only worth writing if photographs arrive rotated
+  // AND rotated ones read worse. One field in the reply answers both.
+  assert.ok(FIELD_SPEC.some(([k]) => k === 'orientation'));
+  assert.ok(!PHOTO_FIELDS.includes('orientation'),
+    'it describes the photograph, not the record — scoring it against a label would be meaningless');
+  const p = chatPrompt(['A']);
+  assert.match(p, /Report in `orientation` how the writing sat/);
+  assert.match(p, /whichever way up it arrives/, 'a rotated photo is still to be read');
+  assert.match(p, /This is being\nmeasured, not corrected/);
+  for (const o of ORIENTATIONS) assert.ok(p.includes(`\`${o}\``), `${o} is offered`);
+  // A round label with an arc of company name over a straight title has
+  // no single orientation, and saying so must be a correct answer
+  // rather than a refusal.
+  assert.ok(ORIENTATIONS.includes('mixed'));
 });
 
 // ── the reply, which is where a hand-run trip goes wrong ──────────
