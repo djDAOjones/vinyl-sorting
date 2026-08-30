@@ -13,20 +13,29 @@
  * Rate limited to the shared 50/min. Read-only against Discogs; writes
  * only to the local database.
  *
- * Usage: node tools/match-run.mjs [--limit N] [--out data/match-run.json]
+ * RESUMABLE BY CONSTRUCTION: it selects only items with no `match_run`,
+ * so a run that dies costs the row it was on and nothing else. The
+ * database is a file, not memory, so results survive the process.
+ *
+ * Usage: node tools/match-run.mjs [--limit N] [--db data/deep-groove.sqlite]
+ *                                 [--out data/match-run.json] [--backlog-only]
  */
 
-import { readFileSync, writeFileSync } from 'node:fs';
-import { makeEnv } from './test/helpers/bindings.mjs';
-import { loadDataset } from './load-dataset.mjs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { DatabaseSync } from 'node:sqlite';
+import { applySchema } from './test/helpers/bindings.mjs';
+import { makeD1, makeR2, makeKv } from './test/helpers/bindings.mjs';
+import { toSeedSql } from './load-dataset.mjs';
 import { DiscogsClient } from '../worker/discogs.ts';
 import { RateLimiter } from '../worker/rate-limit.ts';
 import { matchRow, persistRun } from '../worker/match/run.ts';
 
 const args = process.argv.slice(2);
 const argOf = (n, d) => { const i = args.indexOf(n); return i >= 0 && args[i + 1] ? args[i + 1] : d; };
-const limit = Number(argOf('--limit', '40')) || 40;
+const limit = Number(argOf('--limit', '0')) || Infinity;
 const out = argOf('--out', 'data/match-run.json');
+const dbPath = argOf('--db', 'data/deep-groove.sqlite');
+const backlogOnly = args.includes('--backlog-only');
 
 const token = readFileSync('Pre August 2026/Windsurf Projects/discogs_personal_access_token', 'utf8').trim();
 
@@ -39,25 +48,50 @@ const limiter = new RateLimiter({
 });
 const client = new DiscogsClient(token, limiter);
 
-// Load the dataset into a real database, then match against it.
-const env = makeEnv();
-const source = loadDataset(':memory:');
-env.DB.raw.exec(readFileSync('data/seed.sql', 'utf8'));
-source.db.close?.();
+// A FILE, not memory: 45 minutes of API time must survive the process.
+const fresh = !existsSync(dbPath);
+const db = new DatabaseSync(dbPath);
+if (fresh) {
+  applySchema(db);
+  db.exec(readFileSync('data/seed.sql', 'utf8'));
+  console.log(`match-run: created ${dbPath} from the M0 seed`);
+} else {
+  const done = db.prepare('SELECT COUNT(*) n FROM match_run').get().n;
+  console.log(`match-run: resuming ${dbPath} — ${done} row(s) already matched`);
+}
 
-/** The backlog: rows with a capture but no Discogs release yet. */
-const rows = env.DB.raw.prepare(`
+/** Wrap the file database in the same D1 shape the Worker expects. */
+const statement = (sql, boundArgs = []) => ({
+  bind: (...next) => statement(sql, next),
+  first: async () => db.prepare(sql).all(...boundArgs)[0] ?? null,
+  all: async () => ({ results: db.prepare(sql).all(...boundArgs), success: true }),
+  run: async () => { db.prepare(sql).run(...boundArgs); return { success: true }; },
+  __exec: () => db.prepare(sql).run(...boundArgs),
+});
+const env = {
+  DB: { raw: db, prepare: (sql) => statement(sql), exec: async (sql) => { db.exec(sql); },
+    batch: async (stmts) => { db.exec('BEGIN'); try { const r = stmts.map((x) => x.__exec()); db.exec('COMMIT'); return r; } catch (e) { db.exec('ROLLBACK'); throw e; } } },
+  PHOTOS: makeR2(), CACHE: makeKv(),
+};
+
+/**
+ * Every row without a match_run yet. The 277 that already claim a
+ * release are included on purpose: searching afresh and letting the
+ * gate judge is the actual re-verification, where the earlier audit
+ * only asked whether the existing claim held up.
+ */
+const rows = db.prepare(`
   SELECT i.id AS itemId, c.id AS captureId,
          c.catno_raw AS catnoRaw, c.label_raw AS labelRaw,
          c.title_raw AS titleRaw, c.name_raw AS nameRaw, c.year_raw AS yearRaw
     FROM item i
     LEFT JOIN capture c ON c.item_id = i.id
-   WHERE i.release_id IS NULL
-     AND NOT EXISTS (SELECT 1 FROM match_run m WHERE m.item_id = i.id)
+   WHERE NOT EXISTS (SELECT 1 FROM match_run m WHERE m.item_id = i.id)
+     ${backlogOnly ? 'AND i.release_id IS NULL' : ''}
    ORDER BY i.id
-   LIMIT ?`).all(limit);
+   LIMIT ?`).all(limit === Infinity ? -1 : limit);
 
-console.log(`match-run: ${rows.length} unmatched rows (of the backlog); searching Discogs`);
+console.log(`match-run: ${rows.length} rows to match; searching Discogs at the shared 50/min`);
 
 const outcomes = [];
 let n = 0;
@@ -85,6 +119,11 @@ const stats = {
   queryErrors: outcomes.reduce((a, o) => a + (o.queryErrors ?? 0), 0),
 };
 writeFileSync(out, `${JSON.stringify({ ...stats, outcomes }, null, 2)}\n`);
+
+// Re-emit the seed WITH the match results, so a deployment inherits
+// this run instead of spending the same 2,000 queries again.
+writeFileSync('data/seed.sql', toSeedSql(db));
+console.log(`  -> data/seed.sql rewritten, now carrying the match results`);
 
 console.log(`\nmatch-run: ${stats.attempted} rows`);
 console.log(`  verified (auto-accepted): ${stats.verified}`);

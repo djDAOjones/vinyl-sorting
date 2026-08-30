@@ -58,52 +58,38 @@ node tools/freeze-archive.mjs --check && node tools/build-report.mjs
 
 ## Deploying — needs your Cloudflare account
 
-These are the steps I cannot run: they need your login. Everything
-above is already verified locally.
+Everything that can be automated is. Two commands are yours because
+they need your login and your credential; the rest is one script.
 
 ```bash
 npx wrangler login
 ```
 
-Create the database, and put its id into `wrangler.toml` where it says
-`REPLACE_WITH_ID_FROM_wrangler_d1_create`:
-
 ```bash
-npx wrangler d1 create deep-groove
+bash tools/deploy.sh
 ```
 
-Create the photo bucket and the cache namespace, putting the KV id into
-`wrangler.toml` likewise:
+That creates the D1 database, the R2 bucket and the KV namespace,
+writes their ids into `wrangler.toml`, applies both migrations, loads
+the dataset, deploys the Worker and publishes the client. It is
+idempotent — if it fails halfway, run it again.
 
-```bash
-npx wrangler r2 bucket create deep-groove-photos && npx wrangler kv namespace create CACHE
-```
-
-Apply the schema:
-
-```bash
-npx wrangler d1 execute deep-groove --remote --file schema/001-init.sql
-```
-
-Generate the seed — it is derived from the committed CSV in one
-command, so it is not itself committed — and load M0's 446 rows:
-
-```bash
-node tools/load-dataset.mjs --sql && npx wrangler d1 execute deep-groove --remote --file data/seed.sql
-```
-
-Store the Discogs token as a secret. It is never committed, and no
-route reads it until M2 — a test enforces that.
+Then the one step I will not automate, because storing a credential is
+yours to do:
 
 ```bash
 npx wrangler secret put DISCOGS_TOKEN
 ```
 
-Deploy the Worker, then the built client:
+The token is in `Pre August 2026/Windsurf Projects/`. Until it is set,
+the cron matcher logs a warning and does nothing; everything else
+works.
 
-```bash
-npx wrangler deploy && npm run build && npx wrangler pages deploy dist
-```
+**Already verified locally, so it should not surprise you:** the Worker
+bundles at 95 KiB with all three bindings resolving, both migrations
+apply through wrangler's own D1 (18 tables, 4 views), and the seed
+loads into it — 267 releases, 4,681 provenance rows, 0 decision
+eligible. What is untested is only what needs a real account.
 
 ## How no-sign-in stays safe now the matcher exists
 
