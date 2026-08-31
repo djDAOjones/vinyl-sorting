@@ -2,6 +2,55 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-31 — CAPTURE-ONE-SCREEN: one disc, one screen
+
+**Decision:** "Photograph a whole crate" is removed. Condition grading
+and the "More" block are commented out of the page rather than deleted.
+What is left is the shutter, three boxes and Queue it, which fits an
+iPhone SE in portrait with nothing below the fold.
+
+**Rationale:** One sentence from the maintainer retires the bulk mode
+outright — more than one photograph is always needed. CAPTURE-BULK-PHOTOS
+wrote one row per photograph, so a crate walked that way manufactured
+three discs where one stood: the same fault as a required field answered
+with filler, arriving faster and indistinguishable afterwards. The speed
+it bought is bought instead by there being almost nothing on the page.
+
+**Parked, not deleted.** The condition and More markup stays in `main.ts`
+inside HTML comments. The Worker still accepts every one of those fields,
+`readFields` still looks for every id, and removing two comment markers
+restores the page exactly. Nothing is lost by leaving them off: condition
+and matrix/runout are legible on the photograph afterwards, which is a
+better reading than one typed one-handed in a loft.
+
+**What it costs, stated rather than solved.** `capturedBy` has no box now,
+so a second capturer cannot name themselves. The value is read from
+storage alone and a device that never had one sends nothing — absent
+rather than guessed, per the rule everywhere else here. On the wish-list.
+
+**`bulkFields` and `BULK_CARRIED` stay in `queue-logic.ts`** with their
+tests. The UI path is gone; deleting tested logic to tidy up after it is
+not the same decision and was not asked for.
+
+**Five faults the pass found, all of them mobile-only.** A flash message
+was written into the page flow, so every camera error — including the
+torch refusal iOS always gives — was painted behind the fullscreen
+viewfinder where nobody could read it; it is now a fixed toast above both
+the bar and the camera. A double tap on Queue it wrote two discs, because
+each pass mints its own clientId and the Worker's idempotency cannot see
+past that. Autofocus after a save threw the keyboard over the shutter,
+which is the next thing anyone touches. The photo-delete target was 24 px
+next to another 24 px target, and losing that coin toss deletes a
+photograph of a disc already back in the crate — 34 px now, and inside
+the frame rather than overhanging the next photograph. Landscape put the
+three boxes below the fold; they now run across, where the width is.
+
+**Verify:** npm run gate green (238 tests), and the page driven in a
+375x812, a 375x667 and a 667x375 viewport: fits without scrolling in all
+three, Enter walks the three boxes and releases the keyboard, the queue
+button counts the photographs it is about to send, a queued capture
+resets the form, and the parked ids resolve to null without throwing.
+
 ## 2026-08-31 — PHOTO-PROMOTE: a reading becomes a lead, never a fact
 
 **Decision:** A photo reading is written into `raw_value` with a new

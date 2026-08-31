@@ -5,11 +5,13 @@
  * labels, type nothing, transcribe later at a desk. It is faster per
  * disc and it is delegable.
  *
- * TWO MODES. One disc at a time, with the label and catalogue number
- * typed; or a whole crate in one pass, where the shots ARE the capture
- * and nothing is typed at all. The second is what "walk a crate
- * photographing labels" actually means — twenty form interactions is
- * the thing that stops the cataloguing.
+ * ONE DISC AT A TIME, photographed as many times as it needs. The
+ * crate-in-one-pass mode is gone (maintainer, 2026-08-31): it wrote one
+ * row per photograph, and more than one photograph is always wanted —
+ * label, sleeve, runout — so a crate walked that way manufactured three
+ * discs where one stood. The speed it bought is bought instead by
+ * having almost nothing on the page: photograph, and type only what you
+ * feel like typing.
  *
  * The one rule the interface exists to enforce: LABEL AND CATALOGUE
  * NUMBER ARE SEPARATE INPUTS. Merging them is what left label captured
@@ -18,7 +20,7 @@
 
 import { putEntry, allEntries } from './queue.ts';
 import {
-  CAPTURED_KIND, PHOTO_LONG_EDGE, bulkFields, scaleTo, summarise, torchSupported,
+  CAPTURED_KIND, PHOTO_LONG_EDGE, scaleTo, summarise, torchSupported,
   videoConstraints, type QueuedCapture, type QueuedPhoto,
 } from './queue-logic.ts';
 import { startSync, drain } from './sync.ts';
@@ -29,13 +31,19 @@ const app = document.getElementById('app')!;
  * Sticky between discs. Only `who`, deliberately.
  *
  * Crate used to stick too, which was right while it was a required
- * field you could see. Now that it is optional and folded into "More",
- * a remembered value would attach itself to every future capture
- * unseen — so one placeholder typed once ("1", on item 448) would go on
+ * field you could see. Now that the whole "More" block is parked, a
+ * remembered value would attach itself to every future capture unseen —
+ * so one placeholder typed once ("1", on item 448) would go on
  * asserting a location nobody has confirmed. An invisible field that
  * fills itself in is the same fault as a required field answered with
  * filler, and this project's rule is the same either way: refuse rather
- * than guess. Type a crate when you mean one.
+ * than guess.
+ *
+ * `who` survives that test where crate does not: it is a fact about the
+ * person holding the phone, not about the disc, so carrying it is not a
+ * claim about anything the record says. With its box parked there is
+ * nowhere left to type it, so it is now read from storage alone — see
+ * `readFields`, which must not let a missing box blank it.
  */
 const sticky = {
   get who() { return localStorage.getItem('dg.who') ?? ''; },
@@ -79,26 +87,31 @@ function render(): void {
     </button>
     <input id="file" type="file" accept="image/*" capture="environment" multiple hidden>
     <div class="strip" id="strip"></div>
-    <p class="note" id="camNote">Keep going — label, sleeve, runout, whatever the record needs.
-      Nothing to label or choose. Queue it when you are done with this disc.</p>
-
-    <button class="bulk" id="bulkBtn" type="button">📚 Photograph a whole crate</button>
-    <input id="bulkFile" type="file" accept="image/*" multiple hidden>
-    <p class="note">One row per photo, nothing typed. Nothing you have typed above
-      carries over — a catalogue number belongs to one disc, so copying one across
-      twenty rows would invent nineteen wrong ones.</p>
+    <p class="note" id="camNote">Label, sleeve, runout — as many as the disc needs.</p>
 
     <fieldset>
       <legend>Off the label</legend>
       <label><span>Catalogue number</span>
-        <input id="catnoRaw" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="SXL 6113"></label>
+        <input id="catnoRaw" autocomplete="off" autocapitalize="characters" spellcheck="false"
+          enterkeyhint="next" placeholder="SXL 6113"></label>
       <label><span>Label</span>
-        <input id="labelRaw" autocomplete="off" spellcheck="false" placeholder="Decca"></label>
-      <p class="note">Two separate boxes on purpose — a label mashed into the catalogue number is the
-        thing that made 9% of the old matches point at the wrong record.</p>
-      <label><span>One name — composer, conductor or soloist</span>
-        <input id="nameRaw" autocomplete="off" placeholder="Solti"></label>
+        <input id="labelRaw" autocomplete="off" spellcheck="false"
+          enterkeyhint="next" placeholder="Decca"></label>
+      <label><span>Composer, conductor or soloist</span>
+        <input id="nameRaw" autocomplete="off" enterkeyhint="done" placeholder="Solti"></label>
+      <p class="note">Label and catalogue number stay in separate boxes: mashing the two together is
+        what pointed 9% of the old matches at the wrong record.</p>
     </fieldset>
+
+    <!-- PARKED, not deleted (maintainer, 2026-08-31). Condition grading and the
+         "More" block are commented out of the page rather than taken out of the
+         system: the Worker still accepts every one of these fields, readFields
+         still looks for each id, and removing these two comment markers puts the
+         markup back exactly as it was. They are off the page because every field
+         between the shutter and "Queue it" is a reason to stop cataloguing, which
+         is the brief's stated risk — and because all of it is still legible on the
+         photograph afterwards, where condition and matrix are read more reliably
+         than they are typed one-handed in a loft.
 
     <fieldset>
       <legend>Condition</legend>
@@ -107,7 +120,9 @@ function render(): void {
         <label><span>Sleeve</span><select id="sleeveGrade">${GRADES.map((g) => `<option value="${g}">${g || '—'}</option>`).join('')}</select></label>
       </div>
     </fieldset>
+    -->
 
+    <!-- PARKED with the block above, and for the same reason.
     <details>
       <summary>More — title, matrix/runout, year, where it lives</summary>
       <label><span>Title</span><input id="titleRaw" autocomplete="off"></label>
@@ -124,6 +139,7 @@ function render(): void {
         recording if the storage is stable — otherwise the record asserts something
         untrue, which costs more than saying nothing.</p>
     </details>
+    -->
 
     <div id="flash"></div>
 
@@ -133,7 +149,11 @@ function render(): void {
     </div></div>`;
 
   const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-  $<HTMLInputElement>('capturedBy').value = sticky.who;
+  // The box is inside the parked block on this build, so there may be
+  // nothing to fill in. Blind `$('capturedBy').value =` threw here and
+  // took the whole render with it.
+  const who = document.getElementById('capturedBy') as HTMLInputElement | null;
+  if (who) who.value = sticky.who;
   // Clear anything a previous build remembered, so a placeholder typed
   // once cannot keep attaching itself to new captures.
   localStorage.removeItem('dg.crate');
@@ -151,17 +171,38 @@ function render(): void {
     renderPhotos();
   });
 
-  const bulkFile = $<HTMLInputElement>('bulkFile');
-  $('bulkBtn').addEventListener('click', () => bulkFile.click());
-  bulkFile.addEventListener('change', () => {
-    const files = [...(bulkFile.files ?? [])];
-    bulkFile.value = '';       // so the same selection can be made twice
-    void saveBulk(files);
+  /**
+   * Enter walks down the three boxes, and the last one puts the
+   * keyboard away.
+   *
+   * On a phone the keyboard covers the bottom bar, so "Queue it" is
+   * unreachable until something dismisses it — which used to mean
+   * hunting for the keyboard's own close key. Enter is where the thumb
+   * already is. It deliberately does not submit: the photographs are
+   * the capture, and a stray Enter must never queue a disc the person
+   * had not finished with.
+   */
+  const boxes = ['catnoRaw', 'labelRaw', 'nameRaw'].map((id) => $<HTMLInputElement>(id));
+  boxes.forEach((box, i) => {
+    box.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const next = boxes[i + 1];
+      if (next) next.focus();
+      else box.blur();
+    });
   });
 
   renderPhotos();
   $('save').addEventListener('click', () => { void save(); });
-  $('clear').addEventListener('click', () => { resetForm(); });
+  $('clear').addEventListener('click', () => {
+    // Clear sits a thumb's width from "Queue it" and there is no undo
+    // anywhere: a mis-tap threw away every photograph of the disc in
+    // hand, silently. Ask, but only when there is something to lose.
+    const typed = boxes.some((b) => b.value.trim());
+    if ((photos.length || typed) && !confirm('Clear this disc? The photographs go too.')) return;
+    resetForm();
+  });
   void refreshStatus();
 }
 
@@ -302,8 +343,7 @@ async function startCamera(): Promise<void> {
   shot.hidden = true;
   document.body.classList.add('shooting');
   watchOrientation();
-  if (note) note.textContent = 'Tap the shutter for each photograph — no confirming, '
-    + 'no closing. Done when this disc is finished, then Queue it.';
+  if (note) note.textContent = 'One tap per photograph. Done when the disc is finished.';
   renderPhotos();
 
   if (!torch) return;
@@ -348,8 +388,7 @@ function stopCamera(): void {
   document.body.classList.remove('shooting');
   torchOn = false;
   renderTorch();
-  if (note) note.textContent = 'Keep going — label, sleeve, runout, whatever the record needs. '
-    + 'Nothing to label or choose. Queue it when you are done with this disc.';
+  if (note) note.textContent = 'Label, sleeve, runout — as many as the disc needs.';
 }
 
 /**
@@ -411,6 +450,12 @@ function renderPhotos(): void {
   const done = document.getElementById('camOff');
   if (done) done.textContent = photos.length ? `Done · ${photos.length}` : 'Done';
 
+  // The count belongs on the button that acts on it. The strip is above
+  // the fold once the form is filled, so "Queue it" alone gave no way to
+  // tell four photographs from none without scrolling back up.
+  const queueBtn = document.getElementById('save');
+  if (queueBtn) queueBtn.textContent = n ? `Queue it · ${n} photo${n === 1 ? '' : 's'}` : 'Queue it';
+
   strip.innerHTML = photos.map((p, i) =>
     `<figure class="thumb"><img src="${p.url}" alt="Photograph ${i + 1}">
       <figcaption>${i + 1}</figcaption>
@@ -437,47 +482,70 @@ function readFields(): Record<string, string> {
     'titleRaw', 'matrixRunout', 'yearRaw', 'mediaGrade', 'sleeveGrade', 'capturedBy'];
   const out: Record<string, string> = {};
   for (const id of ids) {
+    // Every parked id is looked for and simply comes back empty, so the
+    // list stays complete: un-parking a block needs no change here.
     out[id] = (document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null)?.value ?? '';
   }
+  // `capturedBy` has no box on this build. Fall back to what this device
+  // already remembers rather than sending a blank: a person typed that
+  // name here, and a field that is not on the page cannot un-type it.
+  if (!out.capturedBy) out.capturedBy = sticky.who;
   return out;
 }
+
+/** True while a queue write is in flight. See `save`. */
+let saving = false;
 
 async function save(): Promise<void> {
   const fields = readFields();
   if (!photos.length && !fields.catnoRaw?.trim()) {
     return flash('Photograph the label, or type a catalogue number.', 'err');
   }
+  // A double tap on a phone is one gesture, and each pass mints its own
+  // clientId — so the Worker's idempotency cannot help, and the second
+  // tap would write a second disc with the same photographs.
+  if (saving) return;
+  saving = true;
+  const btn = document.getElementById('save') as HTMLButtonElement | null;
+  if (btn) btn.disabled = true;
 
-  const clientId = uid();
-  const entry: QueuedCapture = {
-    clientId,
-    createdAt: Date.now(),
-    msToCapture: Date.now() - startedAt,
-    fields,
-    photos: await Promise.all(photos.map(async (p, i) => ({
-      kind: CAPTURED_KIND as QueuedPhoto['kind'],
-      blob: await downscale(p.blob),
-      // The index is the only thing asserted about a photograph, and it
-      // is a fact about the order rather than a claim about the content.
-      // It also keeps the key stable, so a retried upload lands twice on
-      // the same object instead of making a second one.
-      key: `${clientId}-${i + 1}.jpg`,
-    }))),
-    state: 'pending',
-    attempts: 0,
-    nextAttemptAt: 0,
-  };
+  try {
+    const clientId = uid();
+    const entry: QueuedCapture = {
+      clientId,
+      createdAt: Date.now(),
+      msToCapture: Date.now() - startedAt,
+      fields,
+      photos: await Promise.all(photos.map(async (p, i) => ({
+        kind: CAPTURED_KIND as QueuedPhoto['kind'],
+        blob: await downscale(p.blob),
+        // The index is the only thing asserted about a photograph, and it
+        // is a fact about the order rather than a claim about the content.
+        // It also keeps the key stable, so a retried upload lands twice on
+        // the same object instead of making a second one.
+        key: `${clientId}-${i + 1}.jpg`,
+      }))),
+      state: 'pending',
+      attempts: 0,
+      nextAttemptAt: 0,
+    };
 
-  // On disk before anything else. The UI never awaits the network:
-  // this is the whole offline guarantee, and it is why a hard refresh
-  // in a loft loses nothing.
-  await putEntry(entry);
-  sticky.who = fields.capturedBy ?? '';
+    // On disk before anything else. The UI never awaits the network:
+    // this is the whole offline guarantee, and it is why a hard refresh
+    // in a loft loses nothing.
+    await putEntry(entry);
+    // Only when there is something to remember: with the box parked, an
+    // empty read must not wipe a name typed on an earlier build.
+    if (fields.capturedBy) sticky.who = fields.capturedBy;
 
-  flash(`Queued — ${Math.round(entry.msToCapture / 1000)}s. Next disc.`);
-  resetForm();
-  void refreshStatus();
-  void drain().then(refreshStatus);   // opportunistic, never awaited by the form
+    flash(`Queued — ${Math.round(entry.msToCapture / 1000)}s. Next disc.`);
+    resetForm();
+    void refreshStatus();
+    void drain().then(refreshStatus);   // opportunistic, never awaited by the form
+  } finally {
+    saving = false;
+    if (btn) btn.disabled = false;
+  }
 }
 
 /**
@@ -506,53 +574,6 @@ async function downscale(file: Blob): Promise<Blob> {
   }
 }
 
-/**
- * A crate in one pass: one row per photo, nothing typed.
- *
- * Each photo keeps its own `clientId`, so the Worker's idempotency
- * still holds and a retry cannot double-write. Entries land on disk
- * before anything reaches the network, exactly as the single path does.
- */
-async function saveBulk(files: File[]): Promise<void> {
-  if (!files.length) return;
-  const base = readFields();
-  const started = Date.now();
-  flash(`Queueing ${files.length} photo${files.length > 1 ? 's' : ''}…`);
-
-  let queued = 0;
-  for (const [index, file] of files.entries()) {
-    const clientId = uid();
-    await putEntry({
-      clientId,
-      createdAt: Date.now(),
-      // One shared elapsed time divided across the batch: the median is
-      // "seconds per disc", and charging one row the whole crate's
-      // wall-clock would wreck the only measurement the app makes of
-      // itself.
-      msToCapture: Math.round((Date.now() - started) / files.length),
-      fields: bulkFields(base, index),
-      photos: [{ kind: CAPTURED_KIND as QueuedPhoto['kind'], blob: await downscale(file), key: `${clientId}-1.jpg` }],
-      state: 'pending',
-      attempts: 0,
-      nextAttemptAt: 0,
-    });
-    queued++;
-    if (queued % 5 === 0) void refreshStatus();
-  }
-
-  sticky.who = base.capturedBy ?? '';
-
-  // Move the position box on, so the next crateful continues the count
-  // instead of silently restarting it.
-  const start = Number.parseInt((base.position ?? '').trim(), 10);
-  const pos = document.getElementById('position') as HTMLInputElement | null;
-  if (pos && Number.isFinite(start)) pos.value = String(start + files.length);
-
-  flash(`${queued} queued from this crate. They upload on their own.`);
-  void refreshStatus();
-  void drain().then(refreshStatus);
-}
-
 function resetForm(): void {
   for (const id of ['catnoRaw', 'labelRaw', 'nameRaw', 'titleRaw', 'matrixRunout', 'yearRaw',
     'position', 'crate']) {
@@ -567,7 +588,12 @@ function resetForm(): void {
   photos = [];
   renderPhotos();
   startedAt = Date.now();
-  (document.getElementById('catnoRaw') as HTMLInputElement | null)?.focus();
+  // No autofocus. Focusing the catalogue number here threw the keyboard
+  // over the bottom half of the screen, and the next thing anyone does
+  // is photograph the next disc — so the keyboard had to be dismissed
+  // before the shutter could be reached. Go to the top instead, where
+  // the Photograph button lands under the thumb.
+  scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 async function refreshStatus(): Promise<void> {

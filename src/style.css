@@ -24,16 +24,12 @@ h1 { font-size: 1.05rem; color: var(--ink); margin: 0; letter-spacing: .01em; }
   min-height: 8.5rem; font: 600 .95rem var(--f); }
 .shot:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .shot.has-photo { border-style: solid; border-color: var(--accent); color: var(--ink); }
-.shot img { display: block; width: 100%; max-height: 15rem; object-fit: cover; }
+/* Big enough to confirm the shot, small enough that the three boxes
+   below it stay on the same screen. The strip underneath is the real
+   record of what was taken. */
+.shot img { display: block; width: 100%; max-height: 9rem; object-fit: cover; }
 .shot .hint { display: block; padding: 2.5rem 1rem; }
 .shot .retake { display: block; padding: .5rem; font-size: .8rem; color: var(--accent); }
-
-/* Secondary to the single shot, because one disc at a time is still
-   the accurate path — bulk trades typed fields for speed. */
-.bulk { display: block; width: 100%; margin-top: .6rem; min-height: 3rem;
-  font: 600 .95rem var(--f); color: var(--accent); background: var(--card);
-  border: 1px solid var(--rule); border-radius: 10px; padding: .7rem; cursor: pointer; }
-.bulk:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /**
  * The viewfinder takes the whole screen while it is open.
@@ -95,15 +91,24 @@ body.shooting { overflow: hidden; }
 .thumb img { display: block; width: 100%; height: 4rem; object-fit: cover;
   border-radius: 8px; border: 1px solid var(--rule); }
 .thumb figcaption { font-size: .68rem; color: var(--muted); padding-top: .2rem; text-align: center; }
-.thumb .drop { position: absolute; top: -.4rem; right: -.4rem; width: 1.5rem; height: 1.5rem;
-  border-radius: 50%; border: 1px solid var(--rule); background: var(--paper);
-  color: var(--ink); font: 700 .9rem var(--f); line-height: 1; cursor: pointer; padding: 0; }
+/* 2.1rem, not the 1.5rem it was: a 24 px target next to a 24 px target
+   is a coin toss with a thumb, and the wrong outcome deletes a
+   photograph of a disc that has already been put back in the crate.
+   Inside the frame rather than hanging off it — at this size the old
+   overhang crossed the gap and sat on the NEXT photograph, which is a
+   worse mistake than a small button. */
+.thumb .drop { position: absolute; top: .25rem; right: .25rem; width: 2.1rem; height: 2.1rem;
+  border-radius: 50%; border: 1px solid rgba(255,255,255,.35); background: rgba(0,0,0,.62);
+  color: #fff; font: 700 1rem var(--f); line-height: 1; cursor: pointer; padding: 0; }
 
 fieldset { border: 0; margin: 1.25rem 0 0; padding: 0; }
 legend { font: 600 .72rem var(--mono); letter-spacing: .09em; text-transform: uppercase;
   color: var(--muted); padding: 0 0 .5rem; }
 label { display: block; margin-bottom: .75rem; }
 label > span { display: block; font-size: .82rem; color: var(--muted); margin-bottom: .3rem; }
+/* 1.05rem is a floor, not a preference: iOS zooms the whole page in on
+   any input under 16 px and does not zoom back out, so a smaller number
+   here costs a pinch after every field. */
 input, select, textarea {
   width: 100%; font: 500 1.05rem var(--f); color: var(--ink); background: var(--card);
   border: 1px solid var(--rule); border-radius: 10px; padding: .7rem .75rem; min-height: 3rem;
@@ -113,6 +118,10 @@ input::placeholder { color: #5d6b70; }
 .pair { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
 .pair label { margin-bottom: 0; }
 .note { font-size: .76rem; color: var(--muted); margin: -.4rem 0 .8rem; }
+/* The negative top margin above snugs a note under a box, whose label
+   carries .75rem of its own beneath it. Under the shot button there is
+   nothing to absorb, so the same rule wrote the line over the button. */
+#camNote { margin-top: .55rem; }
 
 details { margin-top: .5rem; }
 summary { cursor: pointer; color: var(--accent); font-size: .85rem; padding: .4rem 0; }
@@ -126,6 +135,43 @@ button.primary:disabled { opacity: .4; cursor: not-allowed; }
 button.ghost { font: 600 .95rem var(--f); color: var(--muted); background: transparent;
   border: 1px solid var(--rule); border-radius: 12px; padding: 1rem; cursor: pointer; }
 
-.flash { margin-top: .9rem; padding: .7rem .85rem; border-radius: 10px; font-size: .88rem;
-  background: #16323b; color: var(--accent); border: 1px solid #23505d; }
+/**
+ * Messages float above the bottom bar rather than sitting in the page.
+ *
+ * THE BUG THIS FIXES: `#flash` was the last block in the flow, so every
+ * message landed wherever the page happened to end. After a save, which
+ * scrolls to the top, "Queued — 14s" appeared below the fold; and while
+ * the viewfinder is open the whole page is behind a fixed, opaque
+ * overlay, so "this browser will not let a page control the torch" was
+ * written to a screen nobody could see. Both are exactly when feedback
+ * matters. Fixed, and above the viewfinder's own z-index.
+ */
+#flash { position: fixed; left: 0; right: 0; z-index: 60; padding: 0 1rem;
+  bottom: calc(4.8rem + env(safe-area-inset-bottom)); pointer-events: none; }
+/* Clear of the shutter while shooting, where the bar is not the thing
+   underneath. */
+body.shooting #flash { bottom: calc(7.2rem + env(safe-area-inset-bottom)); }
+.flash { max-width: 34rem; margin: 0 auto; padding: .7rem .85rem; border-radius: 10px;
+  font-size: .88rem; background: #16323b; color: var(--accent); border: 1px solid #23505d;
+  box-shadow: 0 .5rem 1.5rem rgba(0,0,0,.45); }
 .flash.err { background: #3a1f1c; color: var(--bad); border-color: #5c2f2a; }
+
+/**
+ * A phone on its side has ~375 px of height and the browser takes a
+ * third of it, but it has width to spare. So the boxes go ACROSS rather
+ * than down, and the photograph target gives up the height it can
+ * afford — it is still the largest thing on the page. Portrait keeps
+ * the one-per-line stack, which is easier to fill one-handed.
+ */
+@media (orientation: landscape) and (max-height: 480px) {
+  /* Capture only. The review queue is its own layout and shares this
+     sheet for the base elements, nothing more. */
+  main#app { max-width: none; padding: .6rem 1rem 5.5rem; }
+  #app .top { margin-bottom: .6rem; }
+  .shot { min-height: 4.5rem; }
+  .shot .hint { padding: 1.15rem 1rem; }
+  .shot img { max-height: 5.5rem; }
+  .thumb img { height: 3rem; }
+  #app fieldset { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 .7rem; margin-top: .8rem; }
+  #app fieldset > legend, #app fieldset > .note { grid-column: 1 / -1; }
+}
