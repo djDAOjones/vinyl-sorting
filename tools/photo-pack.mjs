@@ -46,7 +46,7 @@ import { existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync, rmSync
 import { execFileSync } from 'node:child_process';
 import { join, extname, basename } from 'node:path';
 import { readCsv } from './lib/csv.mjs';
-import { chatPrompt, packInstructions } from './lib/photo-fields.mjs';
+import { chatPrompt, packInstructions, readAllInstructions } from './lib/photo-fields.mjs';
 
 const args = process.argv.slice(2);
 const argOf = (n, d) => { const i = args.indexOf(n); return i >= 0 && args[i + 1] ? args[i + 1] : d; };
@@ -157,6 +157,8 @@ for (const rec of records) {
 if (batch.length) batches.push(batch);
 
 const pad = (n) => String(n).padStart(2, '0');
+/** What each pack turned out to hold, for the covering instruction. */
+const built = [];
 for (const [i, batch] of batches.entries()) {
   const name = `pack-${pad(i + 1)}`;
   const stage = join(outDir, name);
@@ -191,9 +193,15 @@ for (const [i, batch] of batches.entries()) {
   // The directory STAYS. It is the no-upload path, and deleting it
   // would leave the zip as the only way in — which is the expensive way.
   const shots = batch.reduce((n, b) => n + b.files.length, 0);
+  built.push({ name, records: batch.length, images: shots, reply: `reply-${pad(i + 1)}.txt` });
   console.log(`${name}/ and ${name}.zip — ${batch.length} record(s), ${shots} image(s): `
     + `${batch.map((b) => b.rowId).join(', ')}`);
 }
+
+// One instruction covering every pack, because the work is the whole
+// set and six prompts is six chances to stop after the first.
+writeFileSync(join(outDir, 'READ-ALL.md'),
+  `${readAllInstructions(built, outDir)}\n`);
 
 writeFileSync(join(outDir, 'row-ids.csv'),
   `row_id,original_file\n${rows.map((r) => `${r.rowId},${r.file}`).join('\n')}\n`);
@@ -202,7 +210,9 @@ console.log(`\n${batches.length} pack(s) in ${outDir}: ${records.length} record(
   + `${rows.length} photograph(s).`);
 console.log('\nCheapest path — no upload. In a session that has NOT seen');
 console.log(`${truthPath}, say:`);
-console.log(`\n  Read ${join(outDir, 'pack-01')}/READ-THIS-FIRST.md and do what it says.`);
+console.log(`\n  Read ${join(outDir, 'READ-ALL.md')} and do what it says.`);
+console.log('\nThat one file covers every pack. Pointing at a single pack reads');
+console.log('that pack and stops, which is what it was asked for.');
 console.log('\nBrowser chat instead: unzip a pack, drag the images in, paste');
 console.log('PROMPT.txt above them, save the reply. Either way, then:');
 console.log('\n  node tools/photo-import.mjs data/photo-packs/reply-01.txt');

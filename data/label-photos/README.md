@@ -73,9 +73,14 @@ a `READ-THIS-FIRST.md` and a manifest.
 
 ### The cheap path — no upload
 
-Point a session on this machine at the pack directory:
+Point a session on this machine at the covering instruction:
 
-> Read `data/photo-packs/pack-01/READ-THIS-FIRST.md` and do what it says.
+> Read `data/photo-packs/READ-ALL.md` and do what it says.
+
+That one file lists every pack and names the reply file each should
+write. Pointing at a single pack reads that pack and stops, which is
+what it was asked — the first real run did exactly that and covered 5
+records of 18.
 
 That file carries the whole task and says where to write the answer, so
 there is nothing to paste alongside it. No upload, no dragging, and no

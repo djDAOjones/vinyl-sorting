@@ -20,7 +20,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
   FIELD_SPEC, NO_INFERENCE, BLIND_READ, ROTATIONS, PHOTO_FIELDS,
-  chatPrompt, packInstructions, parseChatReply, scoreOne, trapSprung, summarise,
+  chatPrompt, packInstructions, readAllInstructions, parseChatReply, scoreOne, trapSprung, summarise,
 } from '../lib/photo-fields.mjs';
 
 const TOOLS = ['tools/photo-pack.mjs', 'tools/photo-import.mjs', 'tools/photo-score.mjs',
@@ -375,6 +375,35 @@ test('a pack is a directory as well as a zip, and carries its own instructions',
 
   const listing = execFileSync('unzip', ['-Z1', join(dir, 'packs', 'pack-01.zip')], { encoding: 'utf8' });
   assert.match(listing, /pack-01\/READ-THIS-FIRST\.md/, 'the zip carries them too');
+});
+
+test('one instruction covers every pack, and names each reply file', () => {
+  // Six packs meant six prompts, and the first real attempt did pack-01
+  // and stopped — correctly, since that is what it was asked. The work
+  // is the whole set, so it is asked for once.
+  const dir = scratch();
+  const photos = join(dir, 'photos');
+  const names = [];
+  for (const id of ['A', 'B', 'C']) for (let i = 1; i <= 6; i++) names.push(`${id}-${i}.jpg`);
+  makePhotos(photos, names);
+  writeFileSync(join(photos, 'row-ids.csv'),
+    `file,row_id\n${names.map((n) => `${n},${n[0]}`).join('\n')}\n`);
+
+  execFileSync(process.execPath, ['tools/photo-pack.mjs', '--photos', photos,
+    '--out', join(dir, 'packs'), '--max-images', '8'], { encoding: 'utf8' });
+
+  const all = readFileSync(join(dir, 'packs', 'READ-ALL.md'), 'utf8');
+  assert.match(all, /^# Read all 3 records — 3 packs, 18 photographs$/m);
+  assert.match(all, /Work through \*\*every pack\*\*/);
+  for (const n of ['01', '02', '03']) {
+    assert.ok(all.includes(`pack-${n}/READ-THIS-FIRST.md`), `pack-${n} is listed`);
+    assert.ok(all.includes(`reply-${n}.txt`), `reply-${n} is named`);
+  }
+  assert.ok(all.includes(BLIND_READ), 'the ordering guard travels with it');
+  // Merging replies would defeat the per-pack id check, which is what
+  // stops a reading landing on the wrong record.
+  assert.match(all, /Do not merge them into one file/);
+  assert.match(all, /say which packs you completed/, 'a gap should be visible');
 });
 
 test('the blindness clause survives editing and reaches every pack', () => {

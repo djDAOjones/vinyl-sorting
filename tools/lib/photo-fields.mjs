@@ -261,6 +261,49 @@ export function packInstructions(rows, packName, replyPath) {
   ].join('\n');
 }
 
+/**
+ * The one file to point a reader at when there is more than one pack.
+ *
+ * Six packs meant six prompts, and the first real attempt did pack-01
+ * and stopped — reasonably, since that is what it was asked for. The
+ * work is not one pack; it is all of them, and the instruction should
+ * say so once rather than needing to be repeated.
+ *
+ * The packs stay separate underneath: a pack is bounded so a browser
+ * upload cannot exceed a per-message image cap, and so a reply that
+ * goes wrong costs one pack rather than the whole set.
+ */
+export function readAllInstructions(packs, outDir) {
+  const records = packs.reduce((n, p) => n + p.records, 0);
+  const images = packs.reduce((n, p) => n + p.images, 0);
+  return [
+    `# Read all ${records} records — ${packs.length} packs, ${images} photographs`,
+    '',
+    'These are photographs of vinyl records. Work through **every pack**',
+    'below, not just the first. Each has its own instructions and its own',
+    'reply file.',
+    '',
+    BLIND_READ,
+    '',
+    '## Do this for each pack in turn',
+    '',
+    ...packs.flatMap((p) => [
+      `- **${p.name}** — ${p.records} record(s), ${p.images} image(s): `
+        + `read \`${outDir}/${p.name}/READ-THIS-FIRST.md\`, `
+        + `write \`${outDir}/${p.reply}\``,
+    ]),
+    '',
+    'Finish one pack completely — reply file written — before starting',
+    'the next. Do not merge them into one file: each reply is checked',
+    'against the ids its own pack sent, and that check is what stops a',
+    'reading being attributed to the wrong record.',
+    '',
+    'When every pack has a reply file, say which packs you completed and',
+    'how many records each covered, so a gap is visible rather than',
+    'silent.',
+  ].join('\n');
+}
+
 const blank = (v) => v === null || v === undefined || String(v).trim() === '';
 
 /**
