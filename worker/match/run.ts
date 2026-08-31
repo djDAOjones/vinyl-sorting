@@ -297,6 +297,12 @@ export async function persistRun(
         catno: c.candidate?.catno ?? null,
         year: c.candidate?.year ?? null,
         format: Array.isArray(c.candidate?.format) ? c.candidate.format.join(', ') : c.candidate?.format ?? null,
+        // The sleeve. Stored beside the fields rather than in a column
+        // because it is Discogs' address for an image rather than a
+        // fact about the pressing, and because the 296 runs already in
+        // the queue predate it — the screen has to render a candidate
+        // with no image without looking broken either way.
+        thumb: c.candidate?.thumb ?? null,
       },
     }))));
     written += top5.length;

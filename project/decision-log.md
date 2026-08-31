@@ -2,6 +2,78 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-09-01 — REVIEW-CARD: the sleeve, and five states instead of two
+
+**Decision:** `SearchResult` now declares `thumb` and `cover_image`,
+which Discogs has been sending on every search all along and this
+project parsed away. The small one is stored in the candidate's
+`signals_json` and rendered beside the photographs of the actual disc.
+**No new request buys it** — it is in the response the ladder already
+pays for.
+
+**Hotlinking was checked rather than assumed.** One search against the
+live API returned `i.discogs.com` URLs; loaded in the browser with
+`referrerpolicy="no-referrer"` the image decoded at its natural
+150 px. The `onerror` fallback stays anyway, and so does the drawn
+placeholder, because the 296 runs already in the queue were scored
+before this existed and will carry no image until they are re-run.
+
+**The second half is the comparison, and the state count is the whole
+argument.** Every candidate showed its families as identical grey
+chips, so `catno` and `year` read the same. It now says field by
+field how the reading stands against the candidate, in FIVE states:
+
+- `agrees`, `partly`, `differs` — the ordinary three;
+- `unread` — never read off the disc. 267 queued rows have no label,
+  and rendering that as a disagreement blames the candidate for the
+  reading's silence;
+- `unknown` — read, and Discogs returned nothing to compare it with. A
+  gap on the other side is not a mismatch either.
+
+A reviewer who cannot tell those two absences from a real conflict
+learns to ignore the red mark entirely, which costs more than the
+chips are worth.
+
+**The verdict comes from the scorer's own `families`, never re-derived
+here.** Re-deriving would let the screen and the gate disagree about
+the same candidate. The candidate's value appears only in the tooltip,
+which is what makes a disagreement arguable — a red `label` beside a
+release plainly labelled the same thing is then visibly a scorer bug
+rather than a mystery. The demo seed was made self-consistent for
+exactly this reason, and says so.
+
+**Verify:** npm run gate 271 passing; the queue rendered in both themes
+at 1280 px; `naturalWidth: 150` on the hotlinked thumbnail and the
+drawn placeholder on the candidate without one.
+
+## 2026-09-01 — APP-KEYS: one scheme, and a card that cannot go stale
+
+**Decision:** `g` then a letter goes — `h` home, `a` add, `r` resolve,
+`c` collection, `s` settings. `/` focuses search, `?` opens the card,
+`Escape` closes what is open or leaves the field. The review queue's
+`1`–`5`, `N`, `S`, `B`, `M` are unchanged.
+
+**`g` is a prefix rather than a modifier** because every single-letter
+global steals that letter from a screen that might want it — and the
+review queue, the screen with the most keys, wants nearly all of them.
+It times out after 1.4 s so a stray `g` cannot silently swallow a
+keystroke a minute later.
+
+**The card is generated from the same table that binds the keys**, so a
+shortcut cannot exist without being documented. That is not tidiness:
+the review queue's five were real, good, and a secret for a month
+because nothing on any screen said they existed.
+
+**The typing guard is shared rather than remembered.** A key pressed
+inside a text field is text — the review queue had to learn this when
+typing a Discogs id fired four shortcuts, and it is exactly the kind of
+rule each new screen would otherwise re-learn by breaking. It lives in
+`chrome.ts` and every screen defers to it.
+
+**Verify:** npm run gate 271 passing; `?` opened the card from a real
+keydown; `g c` navigated from settings to the collection; capture takes
+the go-keys and nothing else, because there is no keyboard in a loft.
+
 ## 2026-09-01 — APP-HOME-HUB: a front door, and capture keeps its own
 
 **Decision:** `/` is a hub of four tiles — Add vinyl, Resolve entries,

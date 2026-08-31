@@ -24,6 +24,21 @@ export interface SearchResult {
   format?: string[];
   country?: string;
   uri?: string;
+  /**
+   * The sleeve, which Discogs has been sending all along.
+   *
+   * Every search response carries these two and this interface declared
+   * neither, so they were parsed away — while a reviewer holding a
+   * photograph of a sleeve was asked to match it against a line of
+   * text. No new request buys them: they are in the response the ladder
+   * already pays for (REVIEW-CARD).
+   *
+   * `thumb` is ~150 px and `cover_image` ~600 px; the queue wants the
+   * small one, since it renders five per item and the point is
+   * recognition rather than detail.
+   */
+  thumb?: string;
+  cover_image?: string;
 }
 
 export class DiscogsError extends Error {

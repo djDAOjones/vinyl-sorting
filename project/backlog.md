@@ -25,11 +25,6 @@
   the theme and the column choices, and it sits on a URL with no sign-in —
   so the maintainer drew the line at export, keeping token entry and any
   reset at the command line.
-- [ ] **REVIEW-CARD Make a candidate scannable — the sleeve image, and
-  why it scored** (2026-08-31) — The queue asks a person to judge 287
-  matches and gives them a number to judge with; the sleeve thumbnail
-  Discogs already returns is discarded, and the evidence behind the score
-  renders as undifferentiated chips.
 - [~] **SPIKE-PHOTO-TO-FIELDS Can a label photograph populate the
   capture fields?** [spike] [blocked: twenty photographed labels with
   typed ground truth] (2026-08-30) — The round trip is built, tested and
@@ -38,11 +33,6 @@
   checks, and the scorer keeps refusals apart from wrong answers; twenty
   photographed labels are now the only thing left, because synthesising
   labels would score the model against its own output.
-- [ ] **APP-KEYS One keyboard scheme across the app, and a card that
-  teaches it** (2026-08-31) — The review queue has good shortcuts nothing
-  else has, they are undiscoverable outside it, and the desk screens where
-  a keyboard exists are the ones with none — so the scheme is settled once
-  and shown on demand.
 - [ ] **MATCH-OTHER-NUMBERS Try the other catalogue numbers on the label
   before giving up** (2026-08-31) — The reading already records every
   number it can see in other_numbers and no query has ever used one — so a

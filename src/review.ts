@@ -167,7 +167,81 @@ function photosHtml(item: QueueItem): string {
 
 interface CandRelease {
   title?: string | null; label?: string | null; catno?: string | null;
-  year?: string | number | null; format?: string | null;
+  year?: string | number | null; format?: string | null; thumb?: string | null;
+}
+
+/**
+ * How one field of the reading stands against one candidate.
+ *
+ * FIVE STATES, and the two extra ones are the point. "Agrees" and
+ * "does not agree" is a lie twice over:
+ *
+ *  - `unread` — the field was never read off the disc. 267 of the
+ *    queued rows have no label at all, and showing that as a
+ *    disagreement blames the candidate for the reading's silence.
+ *  - `unknown` — the field was read, and DISCOGS did not return one to
+ *    compare it against. That is not a mismatch either; it is a gap on
+ *    the other side, and a reviewer who cannot tell the two apart
+ *    learns to ignore the red mark entirely.
+ */
+type Verdict = 'agrees' | 'differs' | 'partly' | 'unknown' | 'unread';
+
+const VERDICT_MARK: Record<Verdict, string> = {
+  agrees: '✓', differs: '✗', partly: '~', unknown: '?', unread: '–',
+};
+
+interface Comparison { field: string; verdict: Verdict; detail: string }
+
+/**
+ * Build the comparison from what the scorer already recorded.
+ *
+ * No new data and no second guess at the matching: `families` is the
+ * scorer's own statement of which kinds of evidence agreed, and
+ * `signals` says how. Re-deriving agreement here would let the screen
+ * and the gate disagree about the same candidate, which is worse than
+ * showing less.
+ *
+ * The candidate's own value is shown only in the DETAIL, never used to
+ * decide the verdict — so a disagreement always says both sides, which
+ * is what makes it arguable. A `✗ label` beside a release plainly
+ * labelled the same thing is then visibly a scorer bug rather than a
+ * mystery.
+ */
+function compare(
+  item: QueueItem,
+  families: string[],
+  signals: Record<string, string>,
+  release: CandRelease | undefined,
+): Comparison[] {
+  const has = (v: unknown): boolean => Boolean(v && String(v).trim());
+
+  const row = (
+    field: string, read: string | null, family: string,
+    theirs: unknown, partial = false,
+  ): Comparison => {
+    if (!has(read)) return { field, verdict: 'unread', detail: 'not read off the disc' };
+    const mine = String(read).trim();
+    if (families.includes(family)) return { field, verdict: 'agrees', detail: signals[family] ?? `both say ${mine}` };
+    if (partial) return { field, verdict: 'partly', detail: signals[family] ?? '' };
+    if (!has(theirs)) {
+      return { field, verdict: 'unknown', detail: `you read “${mine}” — Discogs returned none to compare` };
+    }
+    return { field, verdict: 'differs', detail: `you read “${mine}” — this one says “${String(theirs).trim()}”` };
+  };
+
+  return [
+    // A partial catalogue hit is its own state: `MFP 2014` matching
+    // `MFP 20140` is how a containment hit looks, and it may support a
+    // match while never carrying one.
+    row('catalogue', item.catno_raw, 'identifier', release?.catno,
+      Boolean(signals.identifier?.startsWith('partial'))),
+    row('label', item.label_raw, 'label', release?.label),
+    // Discogs puts performers in the release TITLE — "Artist - Work" —
+    // so that is what a captured name is checked against, and the
+    // detail says so rather than implying a field that does not exist.
+    row('name', item.name_raw, 'people', release?.title),
+    row('title', item.title_raw, 'title', release?.title),
+  ];
 }
 
 function renderCandidate(c: Candidate, i: number): string {
@@ -175,34 +249,48 @@ function renderCandidate(c: Candidate, i: number): string {
     families?: string[]; signals?: Record<string, string>; release?: CandRelease;
   }>(c.signals_json, {});
 
-  // What the release IS, when the match that found it recorded one.
-  // Older candidates predate this and fall back to the bare id, which
-  // is what every candidate used to show.
   const named = [release?.catno, release?.label].filter(Boolean).join(' · ');
   const heading = release?.title
     ? esc(String(release.title))
     : `Discogs release ${c.discogs_id}`;
   const sub = [named, release?.year, release?.format].filter(Boolean).map(String).map(esc).join(' · ');
-  // TWO CONTROLS, NOT ONE. Accepting a match and going to look at it
-  // are different intentions, and the old row could only express the
-  // first — so checking a candidate meant accepting it and then
-  // undoing, or not checking at all. Two items were confirmed on
-  // 2026-08-31 by a person who had no way to look.
-  //
-  // A link, not a button, for the right half: middle-click, ⌘-click and
-  // "open in new tab" all work for free, and the URL is visible on
-  // hover, which is what tells you where it goes before you commit.
+
+  const cmp = compare(queue[cursor]!, families, signals, release);
+
+  /**
+   * The sleeve.
+   *
+   * `referrerpolicy="no-referrer"` because Discogs' CDN is entitled to
+   * refuse a hotlink it can attribute, and a missing referrer is the
+   * cheapest way to not find out the hard way. A candidate stored
+   * before REVIEW-CARD existed has no thumbnail at all — there are 296
+   * of those — so the absence is drawn deliberately rather than left as
+   * a broken image.
+   */
+  const art = release?.thumb
+    ? `<img class="sleeve" src="${esc(release.thumb)}" alt="" loading="eager"
+         referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(
+           document.createElement('span'), { className: 'sleeve none', title: 'no sleeve image' }))">`
+    : '<span class="sleeve none" title="no sleeve image — this match ran before they were stored"></span>';
+
+  // A format signal that is NEGATIVE is evidence against and gets said
+  // out loud: a CD or a 7" for a record captured off a vinyl shelf is
+  // the single most useful reason to refuse a high-scoring candidate.
+  const notVinyl = signals.formatKind?.startsWith('not vinyl');
+
   return `
     <div class="cand${i === 0 ? ' best' : ''}">
       <button class="pick" data-discogs-id="${c.discogs_id}"
               title="Accept this match (or press ${i + 1})">
         <span class="key">${i + 1}</span>
-        <span>
+        ${art}
+        <span class="body">
           <span class="title">${heading}</span>
           ${sub ? `<span class="rel">${sub}</span>` : ''}
-          <span class="why">
-            ${families.map((f) => `<span class="chip accent">${esc(f)}</span>`).join('')}
-            ${Object.entries(signals).map(([k, v]) => `<span class="sig">${esc(k)}: ${esc(v)}</span>`).join(' ')}
+          <span class="cmp">
+            ${cmp.map((x) => `<span class="c c-${x.verdict}" title="${esc(x.detail)}"
+              ><b>${VERDICT_MARK[x.verdict]}</b>${esc(x.field)}</span>`).join('')}
+            ${notVinyl ? `<span class="c c-differs" title="${esc(signals.formatKind ?? '')}"><b>✗</b>not vinyl</span>` : ''}
           </span>
         </span>
         <span class="score">${c.score}<small>score</small></span>

@@ -63,7 +63,7 @@ main#review { padding-bottom: 5rem; }
 
 .cand .pick {
   display: grid;
-  grid-template-columns: 2.1rem 1fr auto;
+  grid-template-columns: 2.1rem auto 1fr auto;
   gap: var(--s3);
   align-items: start;
   background: none;
@@ -106,11 +106,61 @@ main#review { padding-bottom: 5rem; }
   text-align: center;
   padding: 2px 0;
 }
-.cand .title { color: var(--text); font-size: var(--t-base); font-weight: 600; }
+.cand .body { min-width: 0; }
+.cand .title { display: block; color: var(--text); font-size: var(--t-base); font-weight: 600; }
+
+/* ── The sleeve (REVIEW-CARD) ────────────────────────────────────
+   Small: five of these render per item and the job is recognition
+   against a photograph of the disc, not detail. A fixed box either
+   way, so a candidate WITHOUT an image is the same shape as one with
+   — 296 runs were scored before these were stored, and a row that
+   collapsed when the picture was missing would read as broken rather
+   than as old. */
+.sleeve {
+  width: 3.25rem; height: 3.25rem;
+  border-radius: var(--r-sm);
+  object-fit: cover;
+  background: var(--sunk);
+  border: 1px solid var(--line);
+  flex: none;
+}
+/* The absence, drawn on purpose: a disc outline, faint. */
+.sleeve.none {
+  display: block;
+  background:
+    radial-gradient(circle at 50% 50%, var(--line-strong) 0 8%, transparent 8%),
+    radial-gradient(circle at 50% 50%, transparent 0 30%, var(--line) 30% 32%, transparent 32%),
+    var(--sunk);
+}
 /* Catalogue number, label, year — the line that says whether this is
    the record in your hand, without opening Discogs. */
 .cand .rel { display: block; margin-top: 2px; font: var(--t-sm) var(--mono); color: var(--text-3); }
-.cand .why { margin-top: var(--s1); display: flex; flex-wrap: wrap; gap: var(--s1); }
+/* ── Why it scored (REVIEW-CARD) ─────────────────────────────────
+   Four fields, each saying how the reading stands against this
+   candidate. Colour carries the state and the glyph repeats it, so it
+   survives being colour-blind and survives a phone in sunlight — and
+   the two are never the only difference between two rows. */
+.cand .cmp { margin-top: var(--s1); display: flex; flex-wrap: wrap; gap: var(--s1); }
+.c {
+  display: inline-flex; align-items: baseline; gap: 3px;
+  font: 600 var(--t-xs) var(--mono);
+  border-radius: var(--r-sm);
+  padding: 1px 0.35rem;
+  background: var(--sunk);
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.c b { font-weight: 700; }
+.c-agrees { background: var(--ok-soft); color: var(--ok); }
+.c-partly { background: var(--accent-soft); color: var(--accent); }
+.c-differs { background: var(--danger-soft); color: var(--danger); }
+/* The two absences stay neutral and low-contrast: neither is evidence,
+   and 267 of the queued rows have no label at all. `unknown` keeps a
+   background so it reads as "asked, no answer" rather than as "never
+   asked", which is the distinction the two glyphs carry. */
+.c-unread { background: transparent; color: var(--text-3); opacity: 0.6; }
+.c-unknown { background: var(--sunk); color: var(--text-3); }
+
 .sig { font: var(--t-xs) var(--mono); color: var(--text-3); }
 .cand .score { font: 700 var(--t-md) var(--mono); color: var(--text); text-align: right; }
 .cand .score small { display: block; font: 500 0.66rem var(--mono); color: var(--text-3); }
@@ -125,10 +175,11 @@ main#review { padding-bottom: 5rem; }
 .shots .shot-link { width: 6.5rem; height: 5rem; }
 
 @media (max-width: 30rem) {
-  .cand .pick { grid-template-columns: 1.8rem 1fr; padding: var(--s2); }
+  .cand .pick { grid-template-columns: 1.8rem auto 1fr; padding: var(--s2); gap: var(--s2); }
+  .sleeve { width: 2.75rem; height: 2.75rem; }
   /* The score moves under the title rather than squeezing it: on a
      narrow screen the title is what identifies the record and the
      score is a footnote to it. */
-  .cand .score { grid-column: 2; text-align: left; display: flex; gap: var(--s1); align-items: baseline; }
+  .cand .score { grid-column: 3; text-align: left; display: flex; gap: var(--s1); align-items: baseline; }
   .cand .score small { display: inline; }
 }

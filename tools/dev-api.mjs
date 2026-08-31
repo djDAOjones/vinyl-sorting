@@ -52,9 +52,23 @@ if (args.includes('--demo')) {
       (1, 'needs-review', '{"reason":"only 1 signal family (identifier) — a catalogue number alone is a lead, not a verdict"}'),
       (2, 'needs-review', '{"reason":"margin 4 < 25 over the runner-up"}'),
       (3, 'needs-review', '{"reason":"not searchable: contains a question mark — uncertain input"}');
+    -- Candidate 1.1 carries a REAL Discogs thumbnail URL and a release
+    -- block; 1.2 carries a release with no thumbnail, and 2.x carry
+    -- neither. That is deliberate: the 296 runs already in production
+    -- were scored before REVIEW-CARD stored images, so the screen has
+    -- to render all three shapes without any of them looking broken.
+    --
+    -- 1.1's release label is NULL on purpose, and the seed has to stay
+    -- self-consistent about it: families says only identifier agreed,
+    -- so a release block claiming a matching label would make the card
+    -- show a red label chip beside two identical values. That is not a
+    -- display bug — it is the card correctly reporting a scorer that
+    -- disagrees with itself, and the seed should not manufacture one.
+    -- A null label renders as the unknown state, which is honest: read
+    -- off the disc, and nothing returned to compare it with.
     INSERT INTO match_candidate (match_run_id, rank, discogs_id, score, signals_json) VALUES
-      (1, 1, 1451234, 73, '{"families":["identifier"],"signals":{"identifier":"exact catno SXL 6113"}}'),
-      (1, 2, 2298871, 23, '{"families":["label"],"signals":{"label":"decca"}}'),
+      (1, 1, 3200885, 73, '{"families":["identifier"],"signals":{"identifier":"exact catno SXL 6113"},"release":{"title":"Mahler, Georg Solti, London Symphony Orchestra - Symphony No. 1","label":null,"catno":"SXL 6113","year":1965,"format":"Vinyl, LP, Album","thumb":"https://i.discogs.com/rWXqcoHJ9FNsJl51dUrpmMlSJT6z4UoCkvwEDAczw7M/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTMyMDA4/ODUtMTMyMDIzMjUx/Mi5qcGVn.jpeg"}}'),
+      (1, 2, 2298871, 23, '{"families":["label"],"signals":{"label":"decca","formatKind":"not vinyl: cd,album"},"release":{"title":"Mahler - Symphony No. 1","label":"Decca","catno":"430 804-2","year":1991,"format":"CD, Album"}}'),
       (2, 1, 3310022, 88, '{"families":["identifier","title"],"signals":{"identifier":"exact catno CFP 40001","title":"3/4 title words"}}'),
       (2, 2, 3310099, 84, '{"families":["identifier","title"],"signals":{"identifier":"exact catno CFP 40001","title":"3/4 title words"}}');
     -- A reading off a photograph, so browse has one to display and

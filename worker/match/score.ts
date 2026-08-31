@@ -40,6 +40,12 @@ export interface Candidate {
   title?: string | null;
   year?: number | string | null;
   format?: string[] | null;
+  /**
+   * Carried through UNSCORED and on purpose. A sleeve image is worth
+   * nothing to the scorer — it cannot read it — and everything to the
+   * person the scorer hands the row to when it cannot decide.
+   */
+  thumb?: string | null;
 }
 
 export interface Scored {
