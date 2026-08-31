@@ -2,6 +2,86 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-09-01 — MATCH-REVERIFY-SWEEP: order by the thing that moves
+
+**Decision:** when nothing is waiting to be matched for the first time,
+the tick tops its batch up with rows nothing has looked at for a while.
+Off by default, settable in Settings, capped per day.
+
+**IT IS ORDERED BY `match_run.ran_at`, NOT BY `last_verified_at`, and
+that is the whole difference between a sweep and an infinite loop.**
+The obvious column is the wrong one: `last_verified_at` is written only
+by `resolveRun` — when a PERSON settles a row — so the matcher never
+changes it. A sweep ordered by it would hand back the same oldest rows
+every five minutes for ever, spending the shared Discogs budget and
+reaching nothing new, while looking entirely correct. `ran_at` is
+written on every pass, so re-running a row pushes it to the back of its
+own queue. A test asserts the queue advances.
+
+**Three more brakes, and each one is a different failure:**
+
+- **Never-matched rows always come first.** The sweep tops the batch
+  up rather than competing, so it can be left on without ever delaying
+  a newly captured disc.
+- **A confirmed row is never swept.** Re-running a release a person
+  accepted can only produce a queue item contradicting a human
+  decision, which is worse than not running.
+- **A daily cap, and it is about the maintainer's time rather than
+  money.** Every swept row that fails to auto-accept lands in the
+  review queue — a person's evening. An uncapped sweep would refill a
+  queue somebody is trying to empty, faster than they can clear it,
+  while being individually right about every row. The count lives in
+  KV against the date so it resets itself, is written BEFORE the work
+  so a dying tick still spends its allowance, and a KV failure yields
+  zero allowance rather than infinite.
+
+A swept run records `swept: true` and the previous run's timestamp, so
+a reviewer meeting a row again knows why it came back.
+
+**Verify:** npm run gate; five new tests including the ordering one
+that would have caught the `last_verified_at` loop.
+
+## 2026-09-01 — APP-SETTINGS: settings and export, and a line under them
+
+**Decision:** three tiers. **Device** — name, theme, density — open,
+local, and a claim about a phone rather than about the collection.
+**Collection** — the re-verification sweep and its two numbers — behind
+the shared passphrase, in KV. **Export** — the whole database as JSON
+or CSV — behind the passphrase, read-only.
+
+**Three things asked for are deliberately absent, and none is a
+refusal on the merits.** A Discogs token typed into a browser has to
+live where the Worker can read it, which means KV — readable by
+anything that gets one shared word, on a URL with no sign-in — when
+`wrangler secret put` already works and is strictly better. Resetting
+is a destructive data operation and a stop-and-ask boundary in the hard
+rules; it will exist as a tool that snapshots first, not as a button
+anyone reaches by mistyping a URL. The roster is shared by the client
+and the Worker precisely so the gate and the sign-in cannot disagree.
+All three want a sign-in first, which is OPEN-V1-AUTH, and the page
+says so in plain words rather than leaving a gap.
+
+**Two export formats, answering two questions.** JSON is the structured
+dump that could be restored, and it carries `schema_migration` because
+a dump that cannot say which schema it came from is one nobody can
+safely load. CSV is one row per record, for a spreadsheet.
+
+**The download is fetched as a blob, not linked.** The route is behind
+`x-edit-token` and an `<a download>` sends no headers — the identical
+shape of bug that made every label photograph 401 in the browser while
+`curl -H` passed. Getting this wrong twice would have been the same
+mistake, not a new one.
+
+**Reading settings is open; writing is not.** What comes back is three
+numbers about how the matcher paces itself — no record, no person, no
+secret — and the screen has to render before it can ask for a
+passphrase.
+
+**Verify:** npm run gate; four new tests on the defaults, the clamping
+and the gate. In the browser: the toggle round-tripped to the server,
+the CSV came back with a header and a row per record, and the same
+request without the passphrase was 401.
+
 ## 2026-09-01 — MATCH-OTHER-NUMBERS: try the rest of the label
 
 **Decision:** `other_numbers` — extracted into

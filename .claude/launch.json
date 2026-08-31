@@ -38,7 +38,10 @@
         "tools/dev-api.mjs",
         "--demo"
       ],
-      "port": 8787
+      "port": 8787,
+      "env": {
+        "DG_EDIT_TOKEN": "localdev"
+      }
     }
   ]
 }

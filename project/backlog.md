@@ -15,11 +15,6 @@
   followed; the Worker name IS the workers.dev hostname, so this is a
   redeploy under a new name — and the data does not move with it, which is
   the part wrangler.toml gets wrong.
-- [ ] **APP-SETTINGS A settings screen that stops short of the dangerous
-  half** (2026-08-31) — Settings has to exist for the re-verify toggle,
-  the theme and the column choices, and it sits on a URL with no sign-in —
-  so the maintainer drew the line at export, keeping token entry and any
-  reset at the command line.
 - [~] **SPIKE-PHOTO-TO-FIELDS Can a label photograph populate the
   capture fields?** [spike] [blocked: twenty photographed labels with
   typed ground truth] (2026-08-30) — The round trip is built, tested and
@@ -71,11 +66,6 @@
   filters over eight fixed columns — enough to look at 483 rows, not
   enough to ask a question of them — and the two sorts most wanted, value
   and release date, have no data behind them.
-- [ ] **MATCH-REVERIFY-SWEEP When nothing is unmatched, re-verify the
-  oldest rows instead of idling** (2026-08-31) — pendingRows only selects
-  rows with no match_run at all, so the cron tick will start doing nothing
-  the moment the backlog is exhausted — while 9% of the imported matches
-  are known wrong and Discogs keeps improving underneath us.
 - [ ] **AI-ROUND-TRIP Make the hand-carried reading loop fast, and make
   it say which photograph it read** (2026-08-31) — The maintainer kept the
   no-metered-services rule, so the answer is a better round trip rather

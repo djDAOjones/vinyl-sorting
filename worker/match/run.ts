@@ -31,6 +31,15 @@ export interface MatchRow {
   yearRaw?: string | null;
   /** Every other number the reading saw (MATCH-OTHER-NUMBERS). */
   otherNumbers?: string | null;
+  /**
+   * When this row was last matched, and ONLY set on a row the
+   * re-verification sweep picked up (MATCH-REVERIFY-SWEEP).
+   *
+   * It is how everything downstream tells a sweep from a first pass:
+   * the run records it, so a reviewer meeting the row again knows why
+   * it came back.
+   */
+  lastRunAt?: string | null;
 }
 
 export interface MatchOutcome {
@@ -329,6 +338,11 @@ export async function persistRun(
       // Only when true, so the column does not grow a key on every one
       // of the 484 rows to record the ordinary case.
       ...(result.outcome.usedFallback ? { usedFallback: true } : {}),
+      // Which of the review queue's items came back from a sweep
+      // rather than arriving for the first time. A sweep that quietly
+      // refills a queue somebody is trying to empty is a bug however
+      // correct each row is, so the row says which it is.
+      ...(row.lastRunAt ? { swept: true, previousRunAt: row.lastRunAt } : {}),
     }),
     releaseId,
     runId,
@@ -444,7 +458,18 @@ async function upsertRelease(
 }
 
 /** Rows awaiting a first match, oldest first. */
-export async function pendingRows(env: Env, limit: number): Promise<MatchRow[]> {
+export interface PendingOptions {
+  /**
+   * Top the batch up by re-verifying rows nothing has looked at for
+   * this many days, once nothing is unmatched (MATCH-REVERIFY-SWEEP).
+   * Undefined means off, which is the default and the shipped state.
+   */
+  reverifyOlderThanDays?: number;
+}
+
+export async function pendingRows(
+  env: Env, limit: number, opts: PendingOptions = {},
+): Promise<MatchRow[]> {
   // A photo-only capture has a `capture` row with every column null —
   // nothing to search on. Where a photograph has been read, the reading
   // lives in `raw_value` and fills the gap.
@@ -460,8 +485,7 @@ export async function pendingRows(env: Env, limit: number): Promise<MatchRow[]> 
   // lists and shortlists — none of which this feeds.
   const raw = (field: string) =>
     `(SELECT r.value FROM raw_value r WHERE r.item_id = i.id AND r.field = '${field}')`;
-  const { results } = await env.DB.prepare(
-    `SELECT i.id AS itemId, c.id AS captureId,
+  const COLUMNS = `i.id AS itemId, c.id AS captureId,
             COALESCE(c.catno_raw, ${raw('catno_raw')}) AS catnoRaw,
             COALESCE(c.label_raw, ${raw('label_raw')}) AS labelRaw,
             COALESCE(c.title_raw, ${raw('title_raw')}) AS titleRaw,
@@ -471,12 +495,60 @@ export async function pendingRows(env: Env, limit: number): Promise<MatchRow[]> 
             -- Capture has no column for it, because a person typing at
             -- a crate types the number they judged primary and the rest
             -- are what a photograph saw (MATCH-OTHER-NUMBERS).
-            ${raw('other_numbers')} AS otherNumbers
-       FROM item i
-       LEFT JOIN capture c ON c.item_id = i.id
+            ${raw('other_numbers')} AS otherNumbers`;
+  const FROM = `FROM item i
+       LEFT JOIN capture c ON c.item_id = i.id`;
+
+  const { results } = await env.DB.prepare(
+    `SELECT ${COLUMNS}
+       ${FROM}
       WHERE NOT EXISTS (SELECT 1 FROM match_run m WHERE m.item_id = i.id)
       ORDER BY i.id
       LIMIT ?`,
   ).bind(limit).all();
-  return results as unknown as MatchRow[];
+  const rows = results as unknown as MatchRow[];
+
+  /**
+   * Never-matched rows first, ALWAYS, and the sweep only tops up.
+   *
+   * A row that has never been looked at is strictly more urgent than
+   * one being looked at again, and making this a top-up rather than an
+   * either/or means the sweep can be left on without ever delaying a
+   * newly captured disc.
+   */
+  const spare = limit - rows.length;
+  if (!opts.reverifyOlderThanDays || spare <= 0) return rows;
+
+  /**
+   * The re-verification sweep.
+   *
+   * ORDERED BY THE LAST MATCH RUN, NOT BY `last_verified_at`, and that
+   * is the difference between a sweep and an infinite loop.
+   * `last_verified_at` is written only by `resolveRun` — when a PERSON
+   * settles a row — so the matcher changes it never. Ordering by it
+   * would hand the same oldest rows back every five minutes for ever,
+   * spending the shared Discogs budget on them and reaching nothing
+   * new. `match_run.ran_at` is written by this code on every pass, so
+   * re-running a row pushes it to the back of its own queue.
+   *
+   * A CONFIRMED ROW IS NEVER SWEPT. A release a person accepted through
+   * the review queue is settled, and re-running it can only produce a
+   * queue item contradicting a human decision — which is worse than not
+   * running at all.
+   */
+  const sweep = await env.DB.prepare(
+    `SELECT ${COLUMNS},
+            (SELECT MAX(m.ran_at) FROM match_run m WHERE m.item_id = i.id) AS lastRunAt
+       ${FROM}
+      WHERE EXISTS (SELECT 1 FROM match_run m WHERE m.item_id = i.id)
+        AND NOT EXISTS (SELECT 1 FROM v_confirmed_field v
+                         WHERE v.entity = 'item' AND v.entity_id = i.id
+                           AND v.field = 'release_id')
+        AND (SELECT MAX(m.ran_at) FROM match_run m WHERE m.item_id = i.id)
+              < datetime('now', ?)
+      ORDER BY lastRunAt ASC, i.id
+      LIMIT ?`,
+  ).bind(`-${Math.trunc(opts.reverifyOlderThanDays)} days`, spare).all();
+
+  return [...rows, ...(sweep.results as unknown as MatchRow[])];
 }

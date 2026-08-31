@@ -10,6 +10,7 @@ import { parseResolve, resolveRun } from './review.ts';
 // gate and the sign-in cannot disagree about who exists.
 import { resolveCapturer } from '../src/who.ts';
 import { applyEdit, parseEdit, parsePromote, promoteReading, tokenMatches } from './edit.ts';
+import { exportCsv, exportJson, readSettings, writeSettings } from './admin.ts';
 
 /**
  * Vinyl sorter Worker.
@@ -302,6 +303,60 @@ export function createApp() {
   });
 
   /**
+   * Collection settings.
+   *
+   * READING IS OPEN, writing is not. What comes back is three numbers
+   * about how the matcher paces itself — it names no record, no person
+   * and no secret — and the settings screen has to render before it can
+   * ask for a passphrase. Writing changes what everyone sees, so it
+   * sits behind the same passphrase that already guards correcting a
+   * reading.
+   */
+  app.get('/api/settings', async (c) => c.json(await readSettings(c.env)));
+
+  app.post('/api/settings', guard, async (c) => {
+    let body: unknown;
+    try { body = await c.req.json(); } catch { return c.json({ error: 'body must be JSON' }, 400); }
+    // Every field is clamped in `parseSettings`, so a bad number is
+    // pulled into range rather than refused: this is a preference
+    // screen, not an API, and rejecting 10000 days outright would be a
+    // worse answer than storing the maximum.
+    return c.json(await writeSettings(c.env, body));
+  });
+
+  /**
+   * Everything, back out again.
+   *
+   * Read-only, so it cannot break anything, and it is the answer to
+   * "what if this all goes away". Behind the passphrase because the
+   * whole collection in one response is a different thing from one row
+   * at a time — and because a household's records are nobody else's.
+   *
+   * TWO FORMATS, answering two different questions. `json` is the
+   * structured dump that could be restored; `csv` is the flattened
+   * collection somebody can open in a spreadsheet, sort, and hand to a
+   * person.
+   */
+  app.get('/api/export', guard, async (c) => {
+    const format = c.req.query('format') === 'csv' ? 'csv' : 'json';
+    const stamp = new Date().toISOString().slice(0, 10);
+    if (format === 'csv') {
+      return new Response(await exportCsv(c.env), {
+        headers: {
+          'content-type': 'text/csv; charset=utf-8',
+          'content-disposition': `attachment; filename="vinyl-sorter-${stamp}.csv"`,
+        },
+      });
+    }
+    return new Response(JSON.stringify(await exportJson(c.env), null, 2), {
+      headers: {
+        'content-type': 'application/json; charset=utf-8',
+        'content-disposition': `attachment; filename="vinyl-sorter-${stamp}.json"`,
+      },
+    });
+  });
+
+  /**
    * The review queue: what the matcher could not settle, with the
    * candidates it weighed. Read-only — a caller may look at what the
    * cron job decided, and cannot make it run.
@@ -549,13 +604,54 @@ export async function runMatchBatch(
     return { processed: 0, rowsWritten: 0, stoppedShort: false, cooledDown: true };
   }
   const rowsThisTick = batchSize ?? batchSizeFor(await limiter.effectiveMinInterval('discogs'));
+
+  /**
+   * How many rows the re-verification sweep may still take today.
+   *
+   * THE CAP IS ABOUT THE MAINTAINER'S TIME, not about money. Every
+   * swept row that fails to auto-accept lands in the review queue —
+   * which is a person's evening — so an uncapped sweep would refill a
+   * queue somebody is trying to empty, faster than they can clear it,
+   * while being individually correct about every row.
+   *
+   * Counted in KV against the date, so the count resets on its own and
+   * nothing has to remember to clear it. A KV failure yields zero
+   * allowance rather than infinite: the sweep is the optional half, and
+   * the safe answer when the counter cannot be read is not to sweep.
+   */
+  const settings = await readSettings(env);
+  const today = new Date().toISOString().slice(0, 10);
+  const sweepKey = `sweep:${today}`;
+  let sweptToday = 0;
+  let sweepAllowance = 0;
+  if (settings.reverify) {
+    try {
+      sweptToday = Number(await env.CACHE.get(sweepKey)) || 0;
+      sweepAllowance = Math.max(0, settings.reverifyMaxPerDay - sweptToday);
+    } catch { sweepAllowance = 0; }
+  }
   // fetchImpl left to the client's own default ON PURPOSE: naming
   // fetch here would put an outbound call in a second file and break
   // the invariant that every upstream request goes through the one
   // rate-limited client. Only the clock is injected.
   const client = new DiscogsClient(env.DISCOGS_TOKEN, limiter, undefined, sleep);
 
-  const rows = await pendingRows(env, rowsThisTick);
+  const found = await pendingRows(env, rowsThisTick,
+    sweepAllowance > 0 ? { reverifyOlderThanDays: settings.reverifyMinDays } : {});
+  // `pendingRows` tops the batch up to the tick size and does not know
+  // the daily allowance; trimming here keeps that query about ordering
+  // and this function about budget.
+  const fresh = found.filter((r) => !r.lastRunAt);
+  const swept = found.filter((r) => r.lastRunAt).slice(0, sweepAllowance);
+  const rows = [...fresh, ...swept];
+  if (swept.length) {
+    // Written BEFORE the work, so a tick that dies half way through has
+    // still spent its allowance. Over-counting a sweep costs a delay;
+    // under-counting it costs the queue filling up unnoticed.
+    try {
+      await env.CACHE.put(sweepKey, String(sweptToday + swept.length), { expirationTtl: 172_800 });
+    } catch { /* the cap degrades to per-tick, which is still a cap */ }
+  }
   let rowsWritten = 0;
   let processed = 0;
   let stoppedShort = false;

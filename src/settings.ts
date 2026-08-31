@@ -29,6 +29,27 @@ import {
 } from './chrome.ts';
 import { forgetCapturer, rememberCapturer, resolveCapturer, storedCapturer } from './who.ts';
 
+const API = '/api';
+
+interface Collection {
+  reverify: boolean;
+  reverifyMinDays: number;
+  reverifyMaxPerDay: number;
+}
+
+let collection: Collection | null = null;
+
+/**
+ * The shared passphrase, held beside `dg.who` on this device — the SAME
+ * key the browse screen uses, so unlocking editing once unlocks it
+ * everywhere. Not sign-in and it does not pretend to be.
+ */
+const editToken = {
+  get(): string { try { return localStorage.getItem('dg.edit') ?? ''; } catch { return ''; } },
+  set(v: string): void { try { localStorage.setItem('dg.edit', v); } catch { /* asked again */ } },
+  clear(): void { try { localStorage.removeItem('dg.edit'); } catch { /* nothing held */ } },
+};
+
 const app = document.getElementById('settings')!;
 
 const THEMES: { value: Theme; label: string; hint: string }[] = [
@@ -93,6 +114,53 @@ function render(): void {
     </section>
 
     <section class="card">
+      <h2 class="subhead">Matching</h2>
+      ${collection ? `
+        <div class="toggle">
+          <span class="txt">
+            <strong>Re-verify the oldest rows</strong>
+            <span>When nothing is waiting to be matched for the first time, look again at
+              rows nothing has checked for a while. Off by default — every row it cannot
+              settle lands in the review queue, which is your evening.</span>
+          </span>
+          <button type="button" class="btn ${collection.reverify ? 'btn-primary' : 'btn-ghost'}"
+            id="reverify">${collection.reverify ? 'On' : 'Off'}</button>
+        </div>
+        <div class="toggle">
+          <span class="txt">
+            <strong>Leave a row alone for</strong>
+            <span>A row is only re-verifiable once its last match is this old.</span>
+          </span>
+          <label class="field" style="margin:0;max-width:7rem">
+            <input id="minDays" type="number" min="1" max="3650" inputmode="numeric"
+              value="${collection.reverifyMinDays}"></label>
+        </div>
+        <div class="toggle">
+          <span class="txt">
+            <strong>At most, per day</strong>
+            <span>The ceiling on how many the sweep may re-queue, so it cannot refill the
+              review queue faster than it can be cleared.</span>
+          </span>
+          <label class="field" style="margin:0;max-width:7rem">
+            <input id="maxPerDay" type="number" min="0" max="500" inputmode="numeric"
+              value="${collection.reverifyMaxPerDay}"></label>
+        </div>
+        <p class="note">Changing these needs the shared passphrase — they change what
+          everyone sees, not just this device.</p>
+      ` : '<p class="note">Could not reach the server. These settings live with the collection, not on this device.</p>'}
+    </section>
+
+    <section class="card">
+      <h2 class="subhead">A copy of everything</h2>
+      <p class="note">Read-only, so it cannot break anything. The JSON is the structured
+        dump that could be restored; the CSV is one row per record, for a spreadsheet.</p>
+      <div class="exports">
+        <button type="button" class="btn btn-ghost" data-export="json">Download JSON</button>
+        <button type="button" class="btn btn-ghost" data-export="csv">Download CSV</button>
+      </div>
+    </section>
+
+    <section class="card">
       <h2 class="subhead">Not on this page</h2>
       <p class="note">Three things were asked for and live at the command line instead, because
         this URL has no sign-in and one shared passphrase is the only thing between it and
@@ -138,6 +206,92 @@ function render(): void {
   });
 
   document.getElementById('setWho')?.addEventListener('click', askName);
+
+  document.getElementById('reverify')?.addEventListener('click', () => {
+    void saveCollection({ reverify: !collection?.reverify });
+  });
+  for (const id of ['minDays', 'maxPerDay'] as const) {
+    const box = document.getElementById(id) as HTMLInputElement | null;
+    // `change`, not `input`: a passphrase-guarded write per keystroke
+    // would fire four times typing "180" and three of them would be
+    // storing a number nobody meant.
+    box?.addEventListener('change', () => {
+      void saveCollection(id === 'minDays'
+        ? { reverifyMinDays: Number(box.value) }
+        : { reverifyMaxPerDay: Number(box.value) });
+    });
+  }
+  for (const btn of app.querySelectorAll<HTMLButtonElement>('button[data-export]')) {
+    btn.addEventListener('click', () => { void download(btn.dataset.export === 'csv' ? 'csv' : 'json'); });
+  }
+}
+
+/** Ask for the passphrase once, and keep it the way browse does. */
+function askToken(): string {
+  const held = editToken.get();
+  if (held) return held;
+  const typed = prompt('The shared passphrase');
+  if (!typed) return '';
+  editToken.set(typed);
+  return typed;
+}
+
+async function saveCollection(patch: Partial<Collection>): Promise<void> {
+  const token = askToken();
+  if (!token) { toast('That needs the shared passphrase.', 'err'); return; }
+  const res = await fetch(`${API}/settings`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-edit-token': token },
+    body: JSON.stringify(patch),
+  });
+  if (res.status === 401) {
+    // A refused passphrase is FORGOTTEN rather than retried: a secret
+    // changed on the Worker must stop being sent, or every write for
+    // the rest of the session fails the same way and silently.
+    editToken.clear();
+    toast('That passphrase was refused.', 'err');
+    return;
+  }
+  if (!res.ok) { toast(`Refused: HTTP ${res.status}`, 'err'); return; }
+  collection = await res.json() as Collection;
+  render();
+  toast('Saved for everyone.');
+}
+
+/**
+ * Fetch the export and hand it to the browser as a file.
+ *
+ * A PLAIN LINK CANNOT DO THIS. The route is behind `x-edit-token` and
+ * an `<a download>` sends no headers — the same shape of bug that made
+ * every label photograph 401 when its gate was header-only. So the
+ * bytes are fetched, turned into a blob, and clicked programmatically.
+ */
+async function download(format: 'json' | 'csv'): Promise<void> {
+  const token = askToken();
+  if (!token) { toast('That needs the shared passphrase.', 'err'); return; }
+  toast(`Preparing the ${format.toUpperCase()}…`);
+  const res = await fetch(`${API}/export?format=${format}`, { headers: { 'x-edit-token': token } });
+  if (res.status === 401) { editToken.clear(); toast('That passphrase was refused.', 'err'); return; }
+  if (!res.ok) { toast(`Export refused: HTTP ${res.status}`, 'err'); return; }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `vinyl-sorter-${new Date().toISOString().slice(0, 10)}.${format}`;
+  a.click();
+  // Revoked on the next turn of the loop rather than immediately:
+  // Safari has not necessarily started reading the blob when `click`
+  // returns, and a revoked URL downloads nothing at all.
+  setTimeout(() => URL.revokeObjectURL(url), 30_000);
+  toast(`${format.toUpperCase()} downloaded.`);
+}
+
+/** The collection half, after the device half is already on screen. */
+async function loadCollection(): Promise<void> {
+  try {
+    const res = await fetch(`${API}/settings`);
+    if (res.ok) { collection = await res.json() as Collection; render(); }
+  } catch { /* the device settings work without a server */ }
 }
 
 /**
@@ -160,3 +314,4 @@ function askName(): void {
 
 bootChrome();
 render();
+void loadCollection();
