@@ -123,7 +123,10 @@ function render(): void {
       <span style="margin-left:auto">reviewing as <strong>${esc(who.value)}</strong></span>
     </div></div>`;
 
-  for (const button of app.querySelectorAll<HTMLButtonElement>('.cand')) {
+  // Only the left half accepts. The right half is a plain link and
+  // needs no handler — which is the point: nothing that opens Discogs
+  // can accidentally record a decision.
+  for (const button of app.querySelectorAll<HTMLButtonElement>('.cand .pick')) {
     button.addEventListener('click', () => { void choose(Number(button.dataset.discogsId)); });
   }
   const manual = document.getElementById('manual') as HTMLInputElement;
@@ -169,18 +172,36 @@ function photosHtml(item: QueueItem): string {
 function renderCandidate(c: Candidate, i: number): string {
   const { families = [], signals = {} } = parse<{ families?: string[]; signals?: Record<string, string> }>(
     c.signals_json, {});
+  // TWO CONTROLS, NOT ONE. Accepting a match and going to look at it
+  // are different intentions, and the old row could only express the
+  // first — so checking a candidate meant accepting it and then
+  // undoing, or not checking at all. Two items were confirmed on
+  // 2026-08-31 by a person who had no way to look.
+  //
+  // A link, not a button, for the right half: middle-click, ⌘-click and
+  // "open in new tab" all work for free, and the URL is visible on
+  // hover, which is what tells you where it goes before you commit.
   return `
-    <button class="cand${i === 0 ? ' top' : ''}" data-discogs-id="${c.discogs_id}">
-      <span class="key">${i + 1}</span>
-      <span>
-        <span class="title">Discogs release ${c.discogs_id}</span>
-        <span class="why">
-          ${families.map((f) => `<span class="fam">${esc(f)}</span>`).join('')}
-          ${Object.entries(signals).map(([k, v]) => `<span class="sig">${esc(k)}: ${esc(v)}</span>`).join(' ')}
+    <div class="cand${i === 0 ? ' best' : ''}">
+      <button class="pick" data-discogs-id="${c.discogs_id}"
+              title="Accept this match (or press ${i + 1})">
+        <span class="key">${i + 1}</span>
+        <span>
+          <span class="title">Discogs release ${c.discogs_id}</span>
+          <span class="why">
+            ${families.map((f) => `<span class="fam">${esc(f)}</span>`).join('')}
+            ${Object.entries(signals).map(([k, v]) => `<span class="sig">${esc(k)}: ${esc(v)}</span>`).join(' ')}
+          </span>
         </span>
-      </span>
-      <span class="score">${c.score}<small>score</small></span>
-    </button>`;
+        <span class="score">${c.score}<small>score</small></span>
+      </button>
+      <a class="peek" href="https://www.discogs.com/release/${c.discogs_id}"
+         target="_blank" rel="noopener noreferrer"
+         title="Open release ${c.discogs_id} on Discogs — does not accept it">
+        <span class="peekicon" aria-hidden="true">↗</span>
+        <span class="peeklabel">Discogs</span>
+      </a>
+    </div>`;
 }
 
 function renderWhoAmI(): void {
