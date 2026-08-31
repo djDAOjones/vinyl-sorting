@@ -1,60 +1,67 @@
 ---
 id: CAPTURE-WHO
-name: Say who is capturing — pick a name once, rather than type one every time
-summary: capturedBy lost its box when the More block was parked and was barely reachable before that, so a phone that has never had a name typed into it sends nothing; the household is six known people, which is a list to pick from rather than a field to type into, and picking is identification rather than the access control OPEN-USERS-ACCESS deferred.
+name: A name typed once at the start — crude gate, and the logger for who captured what
+summary: capturedBy lost its box when the More block was parked, so a phone that has never had a name typed into it sends nothing; the fix is a name typed once at first launch and checked against the six people who capture, which gates the app crudely and stamps every row afterwards without a field in the capture flow.
 status: open
 date: 2026-08-31
 milestone: icebox
 order: 3
 ---
-# Say who is capturing
+# A name typed once at the start
 
 `capturedBy` has no box on the capture screen. CAPTURE-ONE-SCREEN parked
 the block it lived in, and it was barely reachable before that: a
 disclosure to open, then a name to type, every time the phone changed
 hands. A device that has never had one typed into it now sends nothing
-at all — absent rather than guessed, which is right, but it means the
-provenance of a capture says who read the label only by accident.
+at all — absent rather than guessed, which is right, but it means a
+capture says who read the label only by accident.
 
-The maintainer's proposal (2026-08-31) is a simple log in. The people
-are known and there are six of them: **Joe, Jen, Ro, Ivy, Jojo, Sue.**
+The maintainer's design (2026-08-31) is a simple log in at the start:
+**type your name.** It does two jobs at once — a crude, rudimentary
+password, and the logger that stamps every row afterwards.
 
-Six names is a list, not a free-text field. Typing manufactures
-spellings — `jo`, `Jojo`, `JoJo` — of exactly the kind NAMES-CANONICAL
-exists to resolve on the composer side, and there is no reason to invent
-the same problem for six people whose names are already known. One tap,
-once per device, sticky afterwards.
+## Typed, not picked
 
-## Identification, not access control
+A picker was considered and rejected as more friction, and it is also
+self-defeating: a list of six buttons prints the valid answers on the
+screen, so it cannot gate anything at all. Typing asks you to know one.
 
-Worth stating plainly, because the words overlap and the difference is
-the whole size of the item.
+Once per device, and never again — so the interaction cost is one
+screen, ever, against a name that reaches every row captured on that
+phone for the rest of the project.
 
-The brief records **no sign-in for v1** (OPEN-USERS-ACCESS, 2026-08-30).
-That decision was about whether the Worker needs authentication before
-M2 puts the Discogs token behind a public endpoint. A name picker with
-no password answers a different question — which of six known people is
-holding the phone — and can ship without reopening it.
+## Spelling is handled by the roster, not by the typist
 
-If what is wanted is also a gate — a password, an account, a queue only
-its owner can clear — that IS OPEN-USERS-ACCESS, and the brief already
-says it reopens at M2. Whoever promotes this record should say which of
-the two is meant. They are different builds, and only one of them is
-small.
+The people are known and there are six: **Joe, Jen, Ro, Ivy, Jojo, Sue.**
+The typed name is matched against that list and stored in its canonical
+form, so `jojo`, `JOJO` and `JoJo` all land as `Jojo`, and the
+free-text spelling problem NAMES-CANONICAL exists to clean up on the
+composer side never reaches the data at all. A name not on the list is
+refused — and that refusal is the gate.
 
-## What the small version takes
+## What it is not
 
-- A chooser on first launch: six buttons, no keyboard. Stored in
-  `dg.who`, which already exists and which both screens already read.
-- A way to change it, because the phone will be handed over.
+Six household first names are guessable, and the roster has to live
+somewhere the app can read. This is a speed bump and an honest label on
+a row, not access control, and the record says so here rather than
+letting a later reader assume otherwise.
+
+Real access control is OPEN-USERS-ACCESS — no sign-in for v1 by
+maintainer decision (2026-08-30), reopening at M2 when the Discogs
+token sits behind a public endpoint. This item does not touch that
+decision, and shipping it must not be read as having answered it.
+
+## What it takes
+
+- A first-run screen: one box, one button, refuse an unknown name.
+- The name in `dg.who`, which already exists and which both capture and
+  the review queue already read.
 - Capture sends `capturedBy` on every row, as it did before.
-- Nothing on the Worker. `capturedBy` is already accepted and already
-  optional.
+- A way to switch, because the phone will be handed over.
+- Nothing on the Worker: `capturedBy` is already accepted and optional.
 
 ## Why it is in the icebox
 
-The value is real but small while one person is doing the capturing:
-one field of provenance on rows nobody is disputing yet. It earns
-promotion when a second person actually starts capturing, or when the
-log in is wanted for access control too — at which point it stops being
-this item.
+While one person is doing the capturing it buys one field of provenance
+on rows nobody is disputing. It earns promotion when a second person
+actually starts capturing.

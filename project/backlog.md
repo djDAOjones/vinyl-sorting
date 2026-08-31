@@ -46,13 +46,13 @@
   passage?** [sign-off] (2026-08-30) — Whether the app proposes the
   two-to-three-minute comparison passage from the track listing, or the
   listener always chooses it themselves.
-- [ ] **CAPTURE-WHO Say who is capturing — pick a name once, rather than
-  type one every time** (2026-08-31) — capturedBy lost its box when the
-  More block was parked and was barely reachable before that, so a phone
-  that has never had a name typed into it sends nothing; the household is
-  six known people, which is a list to pick from rather than a field to
-  type into, and picking is identification rather than the access control
-  OPEN-USERS-ACCESS deferred.
+- [ ] **CAPTURE-WHO A name typed once at the start — crude gate, and the
+  logger for who captured what** (2026-08-31) — capturedBy lost its box
+  when the More block was parked, so a phone that has never had a name
+  typed into it sends nothing; the fix is a name typed once at first
+  launch and checked against the six people who capture, which gates the
+  app crudely and stamps every row afterwards without a field in the
+  capture flow.
 - [ ] **M3-WORKS-PERFORMANCES MusicBrainz works, performances and
   per-track completeness** — Resolve work and recording identity from
   MusicBrainz, resolve composers for the 131 Various/Unknown rows, and
