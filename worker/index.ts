@@ -162,7 +162,14 @@ export function createApp() {
               i.captured_by, i.captured_at, i.import_ref, i.last_verified_at,
               c.catno_raw, c.label_raw, c.name_raw, c.title_raw, c.year_raw,
               r.discogs_id, r.label AS release_label, r.title AS release_title,
+              c.matrix_runout, r.year AS release_year,
               (SELECT COUNT(*) FROM item_photo p WHERE p.item_id = i.id) AS photo_count,
+              -- Whether a photograph has been READ, which is a
+              -- different question from whether one was taken. The
+              -- mop-up crate is exactly the rows where both are true
+              -- and the release still is not settled: photographed,
+              -- read, and still unresolved (CATALOGUE-CONTROLS).
+              (SELECT COUNT(*) FROM raw_value v2 WHERE v2.item_id = i.id) AS reading_count,
               (SELECT m.state FROM match_run m WHERE m.item_id = i.id
                 ORDER BY m.id DESC LIMIT 1) AS match_state,
               EXISTS (SELECT 1 FROM v_confirmed_field v
@@ -384,6 +391,15 @@ export function createApp() {
          LEFT JOIN capture c ON c.item_id = i.id
          LEFT JOIN review_decision d ON d.match_run_id = m.id
         WHERE m.state = 'needs-review'
+          -- THE NEWEST RUN PER ITEM, NOT EVERY RUN. One run per item
+          -- held until MATCH-REVERIFY-SWEEP made re-running a normal
+          -- operation: a swept row that still cannot auto-accept writes
+          -- a SECOND needs-review run, and without this the same disc
+          -- appears in the queue twice — so a sweep meant to refresh
+          -- the queue would double it instead. Found on the live queue
+          -- rather than in a test, which is why the test below now
+          -- exists.
+          AND m.id = (SELECT MAX(m2.id) FROM match_run m2 WHERE m2.item_id = i.id)
           AND (d.id IS NULL OR (? = 1 AND d.choice = 'skip'))
         ORDER BY m.item_id
         LIMIT ?`,
@@ -442,9 +458,24 @@ export function createApp() {
       'SELECT COUNT(*) AS n FROM review_decision').first<{ n: number }>();
     const eligible = await c.env.DB.prepare(
       'SELECT COUNT(*) AS n FROM v_decision_eligible_item').first<{ n: number }>();
+    // ITEMS waiting, not RUNS waiting, and the two stopped being the
+    // same number when re-running became a normal operation. `byState`
+    // is deliberately left as a histogram of runs — it is how a run is
+    // judged — but "how much work is in the queue" is a question about
+    // discs, and the home screen asks it that way.
+    const waiting = await c.env.DB.prepare(
+      `SELECT COUNT(*) AS n FROM item i
+        WHERE (SELECT m.state FROM match_run m WHERE m.item_id = i.id
+                ORDER BY m.id DESC LIMIT 1) = 'needs-review'
+          AND NOT EXISTS (SELECT 1 FROM review_decision d
+                           WHERE d.match_run_id = (SELECT MAX(m2.id) FROM match_run m2
+                                                    WHERE m2.item_id = i.id)
+                             AND d.choice <> 'skip')`,
+    ).first<{ n: number }>();
     return c.json({
       byState: results, unmatched: pending?.n ?? 0,
       reviewed: reviewed?.n ?? 0, decisionEligible: eligible?.n ?? 0,
+      itemsNeedingReview: waiting?.n ?? 0,
     });
   });
 

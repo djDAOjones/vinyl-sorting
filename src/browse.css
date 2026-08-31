@@ -11,6 +11,38 @@ main#browse { padding-bottom: var(--s6); }
 
 .filters { margin-bottom: var(--s4); }
 
+/* ── Named views (CATALOGUE-CONTROLS) ────────────────────────────
+   Two of these are questions somebody actually asks — "what still
+   needs reviewing" and "which discs am I re-shooting" — and rebuilding
+   a filter by hand every time is how a question stops being asked. */
+.views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin-bottom: var(--s3);
+}
+.viewchip {
+  font: 600 var(--t-xs) var(--mono);
+  letter-spacing: 0.03em;
+  color: var(--text-2);
+  background: var(--sunk);
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  padding: var(--s1) var(--s3);
+  min-height: 2rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.viewchip:hover { color: var(--accent); border-color: var(--accent); }
+.viewchip.on { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+/* The chooser is not a view, so it never takes the selected style. */
+.viewchip.cols { margin-left: auto; color: var(--text-3); }
+.viewchip.cols:hover { color: var(--accent); }
+
+.colgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: var(--s1) var(--s3); }
+.colopt { display: flex; align-items: center; gap: var(--s2); margin: 0; padding: var(--s1) 0; cursor: pointer; }
+.colopt span { font-size: var(--t-sm); color: var(--text); }
+
 /* ── The detail panel ────────────────────────────────────────────── */
 .detail {
   margin-top: var(--s5);

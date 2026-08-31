@@ -1,8 +1,8 @@
 ---
 id: CATALOGUE-CONTROLS
 name: Sort, filter and choose columns on the collection screen
-summary: Browse offers two sorts and three filters over eight fixed columns — enough to look at 483 rows, not enough to ask a question of them — and the two sorts most wanted, value and release date, have no data behind them.
-status: open
+summary: The interface half is done — every column sortable and choosable, five named views including the mop-up crate, and the whole view in the URL — so what remains is the two sorts that need data the database does not hold: value, which needs a price backfill, and genre, which needs a migration.
+status: in-progress
 date: 2026-08-31
 milestone: next
 order: 1
@@ -12,51 +12,35 @@ order: 1
 Asked for: sort by value, sort by release date, choosable columns, a
 genre toggle. Three of the four need data the database does not hold.
 
-## What exists, what does not
+## Where it stands, 2026-09-01
 
-| Wanted | Where it lives | State |
-| --- | --- | --- |
-| Release date | `release.year` | Column exists, populated for matched rows |
-| Value | `release.lowest_price`, `num_for_sale` | Columns exist, **never written** |
-| Genre | — | **No column anywhere** |
-| Columns, sorts, filters | client | Fixed at eight |
+**The interface half is done and deployed.** Twenty-two columns, each
+declaring how to read and sort itself in one place; any of them
+choosable and sortable; five named views; and the whole view — filters,
+sort, direction, columns — encoded in the URL, so it can be bookmarked
+and sent. Absent values sort LAST in both directions, which is the same
+rule the old `verified` sort had to learn: a null is not a small number
+and not an early date.
 
-So the interface work is the small half.
+**The mop-up filter exists and is one click.** `/api/items` gained a
+`reading_count`, so "photographed, read, still unresolved" is a
+composition of state the row already carries, and the crate no longer
+has to be assembled from memory.
 
-### Value
+## What is left, and what each one is blocked on
 
-`lowest_price` comes from the Discogs release endpoint, which
-TRACKLIST-CAPTURE now calls once per accepted release — so the field
-arrives on the same request already being made, for new matches. The
-existing 300-odd need a backfill pass at the pacing M2-DISCOGS-PACING
-settled, and prices go stale, so `price_checked_at` (already a column)
-has to be shown rather than hidden.
+**Value** needs `release.lowest_price` to be populated. The column has
+existed since M1 and has never been written. TRACKLIST-CAPTURE now
+calls the release endpoint once per accepted match, so new matches can
+carry it for free — the ~300 already matched need a backfill pass at
+the pacing M2-DISCOGS-PACING settled, and prices go stale, so
+`price_checked_at` has to be shown rather than hidden.
 
-**Sorting by value ranks unpriced rows last, never first.** The same
-rule `sort: verified` already follows: absent is not zero.
+**Genre** needs migration 005 and a Discogs field. Worth saying again
+that the honest use of it is not a genre column: classical is nearly
+the whole collection, so what earns its place is a **not-classical
+toggle**, which is what the brief means when it says the schema stays
+genre-neutral while the v1 interface does not show it.
 
-### Genre
-
-Needs migration 005 and a Discogs field (`genres`, `styles`). Classical
-is nearly the whole collection, so the honest use of this is not a
-genre column at all — it is a **not-classical toggle**, which is what
-the brief means when it says the schema stays genre-neutral while the
-v1 interface does not show it.
-
-## The filter the mop-up ruling needs
-
-Maintainer, 2026-08-31: **photographed, read, still unresolved.** The
-17 sleeve-only rows get re-shot from the disc, and without a filter
-naming them the mop-up crate is assembled from memory. It is a
-composition of state the row already carries — has a photograph, has a
-promoted reading, has no confirmed release — and it belongs here with
-the other saved views rather than in a tool.
-
-## Shape
-
-Filters compose and are nameable. A view is a URL, so it can be
-bookmarked and sent — which is also how the mop-up filter gets used
-twice without being rebuilt.
-
-**Done when** a saved view survives a reload, value sorts with unpriced
-last, and the mop-up crate can be listed from the screen.
+**Done when** value sorts with unpriced last, and the interface can
+hide what is not classical.

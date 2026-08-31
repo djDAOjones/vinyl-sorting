@@ -63,6 +63,9 @@ interface Row {
   name_raw: string | null; title_raw: string | null; year_raw: string | null;
   discogs_id: number | null; release_label: string | null; release_title: string | null;
   photo_count: number;
+  reading_count: number;
+  matrix_runout: string | null;
+  release_year: number | null;
   match_state: string | null;
   release_confirmed: number;
 }
@@ -181,39 +184,223 @@ const CAPTURE_FIELDS = [
 const STATES = ['auto-accepted', 'needs-review', 'rejected', 'error', 'unmatched'] as const;
 const stateOf = (r: Row): string => r.match_state ?? 'unmatched';
 
-const filters = { state: '', photos: '', text: '', sort: 'id' };
+/* ── Columns, sorts and saved views (CATALOGUE-CONTROLS) ──────────
+ *
+ * The screen offered two sorts and three filters over eight fixed
+ * columns, which is enough to LOOK at 484 rows and not enough to ask a
+ * question of them.
+ *
+ * Every column declares how to read itself and how to sort itself, in
+ * one place, so adding one is a line here rather than an edit in four
+ * functions — which is what the old fixed `<th>` list plus a hand-
+ * written `rowHtml` had become.
+ */
+interface Column {
+  key: string;
+  label: string;
+  get: (r: Row) => unknown;
+  /** Right-aligned and sorted numerically. */
+  num?: boolean;
+  mono?: boolean;
+  /** Rendered by hand — a chip, a tick, something that is not text. */
+  html?: (r: Row) => string;
+}
+
+const COLUMNS: Column[] = [
+  { key: 'id', label: 'id', get: (r) => r.id, num: true },
+  { key: 'catno_raw', label: 'catalogue', get: (r) => r.catno_raw, mono: true },
+  { key: 'label_raw', label: 'label', get: (r) => r.label_raw },
+  { key: 'name_raw', label: 'name', get: (r) => r.name_raw },
+  { key: 'title_raw', label: 'title', get: (r) => r.title_raw },
+  { key: 'year_raw', label: 'year', get: (r) => r.year_raw, mono: true },
+  { key: 'crate', label: 'crate', get: (r) => [r.crate, r.position].filter(Boolean).join(' · ') },
+  { key: 'matrix_runout', label: 'matrix', get: (r) => r.matrix_runout, mono: true },
+  { key: 'media_grade', label: 'media', get: (r) => r.media_grade },
+  { key: 'sleeve_grade', label: 'sleeve', get: (r) => r.sleeve_grade },
+  {
+    key: 'photo_count',
+    label: 'photos',
+    get: (r) => r.photo_count,
+    num: true,
+    html: (r) => `<td class="num">${r.photo_count || '<span class="empty">—</span>'}</td>`,
+  },
+  {
+    key: 'reading_count',
+    label: 'read',
+    get: (r) => r.reading_count ?? 0,
+    num: true,
+    html: (r) => `<td class="num">${r.reading_count || '<span class="empty">—</span>'}</td>`,
+  },
+  {
+    key: 'match_state',
+    label: 'match',
+    get: (r) => stateOf(r),
+    html: (r) => `<td><span class="chip s-${stateOf(r)}">${stateOf(r)}</span>${
+      r.release_confirmed ? '<span class="tick" title="release confirmed by a person">✓</span>' : ''}</td>`,
+  },
+  { key: 'release_title', label: 'discogs title', get: (r) => r.release_title },
+  { key: 'release_label', label: 'discogs label', get: (r) => r.release_label },
+  { key: 'release_year', label: 'released', get: (r) => r.release_year, num: true },
+  { key: 'discogs_id', label: 'discogs id', get: (r) => r.discogs_id, num: true, mono: true },
+  { key: 'decision', label: 'decision', get: (r) => r.decision },
+  { key: 'captured_by', label: 'by', get: (r) => r.captured_by },
+  { key: 'captured_at', label: 'captured', get: (r) => r.captured_at, mono: true },
+  { key: 'last_verified_at', label: 'verified', get: (r) => r.last_verified_at, mono: true },
+  { key: 'import_ref', label: 'imported', get: (r) => r.import_ref, mono: true },
+];
+
+const COLUMN = new Map(COLUMNS.map((c) => [c.key, c]));
+
+/** What the screen showed before it could be changed. */
+const DEFAULT_COLS = ['id', 'catno_raw', 'label_raw', 'name_raw', 'title_raw',
+  'crate', 'photo_count', 'match_state'];
 
 /**
- * Filtering is client-side, and that is a decision rather than a
- * shortcut: the whole collection arrives in one fetch, and a filter
- * that costs a round trip is a filter nobody uses. It stops being true
- * past the deferred 2,000–6,000 record batch, and `/api/items` is
- * already keyset-paged for that day.
+ * Named views, because two of these are questions somebody actually
+ * asks and rebuilding them by hand every time is how they stop being
+ * asked.
+ *
+ * `mop-up` is the one with a job: the maintainer ruled on 2026-08-31
+ * that the sleeve-only rows get re-shot from the disc, and without a
+ * filter naming them the crate gets assembled from memory. It is a
+ * composition of state the row already carries — has a photograph, has
+ * a reading off it, and still has no confirmed release.
+ */
+interface Preset { key: string; label: string; hint: string; apply: (v: View) => void }
+
+const PRESETS: Preset[] = [
+  {
+    key: 'all',
+    label: 'Everything',
+    hint: 'No filter at all',
+    apply: (v) => { v.state = ''; v.photos = ''; v.readings = ''; v.confirmed = ''; },
+  },
+  {
+    key: 'review',
+    label: 'Needs review',
+    hint: 'What the matcher could not settle',
+    apply: (v) => { v.state = 'needs-review'; v.photos = ''; v.readings = ''; v.confirmed = ''; },
+  },
+  {
+    key: 'mop-up',
+    label: 'Mop-up crate',
+    hint: 'Photographed, read, and still unresolved — the discs to re-shoot',
+    apply: (v) => { v.state = ''; v.photos = 'with'; v.readings = 'with'; v.confirmed = 'no'; },
+  },
+  {
+    key: 'unphotographed',
+    label: 'Never photographed',
+    hint: 'The rows imported from the spreadsheet',
+    apply: (v) => { v.state = ''; v.photos = 'without'; v.readings = ''; v.confirmed = ''; },
+  },
+  {
+    key: 'settled',
+    label: 'Confirmed',
+    hint: 'A person has accepted the release',
+    apply: (v) => { v.state = ''; v.photos = ''; v.readings = ''; v.confirmed = 'yes'; },
+  },
+];
+
+interface View {
+  text: string;
+  state: string;
+  photos: string;
+  readings: string;
+  confirmed: string;
+  sort: string;
+  dir: 'asc' | 'desc';
+  cols: string[];
+}
+
+const view: View = {
+  text: '', state: '', photos: '', readings: '', confirmed: '',
+  sort: 'id', dir: 'asc', cols: [...DEFAULT_COLS],
+};
+
+/**
+ * A view is a URL, which is what makes it shareable and bookmarkable —
+ * and is how the mop-up crate gets used twice without being rebuilt.
+ *
+ * `replaceState`, not `pushState`: typing four characters into the
+ * search box should not put four entries in the back button.
+ */
+function readUrl(): void {
+  const q = new URLSearchParams(location.search);
+  const preset = PRESETS.find((p) => p.key === q.get('view'));
+  if (preset) preset.apply(view);
+  for (const k of ['text', 'state', 'photos', 'readings', 'confirmed'] as const) {
+    const v = q.get(k);
+    if (v !== null) view[k] = v;
+  }
+  const sort = q.get('sort');
+  if (sort && COLUMN.has(sort)) view.sort = sort;
+  if (q.get('dir') === 'desc') view.dir = 'desc';
+  const cols = q.get('cols')?.split(',').filter((c) => COLUMN.has(c));
+  if (cols?.length) view.cols = cols;
+}
+
+function writeUrl(): void {
+  const q = new URLSearchParams();
+  for (const k of ['text', 'state', 'photos', 'readings', 'confirmed'] as const) {
+    if (view[k]) q.set(k, view[k]);
+  }
+  if (view.sort !== 'id') q.set('sort', view.sort);
+  if (view.dir !== 'asc') q.set('dir', view.dir);
+  if (view.cols.join(',') !== DEFAULT_COLS.join(',')) q.set('cols', view.cols.join(','));
+  const s = q.toString();
+  history.replaceState(null, '', s ? `?${s}` : location.pathname);
+}
+
+/**
+ * Filtering and sorting are client-side, and that is a decision rather
+ * than a shortcut: the whole collection arrives in one fetch, and a
+ * filter that costs a round trip is a filter nobody uses. It stops
+ * being true past the deferred 2,000–6,000 record batch, and
+ * `/api/items` is already keyset-paged for that day.
  */
 function visible(): Row[] {
-  const needle = filters.text.trim().toLowerCase();
+  const needle = view.text.trim().toLowerCase();
   const out = rows.filter((r) => {
-    if (filters.state && stateOf(r) !== filters.state) return false;
-    if (filters.photos === 'with' && !r.photo_count) return false;
-    if (filters.photos === 'without' && r.photo_count) return false;
+    if (view.state && stateOf(r) !== view.state) return false;
+    if (view.photos === 'with' && !r.photo_count) return false;
+    if (view.photos === 'without' && r.photo_count) return false;
+    if (view.readings === 'with' && !r.reading_count) return false;
+    if (view.readings === 'without' && r.reading_count) return false;
+    if (view.confirmed === 'yes' && !r.release_confirmed) return false;
+    if (view.confirmed === 'no' && r.release_confirmed) return false;
     if (!needle) return true;
-    return [r.catno_raw, r.label_raw, r.name_raw, r.title_raw, r.crate, r.captured_by, String(r.id)]
-      .some((v) => (v ?? '').toLowerCase().includes(needle));
+    // Search reaches every column that can be SHOWN, not the eight the
+    // table happened to start with — a screen that can display a matrix
+    // number and cannot find one is only half a tool.
+    return COLUMNS.some((c) => String(c.get(r) ?? '').toLowerCase().includes(needle));
   });
-  if (filters.sort === 'verified') {
-    // Never verified sorts last rather than first: a null is not an old
-    // date, and putting 287 of them at the top would bury the rows the
-    // sort was asked for.
-    out.sort((a, b) => (b.last_verified_at ?? '').localeCompare(a.last_verified_at ?? '')
-      || a.id - b.id);
-  }
+
+  const col = COLUMN.get(view.sort) ?? COLUMN.get('id')!;
+  const sign = view.dir === 'desc' ? -1 : 1;
+  out.sort((a, b) => {
+    const x = col.get(a);
+    const y = col.get(b);
+    // ABSENT SORTS LAST IN BOTH DIRECTIONS, never first. A null is not
+    // a small number and not an early date: 287 rows have never been
+    // verified, and floating them to the top would bury whatever the
+    // sort was actually asked for. The existing `verified` sort already
+    // had to learn this.
+    const ax = x === null || x === undefined || x === '';
+    const bx = y === null || y === undefined || y === '';
+    if (ax !== bx) return ax ? 1 : -1;
+    if (ax && bx) return a.id - b.id;
+    const cmp = col.num
+      ? Number(x) - Number(y)
+      : String(x).localeCompare(String(y), 'en-GB', { numeric: true });
+    return (cmp || 0) * sign || a.id - b.id;
+  });
   return out;
 }
 
 async function load(): Promise<void> {
   rows = [];
   let after = 0;
-  // Paged rather than assumed. 465 rows arrive in one fetch at 500, and
+  // Paged rather than assumed. 484 rows arrive in one fetch at 500, and
   // the loop is what keeps that an optimisation rather than a limit.
   for (let page = 0; page < 50; page++) {
     const res = await fetch(`${API}/items?limit=500&after=${after}`, { headers: whoHeader() });
@@ -226,43 +413,69 @@ async function load(): Promise<void> {
   render();
 }
 
+const activePreset = (): string => PRESETS.find((p) => {
+  const probe: View = { ...view };
+  p.apply(probe);
+  return probe.state === view.state && probe.photos === view.photos
+    && probe.readings === view.readings && probe.confirmed === view.confirmed;
+})?.key ?? '';
+
 function render(): void {
+  writeUrl();
   const shown = visible();
   const withPhotos = rows.filter((r) => r.photo_count).length;
+  const preset = activePreset();
+
   app.innerHTML = `
     ${headerHtml({ here: 'browse', title: 'The collection',
     aside: `<div class="tally"><b>${shown.length}</b> of ${rows.length} shown<br>
       ${withPhotos} photographed</div>` })}
 
+    <div class="views">
+      ${PRESETS.map((p) => `<button type="button" class="viewchip${p.key === preset ? ' on' : ''}"
+        data-preset="${p.key}" title="${esc(p.hint)}">${esc(p.label)}</button>`).join('')}
+      <button type="button" class="viewchip cols" id="colsBtn">Columns…</button>
+    </div>
+
     <div class="filters controls">
       <label class="field grow"><span>Search</span>
-        <input id="fText" type="search" placeholder="catalogue number, label, name, crate"
-          value="${esc(filters.text)}"></label>
+        <input id="fText" type="search" placeholder="anything in any column"
+          value="${esc(view.text)}"></label>
       <label class="field"><span>Match state</span>
         <select id="fState">
           <option value="">any</option>
-          ${STATES.map((s) => `<option value="${s}"${filters.state === s ? ' selected' : ''}>${s}
-            (${rows.filter((r) => stateOf(r) === s).length})</option>`).join('')}
+          ${STATES.map((st) => `<option value="${st}"${view.state === st ? ' selected' : ''}>${st}
+            (${rows.filter((r) => stateOf(r) === st).length})</option>`).join('')}
         </select></label>
       <label class="field"><span>Photographs</span>
         <select id="fPhotos">
           <option value="">any</option>
-          <option value="with"${filters.photos === 'with' ? ' selected' : ''}>has one</option>
-          <option value="without"${filters.photos === 'without' ? ' selected' : ''}>none</option>
+          <option value="with"${view.photos === 'with' ? ' selected' : ''}>has one</option>
+          <option value="without"${view.photos === 'without' ? ' selected' : ''}>none</option>
         </select></label>
-      <label class="field"><span>Sort</span>
-        <select id="fSort">
-          <option value="id"${filters.sort === 'id' ? ' selected' : ''}>by id</option>
-          <option value="verified"${filters.sort === 'verified' ? ' selected' : ''}>last verified</option>
+      <label class="field"><span>Reading</span>
+        <select id="fReadings">
+          <option value="">any</option>
+          <option value="with"${view.readings === 'with' ? ' selected' : ''}>read</option>
+          <option value="without"${view.readings === 'without' ? ' selected' : ''}>not read</option>
+        </select></label>
+      <label class="field"><span>Release</span>
+        <select id="fConfirmed">
+          <option value="">any</option>
+          <option value="yes"${view.confirmed === 'yes' ? ' selected' : ''}>confirmed</option>
+          <option value="no"${view.confirmed === 'no' ? ' selected' : ''}>not confirmed</option>
         </select></label>
     </div>
 
     <div class="tablewrap">
       <table class="rows">
-        <thead><tr>
-          <th>id</th><th>catalogue</th><th>label</th><th>name</th><th>title</th>
-          <th>crate</th><th>photos</th><th>match</th>
-        </tr></thead>
+        <thead><tr>${view.cols.map((k) => {
+    const c = COLUMN.get(k);
+    if (!c) return '';
+    const on = view.sort === k;
+    return `<th class="sortable" data-sort="${k}"${on ? ` aria-sort="${view.dir}ending"` : ''}
+      >${esc(c.label)}${on ? `<span class="arrow"> ${view.dir === 'asc' ? '↑' : '↓'}</span>` : ''}</th>`;
+  }).join('')}</tr></thead>
         <tbody>${shown.map(rowHtml).join('')}</tbody>
       </table>
     </div>
@@ -272,18 +485,73 @@ function render(): void {
     <div id="toast"></div>`;
 
   const on = (id: string, ev: string, fn: (el: HTMLInputElement) => void): void => {
-    const el = document.getElementById(id) as HTMLInputElement;
-    el.addEventListener(ev, () => fn(el));
+    const el = document.getElementById(id) as HTMLInputElement | null;
+    el?.addEventListener(ev, () => fn(el));
   };
-  on('fText', 'input', (el) => { filters.text = el.value; repaintList(); });
-  on('fState', 'change', (el) => { filters.state = el.value; render(); });
-  on('fPhotos', 'change', (el) => { filters.photos = el.value; render(); });
-  on('fSort', 'change', (el) => { filters.sort = el.value; render(); });
+  on('fText', 'input', (el) => { view.text = el.value; repaintList(); });
+  on('fState', 'change', (el) => { view.state = el.value; render(); });
+  on('fPhotos', 'change', (el) => { view.photos = el.value; render(); });
+  on('fReadings', 'change', (el) => { view.readings = el.value; render(); });
+  on('fConfirmed', 'change', (el) => { view.confirmed = el.value; render(); });
 
-  for (const tr of app.querySelectorAll<HTMLElement>('tr[data-id]')) {
-    tr.addEventListener('click', () => { void openDetail(Number(tr.dataset.id)); });
+  for (const btn of app.querySelectorAll<HTMLButtonElement>('button[data-preset]')) {
+    btn.addEventListener('click', () => {
+      PRESETS.find((p) => p.key === btn.dataset.preset)?.apply(view);
+      render();
+    });
   }
+  for (const th of app.querySelectorAll<HTMLElement>('th[data-sort]')) {
+    th.addEventListener('click', () => {
+      const k = th.dataset.sort ?? 'id';
+      // Clicking the column already sorted turns it round; clicking a
+      // new one starts ascending, which is what every table does.
+      if (view.sort === k) view.dir = view.dir === 'asc' ? 'desc' : 'asc';
+      else { view.sort = k; view.dir = 'asc'; }
+      render();
+    });
+  }
+  document.getElementById('colsBtn')?.addEventListener('click', openColumns);
+
+  bindRows();
   if (openId !== null) void openDetail(openId);
+}
+
+/** The column chooser. Order follows COLUMNS, not the order ticked. */
+function openColumns(): void {
+  let dlg = document.getElementById('colsDlg') as HTMLDialogElement | null;
+  if (!dlg) {
+    dlg = document.createElement('dialog');
+    dlg.id = 'colsDlg';
+    document.body.appendChild(dlg);
+  }
+  dlg.innerHTML = `
+    <div class="dlg-head"><h2>Columns</h2></div>
+    <div class="dlg-body">
+      <div class="colgrid">
+        ${COLUMNS.map((c) => `<label class="colopt">
+          <input type="checkbox" value="${c.key}"${view.cols.includes(c.key) ? ' checked' : ''}>
+          <span>${esc(c.label)}</span></label>`).join('')}
+      </div>
+      <p class="note">The view is in the address bar, so a set of columns and filters can be
+        bookmarked or sent to somebody.</p>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn btn-ghost" id="colsReset" type="button">Reset</button>
+      <button class="btn btn-primary" id="colsDone" type="button">Done</button>
+    </div>`;
+  const apply = (): void => {
+    const ticked = [...dlg!.querySelectorAll<HTMLInputElement>('input:checked')].map((i) => i.value);
+    // At least one column, or the table becomes an invisible list of
+    // rows that still respond to clicks.
+    view.cols = ticked.length ? COLUMNS.filter((c) => ticked.includes(c.key)).map((c) => c.key) : [...DEFAULT_COLS];
+  };
+  dlg.querySelector('#colsDone')?.addEventListener('click', () => { apply(); dlg?.close(); render(); });
+  dlg.querySelector('#colsReset')?.addEventListener('click', () => {
+    view.cols = [...DEFAULT_COLS];
+    dlg?.close();
+    render();
+  });
+  dlg.showModal();
 }
 
 /**
@@ -293,6 +561,7 @@ function render(): void {
  * what a full `render()` on every keystroke did.
  */
 function repaintList(): void {
+  writeUrl();
   const shown = visible();
   const body = app.querySelector('tbody');
   if (body) body.innerHTML = shown.map(rowHtml).join('');
@@ -301,24 +570,26 @@ function repaintList(): void {
     counts.innerHTML = `<b>${shown.length}</b> of ${rows.length} shown<br>`
       + `${rows.filter((r) => r.photo_count).length} photographed`;
   }
+  bindRows();
+}
+
+function bindRows(): void {
   for (const tr of app.querySelectorAll<HTMLElement>('tr[data-id]')) {
     tr.addEventListener('click', () => { void openDetail(Number(tr.dataset.id)); });
   }
 }
 
-const cell = (v: unknown): string => (v === null || v === undefined || v === ''
-  ? '<td class="empty">—</td>' : `<td>${esc(v)}</td>`);
+const cell = (v: unknown, c: Column): string => (v === null || v === undefined || v === ''
+  ? '<td class="empty">—</td>'
+  : `<td class="${c.num ? 'num' : ''}${c.mono ? ' mono' : ''}">${esc(v)}</td>`);
 
 function rowHtml(r: Row): string {
-  const state = stateOf(r);
-  return `<tr data-id="${r.id}" tabindex="0" class="${openId === r.id ? 'open' : ''}">
-    <td class="num">${r.id}</td>
-    ${cell(r.catno_raw)}${cell(r.label_raw)}${cell(r.name_raw)}${cell(r.title_raw)}
-    ${cell([r.crate, r.position].filter(Boolean).join(' · '))}
-    <td class="num">${r.photo_count || '<span class="empty">—</span>'}</td>
-    <td><span class="chip s-${state}">${state}</span>${
-    r.release_confirmed ? '<span class="tick" title="release confirmed by a person">✓</span>' : ''}</td>
-  </tr>`;
+  return `<tr data-id="${r.id}" tabindex="0" class="${openId === r.id ? 'open' : ''}">${
+    view.cols.map((k) => {
+      const c = COLUMN.get(k);
+      if (!c) return '';
+      return c.html ? c.html(r) : cell(c.get(r), c);
+    }).join('')}</tr>`;
 }
 
 async function openDetail(id: number): Promise<void> {
@@ -596,6 +867,7 @@ app.innerHTML = '<p class="empty-note">Loading the collection…</p>';
 // in localStorage and none in document.cookie; without this its images
 // stay broken for reasons it cannot see.
 ensureCapturerCookie();
+readUrl();
 bootChrome(SCREEN_KEYS);
 
 /**

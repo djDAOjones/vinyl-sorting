@@ -160,3 +160,57 @@ test('nothing is swept unless the sweep is asked for', async () => {
   assert.deepEqual(await pendingRows(env, 5, { reverifyOlderThanDays: 999999 }), [],
     'and a row inside the minimum age is left alone');
 });
+
+test('a re-run row appears in the queue ONCE, not twice', async () => {
+  // FOUND ON THE LIVE QUEUE, not in a test. One run per item held until
+  // the sweep made re-running normal; a swept row that still cannot
+  // auto-accept writes a SECOND needs-review run, and the queue
+  // selected per RUN. So a sweep meant to refresh the queue would have
+  // doubled it, one disc at a time, while every individual row was
+  // correct.
+  const env = makeEnv();
+  env.DB.raw.exec(`
+    INSERT INTO item (crate) VALUES ('A');
+    INSERT INTO capture (item_id, catno_raw) VALUES (1,'AAA 1');
+    INSERT INTO match_run (item_id, state, ran_at) VALUES
+      (1,'needs-review','2020-01-01 00:00:00'),
+      (1,'needs-review','2026-09-01 00:00:00');
+  `);
+  const app = createApp();
+  const res = await app.fetch(new Request('https://x/api/review-queue'), env, {
+    waitUntil() {}, passThroughOnException() {},
+  });
+  const { queue } = await res.json();
+  assert.equal(queue.length, 1, 'one disc, one place in the queue');
+  assert.equal(queue[0].item_id, 1);
+
+  // And the home screen counts DISCS waiting rather than runs waiting,
+  // which stopped being the same number for the same reason.
+  const stats = await (await app.fetch(new Request('https://x/api/match-stats'), env, {
+    waitUntil() {}, passThroughOnException() {},
+  })).json();
+  assert.equal(stats.itemsNeedingReview, 1, 'one disc is one disc of work');
+  assert.equal(
+    stats.byState.find((r) => r.state === 'needs-review').n, 2,
+    'the run histogram still counts runs — it is how a RUN is judged');
+});
+
+test('resolving the newest run clears the item from the queue', async () => {
+  const env = makeEnv();
+  env.DB.raw.exec(`
+    INSERT INTO item (crate) VALUES ('A');
+    INSERT INTO capture (item_id, catno_raw) VALUES (1,'AAA 1');
+    INSERT INTO match_run (item_id, state, ran_at) VALUES
+      (1,'needs-review','2020-01-01 00:00:00'),
+      (1,'needs-review','2026-09-01 00:00:00');
+    -- A decision on run 2, the newest.
+    INSERT INTO review_decision (item_id, match_run_id, choice, decided_by)
+      VALUES (1, 2, 'none', 'Joe');
+  `);
+  const app = createApp();
+  const { queue } = await (await app.fetch(new Request('https://x/api/review-queue'), env, {
+    waitUntil() {}, passThroughOnException() {},
+  })).json();
+  assert.deepEqual(queue, [],
+    'the older unresolved run must NOT resurrect a disc a person has settled');
+});

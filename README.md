@@ -5,8 +5,13 @@ Discogs and MusicBrainz, and turn overlapping copies into a finite
 queue of listening decisions.
 
 **Live:** <https://vinyl-sorter.joe-2d2.workers.dev>
-— capture at `/`, the review queue at `/review`.
-The Worker serves both, so the API is same-origin.
+— a hub at `/`, capture at `/capture`, the review queue at `/review`,
+the collection at `/browse`, settings at `/settings`. The Worker serves
+all five, so the API is same-origin.
+
+The app's manifest starts at `/capture`, not at the hub: a phone with
+the app on its home screen opens straight into the camera, and the menu
+is for the desk. Nothing goes between the shutter and Queue it.
 
 The app was called Deep Groove until 2026-08-30, and the URL followed
 on 2026-08-31. The D1 database, the R2 bucket and the phone's offline
@@ -38,12 +43,29 @@ npm run dev     # the capture app on :5173, proxying /api
 npm run gate    # tsc --noEmit + the whole test suite
 ```
 
-Three screens: capture at `/`, the review queue at `/review`, and the
-collection at `/browse` (Cloudflare drops the `.html`; Vite's dev server
-does not, so link to `/browse.html` locally).
+Five screens (Cloudflare drops the `.html`; Vite's dev server does not,
+so links are written the long way):
+
+| | |
+| --- | --- |
+| `/` | the hub — four destinations and the counts behind them |
+| `/capture.html` | photograph a disc and queue it; always dark |
+| `/review.html` | resolve what the matcher could not settle |
+| `/browse.html` | the collection, with columns, sorts and saved views |
+| `/settings.html` | theme, density, matching, and an export |
+
 `npm run api -- --demo` seeds a few review items so the queue has work
 in it, and `DG_EDIT_TOKEN=anything npm run api -- --demo` also turns on
-the edit routes locally.
+the edit and settings routes locally.
+
+Press <kbd>?</kbd> on any screen for the keyboard shortcuts; `g` then a
+letter goes — `h` home, `a` add, `r` resolve, `c` collection, `s`
+settings.
+
+The collection screen keeps its whole view in the URL — filters, sort,
+columns — so a view can be bookmarked or sent. `?view=mop-up` lists the
+discs that were photographed, read, and still have no confirmed
+release, which is the crate to re-shoot.
 
 ### Walking a crate
 

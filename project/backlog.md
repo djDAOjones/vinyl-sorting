@@ -61,11 +61,12 @@
 
 <!-- Intent: The half of the interface brief needing data the database does not hold — value and genre, a re-verification sweep for when the backlog empties, and readings that name their source photograph. Each blocked on a migration, a backfill or a pack-format change rather than on M2. -->
 
-- [ ] **CATALOGUE-CONTROLS Sort, filter and choose columns on the
-  collection screen** (2026-08-31) — Browse offers two sorts and three
-  filters over eight fixed columns — enough to look at 483 rows, not
-  enough to ask a question of them — and the two sorts most wanted, value
-  and release date, have no data behind them.
+- [~] **CATALOGUE-CONTROLS Sort, filter and choose columns on the
+  collection screen** (2026-08-31) — The interface half is done — every
+  column sortable and choosable, five named views including the mop-up
+  crate, and the whole view in the URL — so what remains is the two sorts
+  that need data the database does not hold: value, which needs a price
+  backfill, and genre, which needs a migration.
 - [ ] **AI-ROUND-TRIP Make the hand-carried reading loop fast, and make
   it say which photograph it read** (2026-08-31) — The maintainer kept the
   no-metered-services rule, so the answer is a better round trip rather

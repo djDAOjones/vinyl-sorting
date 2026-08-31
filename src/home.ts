@@ -26,6 +26,8 @@ interface Stats {
   unmatched: number;
   reviewed: number;
   decisionEligible: number;
+  /** DISCS waiting, not runs — the two differ once a row is re-run. */
+  itemsNeedingReview?: number;
 }
 
 let stats: Stats | null = null;
@@ -70,7 +72,12 @@ const countLine = (n: number | null, one: string, many = `${one}s`, quiet = fals
 
 function render(): void {
   const who = storedCapturer();
-  const needsReview = stateCount('needs-review');
+  // Items, falling back to the run histogram for a Worker deployed
+  // before `itemsNeedingReview` existed. The tile is a count of work,
+  // and work is measured in discs.
+  const needsReview = stats
+    ? (stats.itemsNeedingReview ?? stateCount('needs-review'))
+    : null;
 
   app.innerHTML = `
     <div class="hero">
