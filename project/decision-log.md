@@ -2,6 +2,45 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-31 — CAPTURE-BULK-REMNANT: they stay, and the file says so
+
+**Decision:** `bulkFields` and `BULK_CARRIED` stay in
+`src/queue-logic.ts` with their two tests. Both now carry a comment
+saying, in the first line, that nothing calls them and why — so the next
+reader does not spend five minutes working out whether something is
+broken. Deleting them remains the maintainer's to take.
+
+**Rationale:** The record offered two honest endings and one of them is
+not this session's to choose. Deleting the exports deletes their
+assertions in `queue-logic.test.mjs`, and "no weakening or deleting
+tests" is a stop-and-ask boundary in AGENTS.md — which an autonomous
+session may not cross on its own judgement, however safe the deletion
+looks. Nothing is left untested by removing a test with the code it
+covers, and that argument is exactly the kind a person should make
+rather than an agent.
+
+**So the other ending was taken, and it is a real one.** The cost of the
+remnant was never the bytes; it was the next reader finding tested,
+exported logic with no caller and having to reconstruct whether that was
+a bug. A comment that opens "NOTHING CALLS THESE TWO. Read this before
+you go looking." costs nothing and removes the whole cost.
+
+**What the comment says, so the decision is not lost with it.** The mode
+is retired on a reason that will not reverse — more than one photograph
+of a disc is always wanted, so one row per photograph manufactured three
+discs where one stood. The logic is not half-wired and not waiting on
+anything. And the test comment says the two bulk tests go WITH the
+exports and not before them, so a future tidy-up cannot delete the
+coverage and leave the code.
+
+Note for whoever takes it: `scaleTo`, in the same test section, is very
+much live — the downscale runs on every photograph — so the section
+header is misleading about its own contents. Only the two bulk tests
+cover retired code.
+
+**Verify:** npm run gate — comments only, 258 tests with the same 222
+passing.
+
 ## 2026-08-31 — DATASET-EDIT: a person may correct their own reading
 
 **Decision:** Built as signed off. Two routes, `POST

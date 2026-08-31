@@ -55,12 +55,6 @@
   passage?** [sign-off] (2026-08-30) — Whether the app proposes the
   two-to-three-minute comparison passage from the track listing, or the
   listener always chooses it themselves.
-- [ ] **CAPTURE-BULK-REMNANT bulkFields and BULK_CARRIED have no caller
-  — decide whether they stay** (2026-08-31) — CAPTURE-ONE-SCREEN removed
-  the crate button and saveBulk with it but left bulkFields and
-  BULK_CARRIED exported and tested with nothing calling them, because
-  deleting them deletes tests and tidying up after a removal is not the
-  same decision as the removal.
 - [ ] **M3-WORKS-PERFORMANCES MusicBrainz works, performances and
   per-track completeness** — Resolve work and recording identity from
   MusicBrainz, resolve composers for the 131 Various/Unknown rows, and

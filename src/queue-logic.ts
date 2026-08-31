@@ -174,7 +174,25 @@ export function scaleTo(width: number, height: number, longEdge = PHOTO_LONG_EDG
 }
 
 /**
- * The only fields a bulk capture carries from the form to every row.
+ * NOTHING CALLS THESE TWO. Read this before you go looking.
+ *
+ * CAPTURE-ONE-SCREEN removed the crate-in-one-pass button and `saveBulk`
+ * with it on 2026-08-31, and left the logic here. It is not broken, not
+ * half-wired and not waiting on anything: there is simply no caller, and
+ * the mode is retired on a reason that will not reverse — more than one
+ * photograph of a disc is always wanted, so one row per photograph
+ * manufactured three discs where one stood.
+ *
+ * They stay because deleting them deletes their tests, and "no
+ * weakening or deleting tests" is a stop-and-ask boundary in AGENTS.md
+ * that an autonomous session may not cross on its own judgement
+ * (CAPTURE-BULK-REMNANT, 2026-08-31). Removing this block and its
+ * assertions in `queue-logic.test.mjs` is the maintainer's to take, and
+ * costs nothing either way — which is why it was not worth guessing at.
+ *
+ * ─────────────────────────────────────────────────────────────────
+ *
+ * The only fields a bulk capture carried from the form to every row.
  *
  * Everything else on that form is a claim about ONE disc — its
  * catalogue number, its label, its condition. Copying a catalogue
@@ -186,7 +204,8 @@ export function scaleTo(width: number, height: number, longEdge = PHOTO_LONG_EDG
 export const BULK_CARRIED = ['crate', 'position', 'capturedBy'] as const;
 
 /**
- * The fields for the index-th photo of a bulk run.
+ * The fields for the index-th photo of a bulk run. NO CALLER — see
+ * `BULK_CARRIED` above.
  *
  * Position auto-increments ONLY from a number the person actually
  * typed. Blank stays blank: photographing in shelf order does make

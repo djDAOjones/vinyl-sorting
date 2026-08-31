@@ -137,6 +137,16 @@ test('the queued body is accepted by the Worker that will receive it', async () 
 });
 
 // ── CAPTURE-BULK-PHOTOS — a crate in one pass ─────────────────────
+//
+// THE MODE IS GONE (CAPTURE-ONE-SCREEN, 2026-08-31) and `bulkFields`
+// and `BULK_CARRIED` have no caller. `scaleTo` below is still very much
+// live — the downscale runs on every photograph — so only the two bulk
+// tests are covering retired code.
+//
+// They are kept rather than deleted because deleting them is deleting
+// tests, which AGENTS.md makes a stop-and-ask (CAPTURE-BULK-REMNANT).
+// If the maintainer takes that decision, these two tests go WITH the
+// exports in `queue-logic.ts` and not before them.
 
 test('a photo is downscaled to the long edge, and a small one is left alone', () => {
   // 4 MB a frame times twenty is ~80 MB in IndexedDB, on a phone, in a
