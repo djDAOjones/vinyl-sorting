@@ -57,3 +57,8 @@ data/label-photos/ground-truth.from-captures.csv
 # transient, and a gitlink to one turns this repo into an accidental
 # submodule host.
 .claude/worktrees/
+
+# A focused re-read pack: transient, regenerated whenever a row is
+# split. The reading it produces is archived under data/photo-runs/.
+data/photo-resplit/
+data/photo-resplit-packs/
