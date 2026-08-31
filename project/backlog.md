@@ -10,11 +10,11 @@
 
 <!-- Intent: M2 plus the interface brief of 2026-08-31. M2's own remainder is maintainer work — clearing 287 needs-review by keyboard — and the app moves to its real URL, gains a home page and a settings screen, and is rebuilt on one visual language. The two meet at the review queue: REVIEW-CARD and MATCH-OTHER-NUMBERS exist to make clearing it cheaper, not prettier. -->
 
-- [~] **APP-RENAME Move the app to vinyl-sorter.joe-2d2.workers.dev**
-  (2026-08-31) — The product was renamed in August and the URL never
-  followed; the Worker name IS the workers.dev hostname, so this is a
-  redeploy under a new name — and the data does not move with it, which is
-  the part wrangler.toml gets wrong.
+- [ ] **APP-RENAME Set EDIT_TOKEN on the renamed Worker** (2026-09-01) —
+  The move to vinyl-sorter is done and the old script is deleted, but
+  Worker secrets are per-script and EDIT_TOKEN did not come across — so
+  correcting a reading and downloading an export both answer 503 until one
+  command is run.
 - [~] **SPIKE-PHOTO-TO-FIELDS Can a label photograph populate the
   capture fields?** [spike] [blocked: twenty photographed labels with
   typed ground truth] (2026-08-30) — The round trip is built, tested and

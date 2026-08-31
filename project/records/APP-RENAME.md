@@ -1,80 +1,39 @@
 ---
 id: APP-RENAME
-name: Move the app to vinyl-sorter.joe-2d2.workers.dev
-summary: The product was renamed in August and the URL never followed; the Worker name IS the workers.dev hostname, so this is a redeploy under a new name — and the data does not move with it, which is the part wrangler.toml gets wrong.
-status: in-progress
-date: 2026-08-31
+name: Set EDIT_TOKEN on the renamed Worker
+summary: The move to vinyl-sorter is done and the old script is deleted, but Worker secrets are per-script and EDIT_TOKEN did not come across — so correcting a reading and downloading an export both answer 503 until one command is run.
+status: open
+date: 2026-09-01
 milestone: current
 order: 1
 ---
-# Move the app to vinyl-sorter
+# Set EDIT_TOKEN on the renamed Worker
 
-`wrangler.toml` argues at length that this should never happen, and one
-of its three reasons is simply false. Correcting that is most of the
-work of deciding.
+The rename itself closed on 2026-09-01. `vinyl-sorter.joe-2d2.workers.dev`
+serves all five screens against the same D1, the same R2 and the same
+KV — the bindings reference a UUID and a bucket, so nothing moved —
+`deep-groove` answers 404, and exactly one cron trigger exists.
 
-## What actually moves: nothing
+`DISCOGS_TOKEN` was set again from the archived token file. **The other
+secret cannot be moved by anyone but the maintainer**: its value exists
+nowhere but in a person's head and the deleted script, and AGENTS.md
+bars a passphrase from being pasted into a session transcript.
 
-Bindings reference resources, not the script: `database_id` is a UUID,
-`bucket_name` an account-level bucket, KV likewise. A Worker of any
-name binding them gets the same D1 and the same photographs.
-
-So `wrangler.toml`'s claim that renaming "means a new database and
-moving 448 items and 446 match runs into it" is simply wrong, and it
-has been the main argument against doing this since 30 August.
-
-## What actually breaks: the origin
-
-Everything the browser scopes to a hostname starts empty at the new
-one — home-screen icons, `dg.who` and `dg.edit` in localStorage, the
-`dg_who` cookie the photographs need, and **the IndexedDB capture
-queue**. That last one has teeth: a phone holding unsent captures has
-them at the OLD origin, and nothing at the new one can reach them.
-
-Worker **secrets** are per-script and do not come across either.
-
-## The ruling, 2026-08-31
-
-Maintainer: rename, and **delete the old Worker** rather than leaving a
-redirect. No grace period.
-
-Deleting promptly is not only tidiness. The old script keeps its own
-`crons` trigger and its own copy of `DISCOGS_TOKEN`, and it binds the
-same D1 — so two live Workers would run two matchers against one
-database and one Discogs rate limit, racing `claimRow` and doubling the
-traffic that M2-DISCOGS-PACING spent three fixes calming down.
-
-## Where it stands, 2026-08-31
-
-Done: `name = "vinyl-sorter"`, built, deployed, `DISCOGS_TOKEN` set,
-and verified against the LIVE URL rather than a local build — health,
-an item, and a 512 KB photograph fetched with a **cookie**, which is
-the request an `<img>` actually makes and the one that caught
-BROWSE-PHOTOS out. An unnamed caller still gets 401.
-
-Two things remain, and both are the maintainer's.
-
-**`EDIT_TOKEN` is not set on the new script.** Secrets are per-script,
-its value exists nowhere but the old Worker, and a passphrase must not
-be pasted into a session transcript to move it. Until it is set,
-correcting a reading on the browse screen answers 503 — "editing is not
-configured on this deployment", which is the honest message and the
-right one. One command fixes it:
+Until it is set, `POST /api/items/:id/field`, `POST /api/settings` and
+`GET /api/export` all answer 503 — "editing is not configured on this
+deployment", which is the honest message rather than a broken one.
 
     npx wrangler secret put EDIT_TOKEN
 
-**The old script is still running, deliberately.** The plan said delete
-it promptly, and the reason was that two live Workers mean two cron
-matchers racing one D1 and one Discogs budget. That reason is currently
-void: `unmatched` is 0, so `pendingRows` returns nothing and both ticks
-do nothing at all.
+## The thing to check afterwards
 
-Which leaves only the argument for keeping it: a phone holding unsent
-captures can still drain them to the old origin, and once the script is
-gone they are unreachable for ever. The last capture reached D1 at
-20:44, so the phone that was working had signal — but that is evidence,
-not proof. It costs nothing to leave it up until every phone has been
-opened once.
+Every phone re-adds the app from the new URL, and re-types its name:
+`localStorage`, the `dg_who` cookie and the IndexedDB capture queue are
+all scoped to the hostname. **Anything a phone had queued and unsent at
+the moment of the cut was at the old origin and is unreachable.** The
+last capture reached D1 at 20:44 on 2026-08-31, so the phone that was
+working had signal — that is evidence rather than proof, and it is the
+cost the maintainer accepted when choosing a clean cut over a redirect.
 
-**Done when** `EDIT_TOKEN` is set, the phones have synced, the old
-script is deleted, and exactly one cron trigger exists.
+**Done when** the secret is set and one edit has been made through the
+browse screen.
