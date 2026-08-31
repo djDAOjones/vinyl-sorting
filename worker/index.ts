@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import type { Context, MiddlewareHandler } from 'hono';
 import type { Env } from './env.ts';
 import { insertCapture, parseCapture } from './capture.ts';
-import { DiscogsClient, SUBREQUEST_BUDGET } from './discogs.ts';
+import { DiscogsClient, MAX_ATTEMPTS_PER_QUERY, SUBREQUEST_BUDGET } from './discogs.ts';
 import { RateLimiter } from './rate-limit.ts';
 import { claimRow, matchRow, pendingRows, persistRun } from './match/run.ts';
 import { parseResolve, resolveRun } from './review.ts';
@@ -503,7 +503,9 @@ export const CRON_PERIOD_MS = 300_000;
  */
 export const batchSizeFor = (minIntervalMs: number): number => Math.max(1, Math.min(
   Math.floor(TICK_WORK_BUDGET_MS / (QUERIES_PER_ROW * Math.max(1, minIntervalMs))),
-  Math.floor(SUBREQUEST_BUDGET / QUERIES_PER_ROW),
+  // Attempts, not queries: a throttled query costs up to four
+  // subrequests, and sizing on one apiece left no headroom at all.
+  Math.floor(SUBREQUEST_BUDGET / (QUERIES_PER_ROW * MAX_ATTEMPTS_PER_QUERY)),
 ));
 
 export interface MatchBatchOptions {

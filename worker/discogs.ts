@@ -46,6 +46,19 @@ export class DiscogsError extends Error {
  */
 export const SUBREQUEST_BUDGET = 36;
 
+/**
+ * Attempts one query may cost.
+ *
+ * `#get` retries a 429 up to four times, so a query is not one
+ * subrequest — it is up to four. Exported because `batchSizeFor` was
+ * sizing the batch as though every query succeeded first time: three
+ * rows at twelve queries came to exactly the 36-attempt budget with
+ * NOTHING left for a retry, so the first throttled query ate the next
+ * row's allowance. Items 451 and 466 spent the whole budget on nine
+ * queries on 2026-08-31, which is 3.7 attempts each.
+ */
+export const MAX_ATTEMPTS_PER_QUERY = 4;
+
 export class DiscogsClient {
   readonly #token: string;
   readonly #limiter: RateLimiter;
@@ -126,7 +139,7 @@ export class DiscogsClient {
 
     // Discogs enforces its own limit too, and answers 429 with a
     // Retry-After. Honour it rather than hammering.
-    for (let attempt = 1; attempt <= 4; attempt++) {
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS_PER_QUERY; attempt++) {
       // Refused BEFORE the request, so the invocation survives to write
       // what it already found. Hitting Cloudflare's cap instead kills
       // the whole tick and loses every row in it.
@@ -146,7 +159,7 @@ export class DiscogsClient {
       if (!res.ok) throw new DiscogsError(res.status, `${path} -> HTTP ${res.status}`);
       return res.json();
     }
-    throw new DiscogsError(429, `${path} -> throttled by Discogs after 4 attempts`);
+    throw new DiscogsError(429, `${path} -> throttled by Discogs after ${MAX_ATTEMPTS_PER_QUERY} attempts`);
   }
 
   /**

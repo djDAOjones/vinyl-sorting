@@ -21,7 +21,7 @@ import {
   CRON_PERIOD_MS, QUERIES_PER_ROW, TICK_WORK_BUDGET_MS, batchSizeFor,
 } from '../../worker/index.ts';
 import { claimRow, persistRun } from '../../worker/match/run.ts';
-import { SUBREQUEST_BUDGET } from '../../worker/discogs.ts';
+import { MAX_ATTEMPTS_PER_QUERY, SUBREQUEST_BUDGET } from '../../worker/discogs.ts';
 import { makeEnv, makeKv } from './helpers/bindings.mjs';
 
 const DEFAULT = BUDGETS.discogs.minIntervalMs;
@@ -80,12 +80,22 @@ test('widening the gap narrows the batch, and Cloudflare caps it regardless', ()
   // Two ceilings now. At tight gaps the binding one is Cloudflare's
   // per-invocation subrequest cap, which no amount of waiting relieves
   // — that is the wall the matcher actually hit on 2026-08-31.
-  assert.equal(batchSizeFor(2000), Math.floor(SUBREQUEST_BUDGET / QUERIES_PER_ROW),
-    'at 2s the subrequest cap binds, not the clock');
-  assert.ok(batchSizeFor(2000) * QUERIES_PER_ROW <= SUBREQUEST_BUDGET,
-    'a full tick must never be able to exceed the subrequest cap');
+  // A tick must fit inside the cap at WORST case, not best: a throttled
+  // query costs up to MAX_ATTEMPTS_PER_QUERY subrequests, and sizing on
+  // one apiece left the first retry eating the next row's allowance.
+  for (const gap of [2000, 3000, 6000, MAX_MIN_INTERVAL_MS]) {
+    const worst = batchSizeFor(gap) * QUERIES_PER_ROW * MAX_ATTEMPTS_PER_QUERY;
+    assert.ok(worst <= SUBREQUEST_BUDGET || batchSizeFor(gap) === 1,
+      `a ${gap}ms tick could spend ${worst} subrequests against a ${SUBREQUEST_BUDGET} budget`);
+  }
   // Past the crossover the clock binds again and widening narrows.
-  assert.ok(batchSizeFor(MAX_MIN_INTERVAL_MS) < batchSizeFor(2000), 'a very wide gap means fewer rows');
+  // Widening no longer narrows, because there is nothing left to
+  // narrow: at twelve queries and up to four attempts each, the
+  // 36-subrequest budget affords ONE row per invocation at every gap
+  // the override permits. That is the honest state, and it is why the
+  // matcher is slow rather than why it fails.
+  assert.equal(batchSizeFor(2000), 1);
+  assert.equal(batchSizeFor(MAX_MIN_INTERVAL_MS), 1);
   // The widest permitted gap must still leave one row able to finish
   // inside a cron period — that is what the cap is for.
   assert.ok(MAX_MIN_INTERVAL_MS * QUERIES_PER_ROW <= CRON_PERIOD_MS,
