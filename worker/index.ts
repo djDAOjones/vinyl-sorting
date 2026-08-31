@@ -170,6 +170,24 @@ export function createApp() {
               -- and the release still is not settled: photographed,
               -- read, and still unresolved (CATALOGUE-CONTROLS).
               (SELECT COUNT(*) FROM raw_value v2 WHERE v2.item_id = i.id) AS reading_count,
+              -- The READING, kept in its own columns beside capture's
+              -- and never merged into them. A photo-only row has an
+              -- empty capture and its values in raw_value, so the list
+              -- showed nineteen rows of dashes — but COALESCEing the
+              -- two would erase the distinction the whole project rests
+              -- on: capture is what a PERSON read, a reading is what a
+              -- machine read off a photograph, and duplicate detection
+              -- depends on telling them apart.
+              (SELECT r2.value FROM raw_value r2
+                WHERE r2.item_id = i.id AND r2.field = 'catno_raw') AS read_catno,
+              (SELECT r2.value FROM raw_value r2
+                WHERE r2.item_id = i.id AND r2.field = 'label_raw') AS read_label,
+              (SELECT r2.value FROM raw_value r2
+                WHERE r2.item_id = i.id AND r2.field = 'name_raw') AS read_name,
+              (SELECT r2.value FROM raw_value r2
+                WHERE r2.item_id = i.id AND r2.field = 'title_raw') AS read_title,
+              (SELECT r2.value FROM raw_value r2
+                WHERE r2.item_id = i.id AND r2.field = 'other_numbers') AS read_other,
               (SELECT m.state FROM match_run m WHERE m.item_id = i.id
                 ORDER BY m.id DESC LIMIT 1) AS match_state,
               EXISTS (SELECT 1 FROM v_confirmed_field v

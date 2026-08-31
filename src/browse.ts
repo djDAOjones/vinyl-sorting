@@ -64,6 +64,11 @@ interface Row {
   discogs_id: number | null; release_label: string | null; release_title: string | null;
   photo_count: number;
   reading_count: number;
+  read_catno: string | null;
+  read_label: string | null;
+  read_name: string | null;
+  read_title: string | null;
+  read_other: string | null;
   matrix_runout: string | null;
   release_year: number | null;
   match_state: string | null;
@@ -202,6 +207,8 @@ interface Column {
   /** Right-aligned and sorted numerically. */
   num?: boolean;
   mono?: boolean;
+  /** A machine reading rather than something a person typed. */
+  reading?: boolean;
   /** Rendered by hand — a chip, a tick, something that is not text. */
   html?: (r: Row) => string;
 }
@@ -238,6 +245,15 @@ const COLUMNS: Column[] = [
     html: (r) => `<td><span class="chip s-${stateOf(r)}">${stateOf(r)}</span>${
       r.release_confirmed ? '<span class="tick" title="release confirmed by a person">✓</span>' : ''}</td>`,
   },
+  // The reading's own columns. Marked `.reading` so they never look
+  // like something a person typed — the provenance rule permits showing
+  // an unconfirmed value anywhere and requires it be shown AS
+  // unconfirmed.
+  { key: 'read_catno', label: 'read catalogue', get: (r) => r.read_catno, mono: true, reading: true },
+  { key: 'read_label', label: 'read label', get: (r) => r.read_label, reading: true },
+  { key: 'read_name', label: 'read name', get: (r) => r.read_name, reading: true },
+  { key: 'read_title', label: 'read title', get: (r) => r.read_title, reading: true },
+  { key: 'read_other', label: 'other numbers', get: (r) => r.read_other, mono: true, reading: true },
   { key: 'release_title', label: 'discogs title', get: (r) => r.release_title },
   { key: 'release_label', label: 'discogs label', get: (r) => r.release_label },
   { key: 'release_year', label: 'released', get: (r) => r.release_year, num: true },
@@ -266,6 +282,15 @@ const DEFAULT_COLS = ['id', 'catno_raw', 'label_raw', 'name_raw', 'title_raw',
  * composition of state the row already carries — has a photograph, has
  * a reading off it, and still has no confirmed release.
  */
+/**
+ * A preset may set COLUMNS as well as filters.
+ *
+ * The mop-up crate is why. Those rows are photo-only, so their capture
+ * columns are empty and the default eight rendered nineteen rows of
+ * dashes — a filter that produces a list of ids answers "how many" and
+ * not "which discs do I go and find". A view that changes what is
+ * being looked FOR should be allowed to change what is shown.
+ */
 interface Preset { key: string; label: string; hint: string; apply: (v: View) => void }
 
 const PRESETS: Preset[] = [
@@ -285,7 +310,11 @@ const PRESETS: Preset[] = [
     key: 'mop-up',
     label: 'Mop-up crate',
     hint: 'Photographed, read, and still unresolved — the discs to re-shoot',
-    apply: (v) => { v.state = ''; v.photos = 'with'; v.readings = 'with'; v.confirmed = 'no'; },
+    apply: (v) => {
+      v.state = ''; v.photos = 'with'; v.readings = 'with'; v.confirmed = 'no';
+      v.cols = ['id', 'read_catno', 'read_label', 'read_name', 'read_other',
+        'photo_count', 'match_state'];
+    },
   },
   {
     key: 'unphotographed',
@@ -414,7 +443,7 @@ async function load(): Promise<void> {
 }
 
 const activePreset = (): string => PRESETS.find((p) => {
-  const probe: View = { ...view };
+  const probe: View = { ...view, cols: [...view.cols] };
   p.apply(probe);
   return probe.state === view.state && probe.photos === view.photos
     && probe.readings === view.readings && probe.confirmed === view.confirmed;
@@ -581,7 +610,9 @@ function bindRows(): void {
 
 const cell = (v: unknown, c: Column): string => (v === null || v === undefined || v === ''
   ? '<td class="empty">—</td>'
-  : `<td class="${c.num ? 'num' : ''}${c.mono ? ' mono' : ''}">${esc(v)}</td>`);
+  : `<td class="${c.num ? 'num' : ''}${c.mono ? ' mono' : ''}${c.reading ? ' reading' : ''}"${
+    c.reading ? ' title="read off a photograph — not confirmed by a person"' : ''
+  }>${esc(v)}</td>`);
 
 function rowHtml(r: Row): string {
   return `<tr data-id="${r.id}" tabindex="0" class="${openId === r.id ? 'open' : ''}">${

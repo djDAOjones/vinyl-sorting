@@ -168,3 +168,11 @@ dd:hover .ftools, dd:focus-within .ftools { opacity: 1; }
 
 .tick { color: var(--ok); margin-left: var(--s1); }
 .empty-note { font-size: var(--t-sm); color: var(--text-3); margin: var(--s2) 0; }
+
+/* A machine reading, in the list.
+   The provenance rule permits showing an unconfirmed value anywhere
+   and requires it be shown AS unconfirmed. In the detail panel that is
+   a sentence under each field; in a table of 484 rows there is no room
+   for a sentence, so it is the type: a reading leans, a typed value
+   stands upright. */
+table.rows td.reading { font-style: italic; color: var(--text-2); }
