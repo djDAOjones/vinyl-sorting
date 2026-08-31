@@ -19,8 +19,37 @@ const count = (/** @type {any} */ db, /** @type {string} */ t) => Number(one(db,
 
 test('every migration applies clean, in order', () => {
   const db = fresh();
-  assert.equal(Number(one(db, 'SELECT MAX(version) v FROM schema_migration').v), 3);
-  assert.equal(Number(one(db, 'SELECT COUNT(*) n FROM schema_migration').n), 3);
+  assert.equal(Number(one(db, 'SELECT MAX(version) v FROM schema_migration').v), 4);
+  assert.equal(Number(one(db, 'SELECT COUNT(*) n FROM schema_migration').n), 4);
+});
+
+test('a photo reading is its own source, and still cannot reach a decision', () => {
+  // The legacy AI values M0 imported were fabricated; a reading off a
+  // photograph of the actual disc is evidence of a different kind, and
+  // filing both as `guess` would hide the difference exactly where it
+  // matters. But `v_confirmed_field` allow-lists, so a new source is
+  // unreachable through every decision view the moment it exists.
+  const db = fresh();
+  db.exec("INSERT INTO item (crate) VALUES ('B4')");
+  db.exec("INSERT INTO raw_value (item_id, field, value) VALUES (1,'catno_raw','SXL 6113')");
+  db.exec("INSERT INTO field_source (entity, entity_id, field, source) VALUES ('raw_value',1,'catno_raw','vision')");
+  assert.equal(count(db, 'field_source'), 1);
+
+  // Even confirmed — which cannot happen through the app, but the view
+  // must not depend on that.
+  db.exec("UPDATE field_source SET confirmed_by='joe', confirmed_at='2026-08-31'");
+  assert.equal(count(db, 'v_confirmed_field'), 0, 'vision is not a source worth trusting on its own');
+
+  assert.throws(() => db.exec("INSERT INTO field_source (entity, entity_id, field, source) VALUES ('item',1,'x','psychic')"),
+    /CHECK constraint failed/, 'and the set is still closed');
+});
+
+test('the rebuild kept every provenance row and every view', () => {
+  const db = fresh();
+  for (const v of ['v_confirmed_field', 'v_decision_eligible_item',
+    'v_decision_eligible_release', 'v_eligible_work_coverage']) {
+    assert.doesNotThrow(() => db.prepare(`SELECT * FROM ${v} LIMIT 1`).all(), `${v} survived`);
+  }
 });
 
 test('a photograph can be stored without claiming what it shows', () => {

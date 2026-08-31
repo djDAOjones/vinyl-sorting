@@ -212,10 +212,28 @@ async function upsertRelease(
 
 /** Rows awaiting a first match, oldest first. */
 export async function pendingRows(env: Env, limit: number): Promise<MatchRow[]> {
+  // A photo-only capture has a `capture` row with every column null —
+  // nothing to search on. Where a photograph has been read, the reading
+  // lives in `raw_value` and fills the gap.
+  //
+  // `capture` ALWAYS WINS where it has a value, and is never written
+  // to: it holds what a HUMAN read, which is what duplicate detection
+  // depends on. A reading is a lead, which is the same standing a
+  // catalogue number has always had here — and the corroboration gate
+  // still refuses a single signal family, so a reading cannot verify a
+  // release on its own. Its output goes to the review queue, where a
+  // person decides. That is why using it here does not breach the
+  // provenance rule, which governs clusters, coverage checks, sell
+  // lists and shortlists — none of which this feeds.
+  const raw = (field: string) =>
+    `(SELECT r.value FROM raw_value r WHERE r.item_id = i.id AND r.field = '${field}')`;
   const { results } = await env.DB.prepare(
     `SELECT i.id AS itemId, c.id AS captureId,
-            c.catno_raw AS catnoRaw, c.label_raw AS labelRaw,
-            c.title_raw AS titleRaw, c.name_raw AS nameRaw, c.year_raw AS yearRaw
+            COALESCE(c.catno_raw, ${raw('catno_raw')}) AS catnoRaw,
+            COALESCE(c.label_raw, ${raw('label_raw')}) AS labelRaw,
+            COALESCE(c.title_raw, ${raw('title_raw')}) AS titleRaw,
+            COALESCE(c.name_raw,  ${raw('name_raw')})  AS nameRaw,
+            COALESCE(c.year_raw,  ${raw('year_raw')})  AS yearRaw
        FROM item i
        LEFT JOIN capture c ON c.item_id = i.id
       WHERE NOT EXISTS (SELECT 1 FROM match_run m WHERE m.item_id = i.id)

@@ -40,6 +40,32 @@ test('the spike cannot reach the database at all', () => {
   }
 });
 
+test('promotion writes raw_value and vision, and never capture', () => {
+  // The one tool here that writes. `capture` holds what a HUMAN read
+  // and duplicate detection depends on that distinction, so a machine
+  // reading goes to `raw_value` under its own provenance.
+  const code = strip(readFileSync('tools/photo-promote.mjs', 'utf8'));
+  assert.ok(!/INSERT\s+INTO\s+capture\b/i.test(code), 'promote inserts into capture');
+  assert.ok(!/UPDATE\s+capture\b/i.test(code), 'promote updates capture');
+  assert.match(code, /INSERT INTO raw_value/);
+  assert.match(code, /'vision'/);
+  // It re-queues only verdicts reached over nothing that nobody ruled
+  // on; a decision or a candidate makes a run somebody's work.
+  assert.match(code, /DELETE FROM match_run/);
+  assert.match(code, /NOT EXISTS \(SELECT 1 FROM review_decision/);
+  assert.match(code, /NOT EXISTS \(SELECT 1 FROM match_candidate/);
+});
+
+test('the matcher may read a reading, but capture always wins', () => {
+  // A photo-only capture has a row of nulls, so there is nothing to
+  // search on until a reading fills the gap. What a person typed must
+  // never be overridden by what a machine thought it saw.
+  const run = readFileSync('worker/match/run.ts', 'utf8');
+  assert.match(run, /COALESCE\(c\.catno_raw, /, 'capture first, reading second');
+  assert.match(run, /FROM raw_value r WHERE r\.item_id = i\.id/);
+  assert.ok(!/COALESCE\(\s*\(SELECT r\.value/.test(run), 'a reading never precedes capture');
+});
+
 test('nothing in the spike writes to capture', () => {
   // The hard rule: `capture` holds what a HUMAN read. A machine reading
   // a photograph is not that, and duplicate detection depends on the

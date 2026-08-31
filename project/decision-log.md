@@ -2,6 +2,48 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-31 — PHOTO-PROMOTE: a reading becomes a lead, never a fact
+
+**Decision:** A photo reading is written into `raw_value` with a new
+provenance source, `vision` (migration 004), and the matcher may read
+it where `capture` is empty. `capture` is never written. The matcher's
+output goes to the review queue, where a person accepts or rejects it.
+
+**Rationale:** The maintainer asked for every photographed record to be
+attempted, matched against Discogs, and then confirmed by hand. That is
+the decision SPIKE-PHOTO-TO-FIELDS was built to inform, and it was
+taken deliberately rather than drifted into: everything before this
+measured, and this one writes.
+
+**`vision` rather than `guess`.** The legacy AI values M0 imported were
+fabricated outright — invented ratings sitting indistinguishably beside
+sourced data, which is most of why this project exists. A reading taken
+off a photograph of the actual disc is evidence of a different kind.
+Filing both as `guess` would hide that difference exactly where it
+matters: deciding whether a value is worth showing someone to confirm.
+
+**The provenance rule holds by construction, not by care.**
+`v_confirmed_field` allow-lists `('shelf','discogs','musicbrainz')`, so
+a new source is unreachable through every decision view the moment it
+exists. Adding a value cannot open a hole; only editing that view
+could, and 004 recreates it verbatim. A test asserts a `vision` row
+stays out of the view even when confirmed.
+
+**Why the matcher may use it.** The provenance rule governs clusters,
+coverage checks, sell lists and shortlists — none of which this feeds.
+Matching produces candidates for a human to rule on, and the
+corroboration gate still refuses a verdict on one signal family, so a
+reading cannot verify a release by itself. It has exactly the standing
+a catalogue number has always had here: a lead. `capture` wins wherever
+it holds a value, and a test asserts the COALESCE cannot be inverted.
+
+**It re-queues, carefully.** The cron matcher already swept all 18 rows
+and rejected them, having had nothing to search — 17 rejected, 1 error,
+zero candidates, zero human decisions. Those verdicts are removed so
+the rows are matched again. A run carrying a candidate or a decision is
+never touched, because that is somebody's work rather than a machine's
+answer to an empty question.
+
 ## 2026-08-31 — PHOTO-ROTATION: the stream does not turn with the phone
 
 **Decision:** The camera stream is re-acquired whenever the phone
