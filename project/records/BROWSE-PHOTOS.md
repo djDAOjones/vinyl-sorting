@@ -2,13 +2,35 @@
 id: BROWSE-PHOTOS
 name: May a route serve a label photograph, now that browse wants to show one?
 summary: DATASET-VIEWER asked for GET /api/photos/:key so the browse screen could render the label photographs, and photos-pull.test.mjs asserts that no such route exists because with no sign-in it puts the household's photographs behind a URL — two live records disagree, so the screen ships listing the keys and the question goes to the maintainer.
-status: open
+status: todo
 date: 2026-08-31
 milestone: current
 order: 9
-flags: sign-off
 ---
 # May a route serve a label photograph?
+
+**Signed off 2026-08-31: yes, serve them — behind the name sign-in.**
+
+The maintainer's answer resolves the disagreement between DATASET-VIEWER
+and the test in `photos-pull.test.mjs`. A photo route may exist, and
+CAPTURE-WHO's typed name is the gate: the same crude credential that
+already decides who may capture now decides who may look. That is
+consistent with OPEN-V1-AUTH, which settled that v1 has no sign-in and
+that a shared secret goes on the drawers worth bolting.
+
+The objection this record raised still stands and shapes the build
+rather than blocking it: `/api/items/:id` is open and returns every
+`r2_key`, so a photo route makes an enumerable archive. Gating the
+route without also gating the keys would be theatre — both move behind
+the name, or neither does.
+
+`tools/test/photos-pull.test.mjs` asserts no photo GET exists. That
+test belongs to PHOTOS-TO-DESKTOP and was right when written; it is now
+superseded by this ruling and must be updated in the same commit, not
+deleted — the property it protects (photographs are not anonymously
+enumerable) is still the property, and the assertion should say so in
+its new form.
+
 
 **Raised by splitting DATASET-VIEWER, 2026-08-31.** The browse screen
 shipped without it: it lists each photograph's key, when it was taken
