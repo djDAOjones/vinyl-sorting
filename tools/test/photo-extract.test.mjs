@@ -112,71 +112,36 @@ test('several photographs of one record are asked for as one object', () => {
   assert.match(single, /^  A$/m);
 });
 
-test('rotation is asked for as degrees, and is not a scored field', () => {
-  // A number rather than a word: "rotated left" has to be interpreted
-  // before anything can act on it, and it is ambiguous about whether it
-  // names the fault or the fix. Degrees clockwise drive `sips -r`
-  // directly.
+test('rotation is asked for per image, as degrees, and is not scored', () => {
+  // Per IMAGE because the first real reply proved per-record
+  // unanswerable: record 451 had 451-1.jpg upright and 451-3.jpg 90°
+  // out, so the reader said 0 and was right to.
   assert.ok(FIELD_SPEC.some(([k]) => k === 'rotate_cw'));
-  assert.ok(!PHOTO_FIELDS.includes('rotate_cw'),
-    'it describes the photograph, not the record');
+  assert.ok(!PHOTO_FIELDS.includes('rotate_cw'), 'it describes the photograph, not the record');
   assert.deepEqual(ROTATIONS, [0, 90, 180, 270]);
-  const p = chatPrompt(['A']);
-  assert.match(p, /how many degrees the\nimage would have to turn CLOCKWISE/);
+  const p = chatPrompt([{ rowId: '451', photos: 4 }]);
+  assert.match(p, /an object from image filename to degrees CLOCKWISE/);
+  assert.match(p, /"451-3\.jpg": 90/, 'shown by example, not only described');
+  assert.match(p, /NOT all the same way up/);
+  assert.match(p, /use \{\} when none do/);
   assert.match(p, /whichever way up it arrives/, 'a rotated photo is still to be read');
-  // A round label reading several ways at once has no single angle, and
-  // forcing a choice would manufacture a fact.
-  assert.match(p, /several directions at once/);
-  assert.match(p, /Use 0 if it is already upright/);
 });
 
-test('rotation applies what was reported, once, and never twice', () => {
-  // A corrected photograph is pixel-for-pixel indistinguishable from one
-  // that was always upright, so re-running cannot be made safe by
-  // inspecting the file. The ledger is what makes it idempotent.
+test('rotation turns only the images the reader actually named', () => {
+  // A filename the pack never held cannot be trusted to mean the image
+  // the reader had in mind, and turning the wrong one is worse than
+  // turning none.
   const dir = scratch();
-  makePhotos(dir, ['A-1.jpg', 'A-2.jpg', 'B-1.jpg']);
-  const before = execFileSync('sips', ['-g', 'pixelWidth', '-g', 'pixelHeight', join(dir, 'A-1.jpg')],
-    { encoding: 'utf8' });
-
+  makePhotos(dir, ['A-1.jpg', 'A-2.jpg']);
   writeFileSync(join(dir, 'extract.json'), JSON.stringify({
-    source: 'chat', model: 'test',
-    results: {
-      A: { fields: { rotate_cw: 90 } },
-      B: { fields: { rotate_cw: 0 } },      // upright — must not be touched
-    },
-  }));
-
-  const first = execFileSync(process.execPath, ['tools/photo-rotate.mjs',
-    '--extract', join(dir, 'extract.json'), '--photos', dir], { encoding: 'utf8' });
-  assert.match(first, /A-1\.jpg — 90° clockwise/);
-  assert.match(first, /A-2\.jpg — 90° clockwise/, 'every photograph of that record turns');
-  assert.ok(!first.includes('B-1.jpg'), '0° is left alone rather than rewritten');
-  assert.match(first, /2 image\(s\)/);
-
-  const after = execFileSync('sips', ['-g', 'pixelWidth', '-g', 'pixelHeight', join(dir, 'A-1.jpg')],
-    { encoding: 'utf8' });
-  assert.notEqual(before, after, 'the image really turned');
-
-  const second = execFileSync(process.execPath, ['tools/photo-rotate.mjs',
-    '--extract', join(dir, 'extract.json'), '--photos', dir], { encoding: 'utf8' });
-  assert.match(second, /0 image\(s\)/, 're-running turns nothing');
-  assert.match(second, /2 already corrected/);
-  const twice = execFileSync('sips', ['-g', 'pixelWidth', '-g', 'pixelHeight', join(dir, 'A-1.jpg')],
-    { encoding: 'utf8' });
-  assert.equal(after, twice, 'and the pixels are untouched the second time');
-});
-
-test('a rotation nobody offered is refused rather than passed to sips', () => {
-  const dir = scratch();
-  makePhotos(dir, ['A-1.jpg']);
-  writeFileSync(join(dir, 'extract.json'), JSON.stringify({
-    results: { A: { fields: { rotate_cw: 45 } } },
+    results: { A: { fields: { rotate_cw: { 'A-2.jpg': 90, 'A-9.jpg': 180 } } } },
   }));
   const out = execFileSync(process.execPath, ['tools/photo-rotate.mjs',
     '--extract', join(dir, 'extract.json'), '--photos', dir], { encoding: 'utf8' });
-  assert.match(out, /45° is not one of 0, 90, 180, 270 — skipped/);
-  assert.match(out, /0 image\(s\)/);
+  assert.match(out, /A-2\.jpg — 90° clockwise/);
+  assert.ok(!out.includes('A-1.jpg —'), 'an image not named is left alone');
+  assert.match(out, /A-9\.jpg: named by row A but not among its images — skipped/);
+  assert.match(out, /1 image\(s\)/);
 });
 
 // ── the reply, which is where a hand-run trip goes wrong ──────────

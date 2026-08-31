@@ -63,17 +63,27 @@ let skipped = 0;
 const problems = [];
 
 for (const [rowId, result] of Object.entries(run.results ?? {})) {
-  const deg = Number(result?.fields?.rotate_cw ?? 0) || 0;
-  if (!deg) continue;
-  if (!ROTATIONS.includes(deg)) {
-    problems.push(`${rowId}: ${deg}° is not one of ${ROTATIONS.join(', ')} — skipped`);
-    continue;
-  }
+  // Per IMAGE, because photographs of one record are often not all the
+  // same way up — 451 arrived with `451-1.jpg` upright and `451-3.jpg`
+  // 90° out, so a single angle per record could not describe it.
+  const map = result?.fields?.rotate_cw;
+  if (!map || typeof map !== 'object' || Array.isArray(map)) continue;
 
-  const files = filesFor(rowId);
-  if (!files.length) { problems.push(`${rowId}: no image on disk`); continue; }
-
-  for (const file of files) {
+  const onDisk = new Set(filesFor(rowId));
+  for (const [file, raw] of Object.entries(map)) {
+    const deg = Number(raw) || 0;
+    if (!deg) continue;
+    if (!ROTATIONS.includes(deg)) {
+      problems.push(`${file}: ${deg}° is not one of ${ROTATIONS.join(', ')} — skipped`);
+      continue;
+    }
+    // A filename the pack never contained cannot be trusted to name the
+    // image the reader meant, and turning the wrong one is worse than
+    // turning none.
+    if (!onDisk.has(file)) {
+      problems.push(`${file}: named by row ${rowId} but not among its images — skipped`);
+      continue;
+    }
     // The ledger, not the pixels, is what makes this safe to re-run:
     // a corrected photograph is indistinguishable from one that was
     // always upright.

@@ -1,0 +1,98 @@
+{
+  "source": "chat",
+  "model": "unknown chat",
+  "results": {
+    "448": {
+      "fields": {
+        "catno_raw": "2535 184",
+        "label_raw": "Deutsche Grammophon",
+        "name_raw": "Gustav Mahler; Nan Merriman; Ernst Haefliger; Concertgebouw Orkest; Eugen Jochum",
+        "title_raw": "DAS LIED VON DER ERDE",
+        "year_raw": null,
+        "side": null,
+        "other_numbers": [],
+        "unreadable": [],
+        "rotate_cw": 0
+      },
+      "truthPreexisting": true
+    },
+    "449": {
+      "fields": {
+        "catno_raw": "2535 184",
+        "label_raw": "Deutsche Grammophon",
+        "name_raw": "Gustav Mahler; Nan Merriman; Ernst Haefliger; Concertgebouw Orkest; Eugen Jochum",
+        "title_raw": "Das Lied von der Erde (The Song of the Earth)",
+        "year_raw": null,
+        "side": "SIDE 1; SIDE 2",
+        "other_numbers": [
+          "1860–1911"
+        ],
+        "unreadable": [],
+        "rotate_cw": 0
+      },
+      "truthPreexisting": false
+    },
+    "450": {
+      "fields": {
+        "catno_raw": "CLP 1296",
+        "label_raw": null,
+        "name_raw": "Schumann; Chopin; Robert Irving; Philharmonia Orchestra",
+        "title_raw": "Carnaval; Les Sylphides",
+        "year_raw": null,
+        "side": "ONE; SIDE TWO",
+        "other_numbers": [
+          "Op. 28, No. 7",
+          "Op. 32, No. 2",
+          "Op. 70, No. 1",
+          "Op. 33, No. 2",
+          "Op. 67, No. 3",
+          "Op. 28, No. 7",
+          "Op. 64, No. 2",
+          "Op. 18"
+        ],
+        "unreadable": [],
+        "rotate_cw": 0
+      },
+      "truthPreexisting": false
+    },
+    "451": {
+      "fields": {
+        "catno_raw": "LXT 5481",
+        "label_raw": null,
+        "name_raw": "Verdi; TEBALDI; DEL MONACO; BASTIANINI; SIEPI; CORENA; SIMIONATO",
+        "title_raw": "HIGHLIGHTS FROM \"LA FORZA DEL DESTINO\"",
+        "year_raw": null,
+        "side": null,
+        "other_numbers": [
+          "1861-2"
+        ],
+        "unreadable": [
+          "label_raw"
+        ],
+        "rotate_cw": 0
+      },
+      "truthPreexisting": false
+    },
+    "452": {
+      "fields": {
+        "catno_raw": "SXL 6493",
+        "label_raw": "DECCA",
+        "name_raw": "TCHAIKOVSKY; SIBELIUS; KYUNG-WHA CHUNG; London Symphony Orchestra; ANDRÉ PREVIN",
+        "title_raw": "VIOLIN CONCERTO in D minor, OP. 47; VIOLIN CONCERTO in D major, OP. 35",
+        "year_raw": null,
+        "side": "SIDE ONE; SIDE TWO",
+        "other_numbers": [
+          "1.",
+          "2.",
+          "3.",
+          "1840-1893",
+          "1878",
+          "1881"
+        ],
+        "unreadable": [],
+        "rotate_cw": 0
+      },
+      "truthPreexisting": false
+    }
+  }
+}

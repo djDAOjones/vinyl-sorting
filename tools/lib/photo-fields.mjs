@@ -64,7 +64,7 @@ export const FIELD_SPEC = [
   ['side', 'the side, if printed'],
   ['other_numbers', 'an array of EVERY other number or code visible that you did not assign above'],
   ['unreadable', 'an array naming the fields you left null because the label was illegible there'],
-  ['rotate_cw', 'degrees to turn this image CLOCKWISE to stand the writing upright: 0, 90, 180 or 270'],
+  ['rotate_cw', 'an object mapping IMAGE FILENAME to the degrees it must turn clockwise to stand its writing upright — include only images that need turning, and use {} if none do'],
 ];
 
 /**
@@ -81,9 +81,12 @@ export const FIELD_SPEC = [
  * straight across genuinely has no single angle, and turning it would
  * help nothing.
  *
- * Measured before anything was built to correct it, and the measurement
- * paid: 60 real photographs showed rotation is real but intermittent —
- * `451-1.jpg` arrived 90° out while `449-1` and `452-1` were upright.
+ * Asked PER IMAGE, not per record. The first version asked once per
+ * record and the first real reply exposed why that is unanswerable:
+ * record 451 has `451-1.jpg` upright and `451-3.jpg` 90° out, so no
+ * single number describes it and the reader — correctly — said 0. A
+ * malformed question gets a useless answer however carefully it is
+ * phrased.
  */
 export const ROTATIONS = [0, 90, 180, 270];
 
@@ -151,11 +154,17 @@ export function chatPrompt(rows) {
     'than the record simply not carrying it.',
     '',
     'Read the record whichever way up it arrives — a rotated photograph',
-    'is still readable. Then say, in `rotate_cw`, how many degrees the',
-    `image would have to turn CLOCKWISE to stand the writing upright: `
-      + `${ROTATIONS.join(', ')}.`,
+    'is still readable. Then report any that need turning in `rotate_cw`,',
+    'as an object from image filename to degrees CLOCKWISE:',
     '',
-    'Use 0 if it is already upright, and also if the label reads in',
+    '    "rotate_cw": { "451-3.jpg": 90 }',
+    '',
+    `Degrees are one of ${ROTATIONS.join(', ')}. Photographs of the same record`,
+    'are often NOT all the same way up, which is why this is per image',
+    'rather than per record. List only the ones that need turning, and',
+    'use {} when none do.',
+    '',
+    'Leave an image out if it is already upright, and also if it reads in',
     'several directions at once — a company name curving over the top',
     'while the title runs straight across has no single angle, and',
     'turning it would help nothing.',

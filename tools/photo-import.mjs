@@ -53,7 +53,17 @@ if (!existsSync(idsPath)) {
   process.exit(2);
 }
 
-const expectedIds = readCsv(readFileSync(idsPath, 'utf8')).map((r) => r.row_id).filter(Boolean);
+/**
+ * The RECORDS that were sent, each once.
+ *
+ * `row-ids.csv` carries one line per file, and a record may have been
+ * photographed a dozen times — so read naively this reported "5 of 98
+ * ids" and named record 453 twelve times in the missing list. A record
+ * is one row however many photographs it took, which is the same rule
+ * the pack builder follows.
+ */
+const expectedIds = [...new Set(
+  readCsv(readFileSync(idsPath, 'utf8')).map((r) => r.row_id).filter(Boolean))];
 
 /**
  * Which rows already had a typed answer BEFORE this reading arrived.

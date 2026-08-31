@@ -70,7 +70,8 @@ for (const [rowId, result] of Object.entries(run.results ?? {})) {
     verdicts: scoreOne(result.fields, want),
     trap: trapSprung(result.fields, want),
     fields: result.fields,
-    rotateCw: Number(result.fields?.rotate_cw ?? 0) || 0,
+    turned: Object.values(result.fields?.rotate_cw ?? {})
+      .filter((d) => Number(d) > 0).length,
   };
   (result.truthPreexisting ? notIndependent : rows).push(row);
 }
@@ -157,26 +158,25 @@ if (notIndependent.length) {
  */
 const oriented = [...rows, ...notIndependent];
 if (oriented.length) {
-  const buckets = new Map();
-  for (const r of oriented) {
-    const key = ROTATIONS.includes(r.rotateCw) ? r.rotateCw : 0;
-    const b = buckets.get(key) ?? { n: 0, wrong: 0 };
-    b.n += 1;
-    b.wrong += PHOTO_FIELDS.filter((f) => r.verdicts[f] === 'wrong' || r.verdicts[f] === 'invented').length;
-    buckets.set(key, b);
-  }
-  const turned = [...buckets.entries()].filter(([k]) => k !== 0).reduce((n, [, b]) => n + b.n, 0);
+  const withTurned = oriented.filter((r) => r.turned > 0);
+  const images = oriented.reduce((n, r) => n + r.turned, 0);
   lines.push('## How the writing sat', '',
-    'Reported by the reader as degrees clockwise to stand it upright.', '',
-    '| rotate_cw | photos | wrong values | wrong per photo |',
-    '| ---: | ---: | ---: | ---: |',
-    ...[...buckets.entries()].sort((a, b) => a[0] - b[0]).map(([k, b]) =>
-      `| ${k}° | ${b.n} | ${b.wrong} | ${(b.wrong / b.n).toFixed(2)} |`),
-    '');
-  lines.push(turned
-    ? `${turned} of ${oriented.length} arrived turned. \`node tools/photo-rotate.mjs\` `
-      + 'stands them up from this reading, then re-pack and read those again.'
-    : 'Every photograph arrived upright, so there is nothing to correct.', '');
+    'Reported per image, as degrees clockwise to stand it upright.', '');
+  lines.push(images
+    ? `${images} photograph(s) across ${withTurned.length} record(s) arrived turned. `
+      + '`node tools/photo-rotate.mjs` stands them up from this reading; re-pack and read those again.'
+    : 'No photograph was reported as needing turning.', '');
+  if (withTurned.length) {
+    const cost = (rs) => {
+      const w = rs.reduce((n, r) => n + PHOTO_FIELDS.filter(
+        (f) => r.verdicts[f] === 'wrong' || r.verdicts[f] === 'invented').length, 0);
+      return rs.length ? (w / rs.length).toFixed(2) : '—';
+    };
+    lines.push('| records | wrong values per record |', '| --- | ---: |',
+      `| with a turned photograph (${withTurned.length}) | ${cost(withTurned)} |`,
+      `| all upright (${oriented.length - withTurned.length}) | `
+        + `${cost(oriented.filter((r) => !r.turned))} |`, '');
+  }
 }
 
 if (unread.length || untyped.length) {
