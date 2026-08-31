@@ -42,17 +42,24 @@ export const CAPTURED_KIND = 'other';
  * Resolution is the whole point: the field this exists to read is a
  * catalogue number printed smaller than everything around it, and a
  * video frame is already a weaker image than the phone's own still —
- * no HDR, no multi-frame stacking. So ask for far more than the 1568 px
+ * no HDR, no multi-frame stacking. So ask for far more than the 2048 px
  * the photo is eventually stored at, and let the browser give what it
  * can. `ideal` rather than `exact` so a device that cannot manage 4K
  * hands back its best instead of failing outright.
+ *
+ * The ask ROSE WITH THE STORAGE SIZE, from 3840 to 4096. When
+ * CAPTURE-GUIDANCE took the stored long edge from 1568 to 2048, a 3840
+ * ask stopped being twice what is kept — and "far more than is stored"
+ * is the property that keeps small print legible, so the number that
+ * had to move was the ask, not the invariant. `ideal` costs nothing to
+ * raise: a phone whose best video mode is 3840 still hands back 3840.
  */
 export function videoConstraints(): MediaStreamConstraints {
   return {
     video: {
       facingMode: { ideal: 'environment' },
-      width: { ideal: 3840 },
-      height: { ideal: 2160 },
+      width: { ideal: 4096 },
+      height: { ideal: 3072 },
     },
     audio: false,
   };
@@ -155,10 +162,33 @@ export function summarise(entries: QueuedCapture[]): {
  *
  * A phone frame is around 4 MB, so a crate of twenty is ~80 MB sitting
  * in IndexedDB — on a phone, in a loft, where iOS evicts under storage
- * pressure. 1568 px lands near 800 KB and is what the chat pack sends
- * anyway, so nothing downstream loses anything.
+ * pressure. That constraint is real and unchanged.
+ *
+ * IT WAS 1568, AND THIS COMMENT USED TO CLAIM "nothing downstream loses
+ * anything". That is now known to be false. Item 481's catalogue number
+ * is printed on the Ace of Clubs badge, in the right place, and is not
+ * in the stored file: the resize took it. Cropping and enlarging the
+ * badge finds the digits are simply gone (CAPTURE-GUIDANCE,
+ * 2026-08-31).
+ *
+ * FRAMING IS THE DOMINANT FIX, NOT PIXELS, and the arithmetic says so.
+ * A whole 12" disc at 1568 px puts the 4" label across ~520 px, so an
+ * eight-character catalogue number gets ~16 px a character before JPEG
+ * finishes it off. The same label FILLING the frame gets ~50 px a
+ * character and is never in doubt. The guidance sheet buys more than
+ * any resolution does, and costs nothing — which is why the number
+ * moved one step rather than four.
+ *
+ * 2048 px is ~1.3 MB against 800 KB: ~70% more in a queue that has to
+ * survive a loft with no signal, bought to restore the margin for a
+ * shot framed in a hurry. Keeping a full-resolution original was
+ * refused — roughly five times the storage to buy less than the
+ * guidance gives away free.
+ *
+ * Neither half helps the 483 rows already photographed. Those are the
+ * mop-up crate.
  */
-export const PHOTO_LONG_EDGE = 1568;
+export const PHOTO_LONG_EDGE = 2048;
 
 /**
  * Target dimensions for a downscale, or null when the image is already

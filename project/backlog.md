@@ -15,11 +15,6 @@
   followed; the Worker name IS the workers.dev hostname, so this is a
   redeploy under a new name — and the data does not move with it, which is
   the part wrangler.toml gets wrong.
-- [ ] **CAPTURE-GUIDANCE Say what to photograph, and make sure the
-  number survives the file** (2026-08-31) — Seventeen sleeve-only rows and
-  one catalogue number lost to the downscale are the same failure from two
-  ends — nobody was told what the shot has to contain, and when a shot did
-  contain it the resize threw it away.
 - [ ] **APP-SETTINGS A settings screen that stops short of the dangerous
   half** (2026-08-31) — Settings has to exist for the re-verify toggle,
   the theme and the column choices, and it sits on a URL with no sign-in —

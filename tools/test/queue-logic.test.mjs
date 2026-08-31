@@ -151,8 +151,14 @@ test('the queued body is accepted by the Worker that will receive it', async () 
 test('a photo is downscaled to the long edge, and a small one is left alone', () => {
   // 4 MB a frame times twenty is ~80 MB in IndexedDB, on a phone, in a
   // loft, where iOS evicts under storage pressure.
-  assert.deepEqual(scaleTo(4032, 3024), { width: 1568, height: 1176 }, 'landscape keeps its ratio');
-  assert.deepEqual(scaleTo(3024, 4032), { width: 1176, height: 1568 }, 'and so does portrait');
+  // The constant is pinned HERE as well as used below, so that raising
+  // it is a deliberate two-line change rather than something a derived
+  // expectation would let through silently. It moved from 1568 to 2048
+  // on 2026-09-01 (CAPTURE-GUIDANCE) because item 481's catalogue
+  // number was resized out of its own photograph.
+  assert.equal(PHOTO_LONG_EDGE, 2048, 'the stored long edge is a decision, not an accident');
+  assert.deepEqual(scaleTo(4032, 3024), { width: 2048, height: 1536 }, 'landscape keeps its ratio');
+  assert.deepEqual(scaleTo(3024, 4032), { width: 1536, height: 2048 }, 'and so does portrait');
   assert.equal(scaleTo(1200, 900), null, 'already small enough — re-encoding would only lose quality');
   assert.equal(scaleTo(PHOTO_LONG_EDGE, PHOTO_LONG_EDGE), null, 'exactly at the edge is small enough');
   assert.equal(scaleTo(0, 0), null, 'a degenerate size is left to the caller, never divided by');
@@ -256,7 +262,7 @@ test('the camera is asked for far more resolution than is stored', () => {
   const c = videoConstraints();
   const v = /** @type {any} */ (c.video);
   assert.equal(v.facingMode.ideal, 'environment', 'the back camera, not the selfie one');
-  assert.ok(v.width.ideal >= PHOTO_LONG_EDGE * 2, 'well above the 1568 px it is stored at');
+  assert.ok(v.width.ideal >= PHOTO_LONG_EDGE * 2, 'at least twice what it is stored at');
   assert.equal(c.audio, false, 'never the microphone — it is not needed and it is intrusive');
   // `ideal`, never `exact`: a device that cannot manage 4K must hand
   // back its best rather than failing to open at all.

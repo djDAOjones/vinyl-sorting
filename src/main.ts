@@ -28,6 +28,7 @@ import {
   forgetCapturer, rememberCapturer, resolveCapturer, storedCapturer,
 } from './who.ts';
 import { bootChrome, headerHtml } from './chrome.ts';
+import { guideHtml, markGuideSeen, needsGuide } from './guidance.ts';
 
 const app = document.getElementById('app')!;
 
@@ -127,7 +128,9 @@ function render(): void {
 
   app.innerHTML = `
     ${headerHtml({ here: 'capture', title: 'Add vinyl',
-    aside: `<button class="whoTag" id="whoTag" type="button"
+    aside: `<button class="whoTag" id="guideBtn" type="button"
+        title="What to photograph, and in what order">?</button>
+      <button class="whoTag" id="whoTag" type="button"
         title="Hand the phone over">${capturer}</button>
       <div class="tally" id="status">queue…</div>` })}
 
@@ -547,9 +550,12 @@ function renderPhotos(): void {
   }
 
   strip.innerHTML = photos.map((p, i) =>
-    `<figure class="thumb"><img src="${p.url}" alt="Photograph ${i + 1}">
+    `<figure class="thumb"><img src="${p.url}" alt="Photograph ${i + 1}" data-open="${i}">
       <figcaption>${i + 1}</figcaption>
       <button type="button" class="drop" data-i="${i}" aria-label="Remove photograph ${i + 1}">×</button></figure>`).join('');
+  for (const img of strip.querySelectorAll<HTMLImageElement>('img[data-open]')) {
+    img.addEventListener('click', () => { inspect(Number(img.dataset.open)); });
+  }
   for (const btn of strip.querySelectorAll<HTMLButtonElement>('button.drop')) {
     btn.addEventListener('click', () => {
       const i = Number(btn.dataset.i);
@@ -559,6 +565,35 @@ function renderPhotos(): void {
       renderPhotos();
     });
   }
+}
+
+/**
+ * One photograph, full size, while the disc is still in your hand.
+ *
+ * THE MOMENT THIS EXISTS FOR: item 481's catalogue number was resized
+ * out of its own file, and nobody could have known until the disc was
+ * back in the crate and the pack reached a desk. A thumbnail 88 px
+ * wide cannot answer "is that number legible?" and the full frame can
+ * — so it is one tap away, and it is a tap taken before the record is
+ * put back rather than a week later (CAPTURE-GUIDANCE).
+ *
+ * `object-fit: contain` and pinch-zoom left to the browser: this is a
+ * plain image on a black ground, which is the one thing every phone
+ * already knows how to magnify.
+ */
+function inspect(i: number): void {
+  const shot = photos[i];
+  if (!shot) return;
+  const box = document.createElement('div');
+  box.className = 'lightbox';
+  box.innerHTML = `<img src="${shot.url}" alt="Photograph ${i + 1}, full size">
+    <button type="button" class="lbClose" aria-label="Close">Close</button>`;
+  const shut = (): void => { box.remove(); document.body.classList.remove('shooting'); };
+  box.addEventListener('click', shut);
+  // Stays open while the page behind it is locked, the same way the
+  // viewfinder locks it — otherwise the page scrolls under the image.
+  document.body.classList.add('shooting');
+  document.body.appendChild(box);
 }
 
 /**
@@ -797,6 +832,29 @@ startSync(() => { void refreshStatus(); });
 // keyboard in a loft, and a phone that shows one has taken the screen
 // away from the viewfinder (APP-KEYS).
 bootChrome();
+
+/**
+ * The guidance, once per device and recallable from the header.
+ *
+ * It is shown AFTER the first render rather than before it, so the
+ * camera is already on screen behind it: the sheet is an instruction
+ * about the thing you are about to do, not a gate in front of it.
+ */
+function openGuide(): void {
+  let dlg = document.getElementById('guide') as HTMLDialogElement | null;
+  if (!dlg) {
+    dlg = document.createElement('dialog');
+    dlg.id = 'guide';
+    document.body.appendChild(dlg);
+  }
+  dlg.innerHTML = guideHtml();
+  dlg.querySelector('#guideOk')?.addEventListener('click', () => { markGuideSeen(); dlg?.close(); });
+  dlg.showModal();
+}
+document.addEventListener('click', (e) => {
+  if ((e.target as HTMLElement | null)?.id === 'guideBtn') openGuide();
+});
+if (storedCapturer() && needsGuide()) openGuide();
 
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => { void navigator.serviceWorker.register('/sw.js'); });
