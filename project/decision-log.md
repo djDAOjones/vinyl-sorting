@@ -389,6 +389,53 @@ becomes worth more than the inconvenience of signing in. Cloudflare
 Access in front of everything is the known next step and was not chosen
 now, not ruled out.
 
+## 2026-08-31 — BROWSE-PHOTOS: serve the photographs, behind the typed name
+
+**Decision:** `GET /api/photos/:key` exists and requires an
+`x-capturer` header naming someone on the roster. The `r2_key` fields
+in `/api/items/:id` and the review queue move behind the same header.
+Browse and the review queue both show the photographs.
+
+**Rationale:** Maintainer, 2026-08-31: "yes, show. use the name sign
+in." The prompting failure was concrete — two items were confirmed in
+the review queue against an empty panel, and the maintainer reported
+having "no idea how I was supposed to cross check". A match cannot be
+judged against a disc nobody can see.
+
+**Say what this gate is, because the code does.** The roster is six
+household first names and it SHIPS IN THE CLIENT BUNDLE; `src/who.ts`
+calls the name "a speed bump and an honest label on a row, not access
+control". Anyone who opens the JavaScript can read the six valid
+answers. So this stops a crawler and a stranger guessing a URL, and
+stops nobody who looks. That trade was taken knowingly, by the same
+person who had already settled OPEN-V1-AUTH as no sign-in for v1.
+
+**What stopped it being theatre.** `/api/items/:id` returns every
+`r2_key`, and the key IS the photograph's address — gating the route
+while handing keys out anonymously would have protected nothing at all.
+Both moved together. That an item HAS photographs, and when, stays
+public: it is the count the browse filter reads and it says nothing
+about a record.
+
+**A path the caller controls, closed on the way.** `parseCapture` only
+trims `r2Key`, so a stored key can be any string a capture chose. The
+route matches the key against `item_photo` before R2 sees it, so an
+invented key is a 404 rather than a lookup.
+
+**The test that said no such route may exist was updated, not
+deleted.** It was right when written, while the question was open. The
+property it protects — photographs are not anonymously enumerable — is
+unchanged, so the assertion moved to the form that still protects it,
+now covering the key as well as the route.
+
+**And a lie in the test double was found by this.** `makeR2` recorded a
+byte COUNT and returned it, so `get(...).body` was undefined: a photo
+route could serve nothing and every local check would still pass. Found
+by fetching a real photograph through the real Worker and getting 200
+with zero bytes. The double now keeps the bytes and returns a stream,
+and the test asserts the image itself comes back — 21,848 bytes in,
+21,848 out.
+
 ## 2026-08-31 — PHOTO-PROMOTE: a reading becomes a lead, never a fact
 
 **Decision:** A photo reading is written into `raw_value` with a new

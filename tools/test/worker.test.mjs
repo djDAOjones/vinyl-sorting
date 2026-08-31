@@ -253,6 +253,50 @@ test('DATASET-VIEWER: the newest match run wins the list column', async () => {
   assert.equal(items[0].match_state, 'needs-review', 're-verification is a normal operation');
 });
 
+test('BROWSE-PHOTOS: a photograph and its key need a name, and R2 never sees an invented key', async () => {
+  // Signed off 2026-08-31: serve them, behind the typed name. The gate
+  // is a speed bump, not access control — the roster ships in the
+  // client bundle and src/who.ts says so — but it must at least be the
+  // speed bump it claims, on BOTH the photograph and its address.
+  const env = makeEnv();
+  await post(env, {
+    clientId: 'c1', catnoRaw: 'SXL 6113',
+    photos: [{ kind: 'other', r2Key: 'labels/c1-1.jpg' }],
+  });
+  await env.PHOTOS.put('labels/c1-1.jpg', new Blob(['jpeg-bytes']).stream(),
+    { httpMetadata: { contentType: 'image/jpeg' } });
+
+  const named = { headers: { 'x-capturer': 'joe' } };   // case is forgiven
+
+  assert.equal((await app.request('/api/photos/labels/c1-1.jpg', {}, env)).status, 401,
+    'an unnamed caller gets no photograph');
+  assert.equal((await app.request('/api/photos/labels/c1-1.jpg', { headers: { 'x-capturer': 'Mallory' } }, env)).status,
+    401, 'and a name that is not on the roster is not a name');
+
+  const ok = await app.request('/api/photos/labels/c1-1.jpg', named, env);
+  assert.equal(ok.status, 200);
+  assert.match(ok.headers.get('content-type'), /image\/jpeg/);
+  // THE BYTES, not just the status. A 200 carrying an empty body looked
+  // identical to a served photograph until the R2 double was made to
+  // keep what it was given.
+  assert.equal(await ok.text(), 'jpeg-bytes', 'the photograph itself must come back');
+  assert.match(ok.headers.get('cache-control'), /private/,
+    'a household photograph must not sit in a shared cache');
+
+  // The key is the photograph's address. Gating one and not the other
+  // would protect nothing.
+  const anon = await (await app.request('/api/items/1', {}, env)).json();
+  assert.equal(anon.photos.length, 1, 'that a photograph exists is not the secret');
+  assert.equal(anon.photos[0].r2_key, undefined, 'but its address is');
+  const seen = await (await app.request('/api/items/1', named, env)).json();
+  assert.equal(seen.photos[0].r2_key, 'labels/c1-1.jpg');
+
+  // parseCapture only trims r2Key, so a stored key can be any string —
+  // one that reaches R2 unchecked is a path the caller controls.
+  assert.equal((await app.request('/api/photos/labels/not-a-real-key.jpg', named, env)).status, 404,
+    'a key the database does not know never reaches R2');
+});
+
 test('DATASET-VIEWER: item detail carries the match history and the readings', async () => {
   const env = makeEnv();
   await post(env, {
@@ -271,7 +315,11 @@ test('DATASET-VIEWER: item detail carries the match history and the readings', a
     INSERT INTO field_source (entity, entity_id, field, source)
       VALUES ('raw_value', 1, 'catno_raw', 'vision');`);
 
-  const body = await (await app.request('/api/items/1', {}, env)).json();
+  // Named, so the detail carries the photo keys. The unnamed case is
+  // asserted below — the key is the photograph's address, so it moved
+  // behind the same header the photo route uses.
+  const named = { headers: { 'x-capturer': 'Joe' } };
+  const body = await (await app.request('/api/items/1', named, env)).json();
   assert.equal(body.photos.length, 1);
   assert.equal(body.photos[0].r2_key, 'labels/c1-1.jpg');
 
@@ -311,7 +359,11 @@ test('items paginate by keyset and report where to continue', async () => {
 test('item detail carries its provenance, so trust is visible', async () => {
   const env = makeEnv();
   await post(env, { clientId: 'c1', crate: 'B4', catnoRaw: 'SXL 6113' });
-  const body = await (await app.request('/api/items/1', {}, env)).json();
+  // Named, so the detail carries the photo keys. The unnamed case is
+  // asserted below — the key is the photograph's address, so it moved
+  // behind the same header the photo route uses.
+  const named = { headers: { 'x-capturer': 'Joe' } };
+  const body = await (await app.request('/api/items/1', named, env)).json();
   assert.equal(body.item.crate, 'B4');
   assert.equal(body.captures.length, 1);
   assert.ok(body.provenance.length > 0);

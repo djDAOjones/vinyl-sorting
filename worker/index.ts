@@ -6,6 +6,9 @@ import { DiscogsClient, SUBREQUEST_BUDGET } from './discogs.ts';
 import { RateLimiter } from './rate-limit.ts';
 import { claimRow, matchRow, pendingRows, persistRun } from './match/run.ts';
 import { parseResolve, resolveRun } from './review.ts';
+// The roster is shared with the client on purpose: one list, so the
+// gate and the sign-in cannot disagree about who exists.
+import { resolveCapturer } from '../src/who.ts';
 import { applyEdit, parseEdit, parsePromote, promoteReading, tokenMatches } from './edit.ts';
 
 /**
@@ -72,6 +75,60 @@ export function createApp() {
   });
 
   /** Read the collection. Keyset pagination — cheap and stable under insert. */
+  /**
+   * Serve one label photograph.
+   *
+   * BROWSE-PHOTOS, maintainer sign-off 2026-08-31: yes, serve them,
+   * gated by the typed name.
+   *
+   * SAY WHAT THIS GATE IS. The roster is six household first names and
+   * it SHIPS IN THE CLIENT BUNDLE — `src/who.ts` says so itself, and
+   * calls the name "a speed bump and an honest label on a row, not
+   * access control". Anyone who opens the JavaScript can read the six
+   * valid answers. So this stops a crawler and a stranger guessing a
+   * URL; it does not stop anyone who looks. The maintainer took that
+   * trade knowingly, having already settled OPEN-V1-AUTH as "no sign-in
+   * for v1".
+   *
+   * What it is NOT is theatre, and the difference is the next route
+   * down: `/api/items/:id` returns every `r2_key`, so gating the
+   * photograph while leaving the keys anonymous would have protected
+   * nothing at all. Both moved behind the same header together.
+   *
+   * The key is matched against `item_photo` rather than passed to R2 as
+   * given. `parseCapture` only trims `r2Key`, so a stored key can be
+   * any string a capture chose — and a key that reaches R2 unchecked is
+   * a path the caller controls.
+   */
+  const capturerGuard: MiddlewareHandler<{ Bindings: Env }> = async (c, next) => {
+    if (!resolveCapturer(c.req.header('x-capturer') ?? '')) {
+      return c.json({ error: 'name yourself first — this is the household app' }, 401);
+    }
+    await next();
+  };
+
+  app.get('/api/photos/:key{[A-Za-z0-9._/-]{1,160}}', capturerGuard, async (c) => {
+    if (!c.env.PHOTOS) return c.json({ error: 'photo storage is not configured' }, 503);
+    const key = c.req.param('key');
+    // Known to the database, or not served. R2 never sees a key the
+    // caller invented.
+    const known = await c.env.DB.prepare('SELECT 1 AS ok FROM item_photo WHERE r2_key = ?')
+      .bind(key).first<{ ok: number }>();
+    if (!known) return c.json({ error: 'no such photograph' }, 404);
+
+    const obj = await c.env.PHOTOS.get(key);
+    if (!obj) return c.json({ error: 'no such photograph' }, 404);
+    return new Response(obj.body, {
+      headers: {
+        'content-type': obj.httpMetadata?.contentType ?? 'image/jpeg',
+        // Private: a household photograph must not sit in a shared
+        // cache. Immutable because the key is client-assigned and its
+        // content never changes.
+        'cache-control': 'private, max-age=31536000, immutable',
+      },
+    });
+  });
+
   app.get('/api/items', async (c) => {
     const limit = Math.min(Number(c.req.query('limit') ?? 100) || 100, 500);
     const after = Number(c.req.query('after') ?? 0) || 0;
@@ -107,6 +164,7 @@ export function createApp() {
 
   app.get('/api/items/:id{[0-9]+}', async (c) => {
     const id = Number(c.req.param('id'));
+    const named = Boolean(resolveCapturer(c.req.header('x-capturer') ?? ''));
     const item = await c.env.DB.prepare('SELECT * FROM item WHERE id = ?').bind(id).first();
     if (!item) return c.json({ error: 'not found' }, 404);
 
@@ -115,8 +173,15 @@ export function createApp() {
     const [captures, photos, provenance, readings, runs, decisions] = await Promise.all([
       c.env.DB.prepare('SELECT * FROM capture WHERE item_id = ? ORDER BY captured_at DESC, id DESC')
         .bind(id).all(),
-      c.env.DB.prepare('SELECT id, kind, r2_key, added_at FROM item_photo WHERE item_id = ? ORDER BY id')
-        .bind(id).all(),
+      // `r2_key` only for a named caller. Gating the photograph while
+      // handing out its key anonymously would have protected nothing —
+      // the key IS the photograph's address. A stranger still learns
+      // that photographs exist and when they were taken, which is the
+      // count the browse screen needs and says nothing about a record.
+      c.env.DB.prepare(
+        `SELECT id, kind, added_at${named ? ', r2_key' : ''} FROM item_photo
+          WHERE item_id = ? ORDER BY id`,
+      ).bind(id).all(),
       c.env.DB.prepare(
         `SELECT entity, entity_id, field, source, confidence, confirmed_by, confirmed_at
            FROM field_source
@@ -225,13 +290,22 @@ export function createApp() {
    */
   app.get('/api/review-queue', async (c) => {
     const limit = Math.min(Number(c.req.query('limit') ?? 50) || 50, 200);
+    const named = Boolean(resolveCapturer(c.req.header('x-capturer') ?? ''));
     // Skipped items leave the default queue but are re-queueable:
     // re-verification is a normal operation, not a migration.
     const includeSkipped = c.req.query('include') === 'skipped';
     const { results } = await c.env.DB.prepare(
       `SELECT m.id AS run_id, m.item_id, m.state, m.ran_at, m.queries_json,
               c.catno_raw, c.label_raw, c.title_raw, c.name_raw,
-              i.crate, i.position, i.last_verified_at
+              i.crate, i.position, i.last_verified_at,
+              ${named
+    // The photographs of the record being judged. A match cannot be
+    // checked against a disc you cannot see — which is what the
+    // maintainer met on 2026-08-31, confirming two items with nothing
+    // on screen to compare. Keys only for a named caller, same as
+    // everywhere else, because the key is the photograph's address.
+    ? `(SELECT group_concat(p.r2_key, char(10)) FROM item_photo p WHERE p.item_id = i.id) AS photo_keys`
+    : `NULL AS photo_keys`}
          FROM match_run m
          JOIN item i ON i.id = m.item_id
          LEFT JOIN capture c ON c.item_id = i.id

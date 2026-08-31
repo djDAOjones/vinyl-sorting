@@ -57,27 +57,52 @@ export function makeD1(schemaDir = 'schema') {
   };
 }
 
-/** Minimal R2Bucket. */
+/**
+ * Minimal R2Bucket.
+ *
+ * It KEEPS THE BYTES, and returns them from `get` the way R2 does: an
+ * object with a `body` stream and `httpMetadata`. It used to record
+ * only a byte count and return that, so `get(...).body` was undefined
+ * — a photo route could serve nothing at all and every local check
+ * still passed, because nothing could tell an empty response from a
+ * served one. That was found on 2026-08-31 by fetching a real
+ * photograph through the real Worker and getting 200 with zero bytes.
+ */
 export function makeR2() {
-  /** @type {Map<string, {bytes: number, contentType?: string}>} */ const store = new Map();
+  /** @type {Map<string, {body: Uint8Array, contentType?: string}>} */ const store = new Map();
   return {
     store,
     put: async (/** @type {string} */ key, /** @type {any} */ body, /** @type {any} */ opts) => {
-      let bytes = 0;
+      /** @type {Uint8Array} */ let bytes;
       if (body && typeof body.getReader === 'function') {
+        const chunks = [];
         const reader = body.getReader();
         for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
-          bytes += value.byteLength;
+          chunks.push(value);
         }
+        bytes = new Uint8Array(chunks.reduce((acc, c) => acc.concat([...c]), []));
+      } else if (body instanceof Uint8Array) {
+        bytes = body;
       } else if (body) {
-        bytes = body.byteLength ?? String(body).length;
+        bytes = new TextEncoder().encode(String(body));
+      } else {
+        bytes = new Uint8Array();
       }
-      store.set(key, { bytes, contentType: opts?.httpMetadata?.contentType });
+      store.set(key, { body: bytes, contentType: opts?.httpMetadata?.contentType });
       return { key };
     },
-    get: async (/** @type {string} */ key) => store.get(key) ?? null,
+    get: async (/** @type {string} */ key) => {
+      const hit = store.get(key);
+      if (!hit) return null;
+      return {
+        // A fresh stream per get, because a stream is consumed once.
+        body: new Blob([hit.body]).stream(),
+        size: hit.body.byteLength,
+        httpMetadata: { contentType: hit.contentType },
+      };
+    },
   };
 }
 

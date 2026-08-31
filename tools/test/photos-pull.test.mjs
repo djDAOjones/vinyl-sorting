@@ -54,13 +54,28 @@ test('pairs come from D1, so no bucket is ever enumerated', () => {
     'it enumerates R2 rather than reading the pairs it was given');
 });
 
-test('it stays a pull — no route is added to the Worker for it', () => {
-  // "No route reads a photo" is what keeps a sign-in-free v1 safe. The
-  // Worker still has a PUT and no GET, and this tool is why it can.
+test('a photograph is never anonymously readable, route or key', () => {
+  // SUPERSEDED, NOT DELETED. This asserted that no photo GET existed at
+  // all — right while the answer to "may a route serve one" was
+  // unsettled. BROWSE-PHOTOS settled it on 2026-08-31: yes, behind the
+  // typed name. The property being protected has not changed —
+  // photographs are not anonymously enumerable — so the assertion moves
+  // to the form that still protects it.
   const worker = readFileSync('worker/index.ts', 'utf8');
-  assert.ok(!/app\.get\([^)]*photos/.test(worker),
-    'a photo-reading route appeared; with no sign-in that is the household\'s photographs behind a URL');
+  assert.match(worker, /app\.get\('\/api\/photos\/:key[^)]*', capturerGuard/,
+    'the photo route exists and is guarded, or it should not exist at all');
   assert.match(worker, /app\.put\('\/api\/photos/, 'the upload route is still there');
+
+  // The key IS the photograph's address, so gating the route while
+  // handing keys out anonymously would protect nothing. Both or
+  // neither — this is the half that is easy to forget.
+  assert.match(worker, /\$\{named \? ', r2_key' : ''\}/,
+    'item detail must withhold r2_key from an unnamed caller');
+
+  // And R2 is never handed a key the caller invented: `parseCapture`
+  // only trims r2Key, so a stored key can be any string.
+  assert.match(worker, /SELECT 1 AS ok FROM item_photo WHERE r2_key = \?/,
+    'the key must be matched against the database before R2 sees it');
 });
 
 test('no credential is read from the environment', () => {

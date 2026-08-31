@@ -50,3 +50,11 @@ kbd { font: 600 .78rem var(--mono); background: var(--card); border: 1px solid v
 .manual input { flex: 1; }
 .done { text-align: center; padding: 4rem 1rem; color: var(--muted); }
 .done strong { display: block; font-size: 1.3rem; color: var(--accent); margin-bottom: .5rem; }
+
+/* The record itself, beside the candidates. A match cannot be judged
+   against a disc you cannot see. */
+.shots { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
+.shots .shot { display: block; width: 6.5rem; border-radius: 8px; overflow: hidden;
+  border: 1px solid var(--rule); background: var(--sunk); }
+.shots .shot img { display: block; width: 100%; height: 5rem; object-fit: cover; }
+.shots .shot:hover, .shots .shot:focus-visible { border-color: var(--accent); outline: none; }

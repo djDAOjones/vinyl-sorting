@@ -50,13 +50,6 @@
   4.7, so 5 of 11 rows errored on Discogs throttling or Cloudflare's
   per-invocation subrequest cap, and one item collected two runs because a
   row outlasting the five-minute cron period is selected twice.
-- [ ] **BROWSE-PHOTOS May a route serve a label photograph, now that
-  browse wants to show one?** (2026-08-31) — DATASET-VIEWER asked for GET
-  /api/photos/:key so the browse screen could render the label
-  photographs, and photos-pull.test.mjs asserts that no such route exists
-  because with no sign-in it puts the household's photographs behind a URL
-  — two live records disagree, so the screen ships listing the keys and
-  the question goes to the maintainer.
 
 ### Next milestone
 

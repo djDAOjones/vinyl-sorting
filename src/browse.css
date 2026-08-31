@@ -144,3 +144,11 @@ dd:hover .ftools, dd:focus-within .ftools { opacity: 1; }
    row it described would be read by nobody. */
 #bflash { position: fixed; left: 0; right: 0; bottom: 1rem; z-index: 60; padding: 0 1rem;
   pointer-events: none; }
+
+/* Photographs in the detail panel. Shown rather than listed since
+   BROWSE-PHOTOS was signed off on 2026-08-31. */
+.shots { display: flex; flex-wrap: wrap; gap: .6rem; margin: .5rem 0 0; }
+.shotfig { margin: 0; width: 8rem; }
+.shotfig img { display: block; width: 100%; height: 6rem; object-fit: cover;
+  border-radius: 8px; border: 1px solid var(--rule); background: var(--sunk); }
+.shotfig figcaption { font-size: .68rem; color: var(--muted); padding-top: .25rem; }

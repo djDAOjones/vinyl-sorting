@@ -24,6 +24,7 @@ interface QueueItem {
   run_id: number; item_id: number; state: string; queries_json: string;
   catno_raw: string | null; label_raw: string | null; title_raw: string | null; name_raw: string | null;
   crate: string | null; position: string | null; last_verified_at: string | null;
+  photo_keys: string | null;
   candidates: Candidate[];
 }
 
@@ -60,7 +61,12 @@ const parse = <T,>(json: string | null, fallback: T): T => {
 };
 
 async function load(): Promise<void> {
-  const res = await fetch(`${API}/review-queue?limit=200`);
+  // Named, so the queue carries the photo keys. Judging a match
+  // against a disc you cannot see is what produced two confirmations
+  // made blind on 2026-08-31.
+  const who = storedCapturer();
+  const res = await fetch(`${API}/review-queue?limit=200`,
+    who ? { headers: { 'x-capturer': who } } : {});
   queue = (await res.json() as { queue: QueueItem[] }).queue;
   cursor = 0;
   render();
@@ -92,6 +98,7 @@ function render(): void {
           ${field('Name', item.name_raw)}
           ${field('Crate', [item.crate, item.position].filter(Boolean).join(' · '))}
         </dl>
+        ${photosHtml(item)}
       </section>
 
       <section>
@@ -129,6 +136,29 @@ function render(): void {
 
 const field = (label: string, value: string | null): string =>
   `<dt>${label}</dt><dd class="${value ? '' : 'empty'}">${value ? esc(value) : '—'}</dd>`;
+
+/**
+ * The record itself, so a match can be checked against the disc.
+ *
+ * Without this the screen asked "is this right?" and offered nothing to
+ * answer with — on 2026-08-31 two items were confirmed that way, and
+ * the maintainer said plainly they had no idea how they were meant to
+ * cross-check. The photographs were in R2 the whole time.
+ *
+ * Click one to open it full size; a label's catalogue number is often
+ * smaller than the thumbnail can carry.
+ */
+function photosHtml(item: QueueItem): string {
+  const keys = (item.photo_keys ?? '').split('\n').map((k) => k.trim()).filter(Boolean);
+  if (!keys.length) {
+    return '<p class="note">No photograph — one of the 446 rows imported from the spreadsheet.</p>';
+  }
+  return `<div class="shots">${keys.map((k, i) => `
+    <a class="shot" href="${API}/photos/${encodeURI(k)}" target="_blank" rel="noopener">
+      <img loading="lazy" src="${API}/photos/${encodeURI(k)}"
+           alt="Photograph ${i + 1} of item ${item.item_id}">
+    </a>`).join('')}</div>`;
+}
 
 function renderCandidate(c: Candidate, i: number): string {
   const { families = [], signals = {} } = parse<{ families?: string[]; signals?: Record<string, string> }>(

@@ -33,6 +33,20 @@
 
 import { storedCapturer } from './who.ts';
 
+/**
+ * The header the photo route and the item detail both want.
+ *
+ * BROWSE-PHOTOS gated both on the typed name — the photograph and its
+ * key together, since the key is the photograph's address and gating
+ * one without the other would protect nothing. An unnamed device still
+ * browses; it just sees that photographs exist rather than what they
+ * are.
+ */
+function whoHeader(): Record<string, string> {
+  const who = storedCapturer();
+  return who ? { 'x-capturer': who } : {};
+}
+
 const app = document.getElementById('browse')!;
 const API = '/api';
 
@@ -204,7 +218,7 @@ async function load(): Promise<void> {
   // Paged rather than assumed. 465 rows arrive in one fetch at 500, and
   // the loop is what keeps that an optimisation rather than a limit.
   for (let page = 0; page < 50; page++) {
-    const res = await fetch(`${API}/items?limit=500&after=${after}`);
+    const res = await fetch(`${API}/items?limit=500&after=${after}`, { headers: whoHeader() });
     if (!res.ok) throw new Error(`items: HTTP ${res.status}`);
     const body = await res.json() as { items: Row[]; nextAfter: number | null };
     rows.push(...body.items);
@@ -315,7 +329,7 @@ async function openDetail(id: number): Promise<void> {
   const panel = document.getElementById('detail')!;
   panel.hidden = false;
   panel.innerHTML = '<p class="empty-note">Loading…</p>';
-  const res = await fetch(`${API}/items/${id}`);
+  const res = await fetch(`${API}/items/${id}`, { headers: whoHeader() });
   if (!res.ok) { panel.innerHTML = `<p class="empty-note">Could not load item ${id}.</p>`; return; }
   panel.innerHTML = detailHtml(await res.json() as Detail);
   panel.querySelector('#closeDetail')?.addEventListener('click', () => {
@@ -542,13 +556,13 @@ function detailHtml(d: Detail): string {
       <section>
         <h3>Photographs ${d.photos.length ? `<span class="n">${d.photos.length}</span>` : ''}</h3>
         ${d.photos.length
-    ? `<p class="empty-note">Held in R2 and not shown here: serving one needs a Worker route
-         that a sign-in-free v1 deliberately does not have. <code>tools/photos-pull.mjs</code>
-         fetches them to a desk from these keys.</p>
-       <ul class="keys">${d.photos.map((p, i) => `<li><span class="n">${i + 1}</span>
-         <code>${esc(p.r2_key)}</code>
-         <span class="prov">${esc(p.added_at)}${p.kind === 'other' ? '' : ` · ${esc(p.kind)}`}</span>
-       </li>`).join('')}</ul>`
+    ? `<div class="shots">${d.photos.map((p, i) => `
+         <figure class="shotfig">
+           <img loading="lazy" src="${API}/photos/${encodeURI(p.r2_key)}"
+                alt="Photograph ${i + 1} of item ${d.item.id}">
+           <figcaption><span class="n">${i + 1}</span>
+             ${esc(p.added_at)}${p.kind === 'other' ? '' : ` · ${esc(p.kind)}`}</figcaption>
+         </figure>`).join('')}</div>`
     : '<p class="empty-note">No photograph. This is one of the 446 rows imported from the spreadsheet.</p>'}
 
         <h3>Match history</h3>
