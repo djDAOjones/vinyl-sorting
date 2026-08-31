@@ -8,8 +8,38 @@
 
 ### Current milestone
 
-<!-- Intent: M2, the photo path and the browse screen, side by side. M2 is deployed and every row now carries a match_run, so its remaining work is maintainer work — clearing 287 needs-review by keyboard. Migration 004 reached production on 2026-08-31, so a photo reading can now be promoted there. The photo path was promoted out of the icebox on 2026-08-30 because it is the buildable work, and because the brief's stated risk is building the app instead of cataloguing the records; DATASET-VIEWER and DATASET-EDIT joined it on 2026-08-31, because 465 catalogued rows can currently be neither seen nor corrected anywhere in the app. -->
+<!-- Intent: M2 plus the interface brief of 2026-08-31. M2's own remainder is maintainer work — clearing 287 needs-review by keyboard — and the app moves to its real URL, gains a home page and a settings screen, and is rebuilt on one visual language. The two meet at the review queue: REVIEW-CARD and MATCH-OTHER-NUMBERS exist to make clearing it cheaper, not prettier. -->
 
+- [ ] **APP-HOME-HUB A home page that names the four things the app
+  does** (2026-08-31) — Three screens exist and none of them is a front
+  door — capture sits at the root, so the collection and the review queue
+  are reachable only from each other, and a new screen has nowhere to be
+  announced.
+- [ ] **APP-RENAME Move the app to vinyl-sorter.joe-2d2.workers.dev**
+  (2026-08-31) — The product was renamed in August and the URL never
+  followed; the Worker name IS the workers.dev hostname, so this is a
+  redeploy under a new name — and the data does not move with it, which is
+  the part wrangler.toml gets wrong.
+- [ ] **CAPTURE-GUIDANCE Say what to photograph, and make sure the
+  number survives the file** (2026-08-31) — Seventeen sleeve-only rows and
+  one catalogue number lost to the downscale are the same failure from two
+  ends — nobody was told what the shot has to contain, and when a shot did
+  contain it the resize threw it away.
+- [ ] **DESIGN-SYSTEM One visual language across every screen, light and
+  dark** (2026-08-31) — Three screens grew separately from one 225-line
+  sheet and now disagree about spacing, controls and density; the
+  maintainer asked for a full redesign, so the palette, type and
+  components are settled once.
+- [ ] **APP-SETTINGS A settings screen that stops short of the dangerous
+  half** (2026-08-31) — Settings has to exist for the re-verify toggle,
+  the theme and the column choices, and it sits on a URL with no sign-in —
+  so the maintainer drew the line at export, keeping token entry and any
+  reset at the command line.
+- [ ] **REVIEW-CARD Make a candidate scannable — the sleeve image, and
+  why it scored** (2026-08-31) — The queue asks a person to judge 287
+  matches and gives them a number to judge with; the sleeve thumbnail
+  Discogs already returns is discarded, and the evidence behind the score
+  renders as undifferentiated chips.
 - [~] **SPIKE-PHOTO-TO-FIELDS Can a label photograph populate the
   capture fields?** [spike] [blocked: twenty photographed labels with
   typed ground truth] (2026-08-30) — The round trip is built, tested and
@@ -18,6 +48,16 @@
   checks, and the scorer keeps refusals apart from wrong answers; twenty
   photographed labels are now the only thing left, because synthesising
   labels would score the model against its own output.
+- [ ] **APP-KEYS One keyboard scheme across the app, and a card that
+  teaches it** (2026-08-31) — The review queue has good shortcuts nothing
+  else has, they are undiscoverable outside it, and the desk screens where
+  a keyboard exists are the ones with none — so the scheme is settled once
+  and shown on demand.
+- [ ] **MATCH-OTHER-NUMBERS Try the other catalogue numbers on the label
+  before giving up** (2026-08-31) — The reading already records every
+  number it can see in other_numbers and no query has ever used one — so a
+  row whose primary number was the wrong guess is refused with its right
+  answer sitting unused in the same JSON.
 - [~] **PHOTOS-TO-DESKTOP Pull captured photos and their row ids out for
   a chat pack** [detail](records/PHOTOS-TO-DESKTOP.md) (2026-08-30) —
   Built, gated and live — photos-pull reads (item_id, r2_key) pairs from
@@ -54,7 +94,24 @@
 
 ### Next milestone
 
-<!-- Intent: Empty — M3 (works, performances, per-track completeness) is next but stays in the icebox until the review queue has been cleared once. -->
+<!-- Intent: The half of the interface brief needing data the database does not hold — value and genre, a re-verification sweep for when the backlog empties, and readings that name their source photograph. Each blocked on a migration, a backfill or a pack-format change rather than on M2. -->
+
+- [ ] **CATALOGUE-CONTROLS Sort, filter and choose columns on the
+  collection screen** (2026-08-31) — Browse offers two sorts and three
+  filters over eight fixed columns — enough to look at 483 rows, not
+  enough to ask a question of them — and the two sorts most wanted, value
+  and release date, have no data behind them.
+- [ ] **MATCH-REVERIFY-SWEEP When nothing is unmatched, re-verify the
+  oldest rows instead of idling** (2026-08-31) — pendingRows only selects
+  rows with no match_run at all, so the cron tick will start doing nothing
+  the moment the backlog is exhausted — while 9% of the imported matches
+  are known wrong and Discogs keeps improving underneath us.
+- [ ] **AI-ROUND-TRIP Make the hand-carried reading loop fast, and make
+  it say which photograph it read** (2026-08-31) — The maintainer kept the
+  no-metered-services rule, so the answer is a better round trip rather
+  than an API — and its biggest missing field is provenance, because a
+  number off a disc label and one in sleeve small print arrive with
+  identical standing.
 
 ### Icebox
 

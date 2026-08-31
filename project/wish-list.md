@@ -38,3 +38,22 @@
   effort floor), not kept (no musical reason) — donate, charity shop,
   or a "not worth selling" pile? Comes up the first session that
   produces one. From OPEN-SELL-THRESHOLD, 2026-08-30.
+- Warn at the shelf when a catalogue number is already in the
+  collection. Finding overlapping copies is the whole project, and the
+  cheapest moment to notice one is while the disc is still in your
+  hand rather than in a cluster three milestones later.
+- "Do I own this?" from a shop. The PWA and the offline store already
+  exist; caching catalogue numbers for lookup with no signal is a small
+  addition to them and is the one feature that gets used away from the
+  house.
+- Import a shared phone album at the desk. The brief names a camera
+  plus a shared album as a legitimate day-one fallback, and there is
+  currently no way to get those photographs in — only the in-app
+  camera writes.
+- A progress screen: catalogued, photographed, matched, confirmed,
+  decided, as counts over time. The home page will show today's
+  numbers; this is the one that says whether the collection is
+  actually converging.
+- The history of one field. Every correction already writes
+  `field_source`, so who changed what and when is recorded and
+  unreadable — an audit view costs a query and no new data.
