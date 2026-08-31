@@ -1,0 +1,38 @@
+[
+  {
+    "row_id": 455,
+    "catno_raw": "M-2314; AM 2314",
+    "label_raw": "Concert Hall",
+    "name_raw": "Chopin; Mendelssohn; Menahem Pressler; Orchestra of the Vienna State Opera; Hans Swarowsky",
+    "title_raw": "Chopin: Piano Concerto No. 2 in F minor, Op. 21; Mendelssohn: Piano Concerto No. 1 in G minor, Op. 25",
+    "year_raw": null,
+    "side": null,
+    "other_numbers": ["No. 2", "Op. 21", "No. 1", "Op. 25"],
+    "unreadable": [],
+    "rotate_cw": {"455-1.jpg": 90}
+  },
+  {
+    "row_id": 456,
+    "catno_raw": "MFP MONO 2064",
+    "label_raw": "Music for Pleasure; EMI; Paul Hamlyn EMI Records",
+    "name_raw": "Grieg; Moura Lympany; Philharmonia Orchestra; Herbert Menges; Schumann; Royal Philharmonic Orchestra; Constantin Silvestri",
+    "title_raw": "Grieg: Piano Concerto in A minor, Op. 16; Schumann: Piano Concerto in A minor, Op. 54",
+    "year_raw": null,
+    "side": "SIDE ONE; SIDE TWO",
+    "other_numbers": ["Op. 16", "1", "2(a)", "2(b)", "3", "Op. 54", "1843", "13", "1869", "1907"],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": 457,
+    "catno_raw": "HM 498",
+    "label_raw": "harmonia mundi FRANCE",
+    "name_raw": "Deller Consort; Carlo Gesualdo da Venosa; Honor Sheppard; Christina Clarke; Alfred Deller; Mark Deller; John Buttrey; Neil Jenkins; Maurice Bevan; Norman Platt; Henry Purcell; Thomas Shadwell; Jean Knibbs; Paul Elliott; The Deller Choir; The King's Musick",
+    "title_raw": "Benedictus; Miserere; Le Masque de Timon d'Athenes",
+    "year_raw": null,
+    "side": "Face A; Face B",
+    "other_numbers": ["ca. 1560-1613", "Luc, I, 68-79", "Psaume 50", "1659-1695", "HM 20"],
+    "unreadable": [],
+    "rotate_cw": {}
+  }
+]

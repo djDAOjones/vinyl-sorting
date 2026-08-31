@@ -1,0 +1,26 @@
+[
+  {
+    "row_id": 461,
+    "catno_raw": "NW 309",
+    "label_raw": "New World Records; Recorded Anthology of American Music",
+    "name_raw": "New York Philharmonic; Zubin Mehta; Stanley Drucker; John Corigliano; Samuel Barber",
+    "title_raw": "Concerto for Clarinet and Orchestra; Third Essay for Orchestra, opus 47",
+    "year_raw": "℗ 1981; © 1981",
+    "side": "Side One; Side Two",
+    "other_numbers": ["I", "II", "III", "17:35", "8:54", "8:36", "19:46", "8:59", "10:40", "1980", "80-750482", "10022"],
+    "unreadable": [],
+    "rotate_cw": {"461-1.jpg": 270, "461-2.jpg": 270, "461-3.jpg": 270, "461-4.jpg": 270, "461-5.jpg": 270}
+  },
+  {
+    "row_id": 462,
+    "catno_raw": "436 286-1DH",
+    "label_raw": "Decca",
+    "name_raw": "Kiri Te Kanawa; Crispian Steele-Perkins; English Chamber Orchestra; Barry Rose; The Utah Symphony Orchestra; Julius Rudel; Lynn Harrell and Cello Ensemble; Jeffrey Tate; The Mormon Tabernacle Choir; London Philharmonic Orchestra; Sir Georg Solti; Vienna Philharmonic Orchestra; Roger Vignoles; Chicago Symphony Orchestra; National Philharmonic Orchestra; Montreal Symphony Orchestra; Charles Dutoit",
+    "title_raw": "The Essential Kiri: Let The Bright Seraphim; Ave Maria; Aria (Cantilena); The Nuns' Chorus; Dove Sono; Beim Schlafengehen; Vocalise; You'll Never Walk Alone; I Know That My Redeemer Liveth; Porgi Amor; Vissi D'Arte; Pie Jesu",
+    "year_raw": null,
+    "side": "Side 1; Side 2",
+    "other_numbers": ["15", "No. 5", "Op. 34, No. 14", "1", "2", "3", "4", "5", "6", "7", "8", "436 286-2", "436 286-4", "28943628617", "LC 0171", "PY 281", "1970"],
+    "unreadable": [],
+    "rotate_cw": {"462-1.jpg": 270, "462-2.jpg": 270, "462-3.jpg": 270}
+  }
+]

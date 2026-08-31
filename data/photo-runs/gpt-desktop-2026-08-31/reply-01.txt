@@ -3,8 +3,8 @@
     "row_id": 448,
     "catno_raw": "2535 184",
     "label_raw": "Deutsche Grammophon",
-    "name_raw": "Gustav Mahler; Nan Merriman; Ernst Haefliger; Concertgebouworkest; Eugen Jochum",
-    "title_raw": "DAS LIED VON DER ERDE",
+    "name_raw": "Gustav Mahler; Nan Merriman; Ernst Haefliger; Concertgebouw Orkest; Eugen Jochum",
+    "title_raw": "Das Lied von der Erde",
     "year_raw": null,
     "side": null,
     "other_numbers": [],
@@ -15,77 +15,47 @@
     "row_id": 449,
     "catno_raw": "2535 184",
     "label_raw": "Deutsche Grammophon",
-    "name_raw": "Gustav Mahler; Nan Merriman; Ernst Haefliger; Concertgebouworkest; Eugen Jochum",
+    "name_raw": "Gustav Mahler; Nan Merriman; Ernst Haefliger; Concertgebouw Orkest; Eugen Jochum; Hans Bethge",
     "title_raw": "Das Lied von der Erde (The Song of the Earth)",
     "year_raw": null,
     "side": "SIDE 1; SIDE 2",
-    "other_numbers": [
-      "1860–1911"
-    ],
+    "other_numbers": ["1860-1911"],
     "unreadable": [],
-    "rotate_cw": {
-      "449-1.jpg": 270
-    }
+    "rotate_cw": {"449-1.jpg": 270}
   },
   {
     "row_id": 450,
     "catno_raw": "CLP 1296",
     "label_raw": null,
     "name_raw": "Schumann; Chopin; Robert Irving; The Philharmonia Orchestra",
-    "title_raw": "CARNAVAL; LES SYLPHIDES",
+    "title_raw": "Carnaval; Les Sylphides",
     "year_raw": null,
     "side": "SIDE TWO",
-    "other_numbers": [
-      "Op. 28, No. 7",
-      "Op. 32, No. 2",
-      "Op. 70, No. 1",
-      "Op. 33, No. 2",
-      "Op. 67, No. 3",
-      "Op. 28, No. 7",
-      "Op. 64, No. 2",
-      "Op. 18"
-    ],
+    "other_numbers": ["Op. 32, No. 2", "Op. 70, No. 1", "Op. 33, No. 2", "Op. 67, No. 3", "Op. 28, No. 7", "Op. 64, No. 2", "Op. 18"],
     "unreadable": [],
     "rotate_cw": {}
   },
   {
     "row_id": 451,
     "catno_raw": "LXT 5481",
-    "label_raw": null,
+    "label_raw": "Decca Records",
     "name_raw": "Verdi; Tebaldi; Del Monaco; Bastianini; Siepi; Corena; Simionato",
-    "title_raw": "Highlights from \u201cLA FORZA DEL DESTINO\u201d",
+    "title_raw": "La Forza Del Destino — Highlights",
     "year_raw": null,
     "side": null,
-    "other_numbers": [
-      "1861-2"
-    ],
-    "unreadable": [
-      "label_raw"
-    ],
-    "rotate_cw": {
-      "451-2.jpg": 270,
-      "451-3.jpg": 270,
-      "451-4.jpg": 270
-    }
+    "other_numbers": ["1861-2"],
+    "unreadable": [],
+    "rotate_cw": {"451-2.jpg": 270, "451-3.jpg": 270, "451-4.jpg": 270}
   },
   {
     "row_id": 452,
     "catno_raw": "SXL 6493",
-    "label_raw": "DECCA",
-    "name_raw": "TCHAIKOVSKY; SIBELIUS; KYUNG-WHA CHUNG; London Symphony Orchestra; ANDRÉ PREVIN",
-    "title_raw": "TCHAIKOVSKY/SIBELIUS Violin Concertos",
+    "label_raw": "Decca",
+    "name_raw": "Tchaikovsky; Sibelius; Kyung-Wha Chung; London Symphony Orchestra; André Previn",
+    "title_raw": "Violin Concertos; Sibelius: Violin Concerto in D minor; Tchaikovsky: Violin Concerto in D major",
     "year_raw": null,
     "side": "SIDE ONE; SIDE TWO",
-    "other_numbers": [
-      "OP. 47",
-      "OP. 35",
-      "1.",
-      "2.",
-      "3.",
-      "(1840-1893)",
-      "1878",
-      "1881"
-    ],
+    "other_numbers": ["Op. 47", "Op. 35", "1", "2", "3", "1840-1893", "1878", "December 1881"],
     "unreadable": [],
     "rotate_cw": {}
   }

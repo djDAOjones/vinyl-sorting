@@ -1,67 +1,70 @@
 {
   "source": "chat",
-  "model": "ChatGPT desktop, repo access",
+  "model": "ChatGPT desktop (repo access), 2026-08-31",
   "results": {
     "448": {
       "fields": {
         "catno_raw": "2535 184",
         "label_raw": "Deutsche Grammophon",
         "name_raw": "Gustav Mahler; Nan Merriman; Ernst Haefliger; Concertgebouw Orkest; Eugen Jochum",
-        "title_raw": "DAS LIED VON DER ERDE",
+        "title_raw": "Das Lied von der Erde",
         "year_raw": null,
         "side": null,
         "other_numbers": [],
         "unreadable": [],
         "rotate_cw": {}
       },
-      "truthPreexisting": true
+      "truthPreexisting": true,
+      "declaredNotIndependent": true
     },
     "449": {
       "fields": {
         "catno_raw": "2535 184",
         "label_raw": "Deutsche Grammophon",
-        "name_raw": "Gustav Mahler; Nan Merriman; Ernst Haefliger; Concertgebouw Orkest; Eugen Jochum",
-        "title_raw": "DAS LIED VON DER ERDE (The Song of the Earth)",
+        "name_raw": "Gustav Mahler; Nan Merriman; Ernst Haefliger; Concertgebouw Orkest; Eugen Jochum; Hans Bethge",
+        "title_raw": "Das Lied von der Erde (The Song of the Earth)",
         "year_raw": null,
         "side": "SIDE 1; SIDE 2",
         "other_numbers": [
-          "(1860–1911)"
+          "1860-1911"
         ],
         "unreadable": [],
         "rotate_cw": {
           "449-1.jpg": 270
         }
       },
-      "truthPreexisting": false
+      "truthPreexisting": false,
+      "declaredNotIndependent": true
     },
     "450": {
       "fields": {
         "catno_raw": "CLP 1296",
         "label_raw": null,
         "name_raw": "Schumann; Chopin; Robert Irving; The Philharmonia Orchestra",
-        "title_raw": "CARNAVAL; LES SYLPHIDES",
+        "title_raw": "Carnaval; Les Sylphides",
         "year_raw": null,
         "side": "SIDE TWO",
         "other_numbers": [
-          "Op. 28, No. 7",
           "Op. 32, No. 2",
           "Op. 70, No. 1",
           "Op. 33, No. 2",
           "Op. 67, No. 3",
+          "Op. 28, No. 7",
           "Op. 64, No. 2",
           "Op. 18"
         ],
         "unreadable": [],
         "rotate_cw": {}
       },
-      "truthPreexisting": false
+      "truthPreexisting": false,
+      "declaredNotIndependent": true
     },
     "451": {
       "fields": {
         "catno_raw": "LXT 5481",
-        "label_raw": "DECCA RECORDS",
-        "name_raw": "Verdi; TEBALDI; DEL MONACO; BASTIANINI; SIEPI; CORENA; SIMIONATO",
-        "title_raw": "LA FORZA DEL DESTINO Highlights",
+        "label_raw": "Decca Records",
+        "name_raw": "Verdi; Tebaldi; Del Monaco; Bastianini; Siepi; Corena; Simionato",
+        "title_raw": "La Forza Del Destino — Highlights",
         "year_raw": null,
         "side": null,
         "other_numbers": [
@@ -74,25 +77,397 @@
           "451-4.jpg": 270
         }
       },
-      "truthPreexisting": false
+      "truthPreexisting": false,
+      "declaredNotIndependent": true
     },
     "452": {
       "fields": {
         "catno_raw": "SXL 6493",
-        "label_raw": "DECCA",
-        "name_raw": "TCHAIKOVSKY; SIBELIUS; KYUNG-WHA CHUNG; London Symphony Orchestra; ANDRÉ PREVIN",
-        "title_raw": "Violin Concertos; SIBELIUS: VIOLIN CONCERTO in D minor; TCHAIKOVSKY: VIOLIN CONCERTO in D major",
+        "label_raw": "Decca",
+        "name_raw": "Tchaikovsky; Sibelius; Kyung-Wha Chung; London Symphony Orchestra; André Previn",
+        "title_raw": "Violin Concertos; Sibelius: Violin Concerto in D minor; Tchaikovsky: Violin Concerto in D major",
         "year_raw": null,
         "side": "SIDE ONE; SIDE TWO",
         "other_numbers": [
-          "OP. 47",
-          "1.",
-          "2.",
-          "3.",
-          "OP. 35",
-          "(1840–1893)",
+          "Op. 47",
+          "Op. 35",
+          "1",
+          "2",
+          "3",
+          "1840-1893",
           "1878",
-          "1881"
+          "December 1881"
+        ],
+        "unreadable": [],
+        "rotate_cw": {}
+      },
+      "truthPreexisting": false,
+      "declaredNotIndependent": true
+    },
+    "453": {
+      "fields": {
+        "catno_raw": "ACL 45; MFP 2024",
+        "label_raw": "Ace of Clubs; Decca; Music for Pleasure; EMI",
+        "name_raw": "Tchaikovsky; Minkus; Weber-Berlioz; Anatole Fistoulari; London Symphony Orchestra; New Symphony Orchestra of London; Paris Conservatoire Orchestra; St. Louis Symphony Orchestra; Vladimir Golschmann",
+        "title_raw": "Nights at the Ballet: Swan Lake; Don Quixote; The Sleeping Beauty; Le Spectre de la Rose; Romeo & Juliet (Fantasy Overture); Francesca da Rimini (Fantasy After Dante)",
+        "year_raw": null,
+        "side": "Side 1; Side 2",
+        "other_numbers": [
+          "Op. 20",
+          "Act 2, No. 10",
+          "Act 2, No. 13d",
+          "Act 1, No. 4b",
+          "Act 2, No. 13b",
+          "Act 2, No. 13e",
+          "1875",
+          "1876",
+          "1877",
+          "1893",
+          "1822-1910",
+          "1894",
+          "1895",
+          "1827",
+          "1853-55",
+          "1861",
+          "1872",
+          "Act 3, No. 25",
+          "Act 1, No. 6",
+          "December, 1888",
+          "1682-1703",
+          "1697",
+          "1890",
+          "January 13th, 14th, or 15th",
+          "Op. 65",
+          "1841",
+          "1819",
+          "Op. 32",
+          "33⅓ RPM"
+        ],
+        "unreadable": [],
+        "rotate_cw": {}
+      },
+      "truthPreexisting": false
+    },
+    "454": {
+      "fields": {
+        "catno_raw": "138 923",
+        "label_raw": "Deutsche Grammophon",
+        "name_raw": "Claude Debussy; Maurice Ravel; Karlheinz Zöller; Berlin Philharmonic Orchestra; Herbert von Karajan",
+        "title_raw": "La mer; Prélude à l'après-midi d'un faune; Daphnis et Chloé, suite no 2",
+        "year_raw": null,
+        "side": "SIDE 1; SIDE 2",
+        "other_numbers": [
+          "suite no 2",
+          "1862-1918",
+          "1",
+          "2",
+          "3",
+          "1875-1937",
+          "1909-1912"
+        ],
+        "unreadable": [],
+        "rotate_cw": {
+          "454-2.jpg": 270,
+          "454-3.jpg": 270,
+          "454-4.jpg": 270,
+          "454-5.jpg": 270
+        }
+      },
+      "truthPreexisting": false
+    },
+    "455": {
+      "fields": {
+        "catno_raw": "M-2314; AM 2314",
+        "label_raw": "Concert Hall",
+        "name_raw": "Chopin; Mendelssohn; Menahem Pressler; Orchestra of the Vienna State Opera; Hans Swarowsky",
+        "title_raw": "Chopin: Piano Concerto No. 2 in F minor, Op. 21; Mendelssohn: Piano Concerto No. 1 in G minor, Op. 25",
+        "year_raw": null,
+        "side": null,
+        "other_numbers": [
+          "No. 2",
+          "Op. 21",
+          "No. 1",
+          "Op. 25"
+        ],
+        "unreadable": [],
+        "rotate_cw": {
+          "455-1.jpg": 90
+        }
+      },
+      "truthPreexisting": false
+    },
+    "456": {
+      "fields": {
+        "catno_raw": "MFP MONO 2064",
+        "label_raw": "Music for Pleasure; EMI; Paul Hamlyn EMI Records",
+        "name_raw": "Grieg; Moura Lympany; Philharmonia Orchestra; Herbert Menges; Schumann; Royal Philharmonic Orchestra; Constantin Silvestri",
+        "title_raw": "Grieg: Piano Concerto in A minor, Op. 16; Schumann: Piano Concerto in A minor, Op. 54",
+        "year_raw": null,
+        "side": "SIDE ONE; SIDE TWO",
+        "other_numbers": [
+          "Op. 16",
+          "1",
+          "2(a)",
+          "2(b)",
+          "3",
+          "Op. 54",
+          "1843",
+          "13",
+          "1869",
+          "1907"
+        ],
+        "unreadable": [],
+        "rotate_cw": {}
+      },
+      "truthPreexisting": false
+    },
+    "457": {
+      "fields": {
+        "catno_raw": "HM 498",
+        "label_raw": "harmonia mundi FRANCE",
+        "name_raw": "Deller Consort; Carlo Gesualdo da Venosa; Honor Sheppard; Christina Clarke; Alfred Deller; Mark Deller; John Buttrey; Neil Jenkins; Maurice Bevan; Norman Platt; Henry Purcell; Thomas Shadwell; Jean Knibbs; Paul Elliott; The Deller Choir; The King's Musick",
+        "title_raw": "Benedictus; Miserere; Le Masque de Timon d'Athenes",
+        "year_raw": null,
+        "side": "Face A; Face B",
+        "other_numbers": [
+          "ca. 1560-1613",
+          "Luc, I, 68-79",
+          "Psaume 50",
+          "1659-1695",
+          "HM 20"
+        ],
+        "unreadable": [],
+        "rotate_cw": {}
+      },
+      "truthPreexisting": false
+    },
+    "458": {
+      "fields": {
+        "catno_raw": "PLE 7009",
+        "label_raw": "Pickwick Records",
+        "name_raw": "The Royal Philharmonic Orchestra; David Rose; Muir Mathieson; Elmer Bernstein; Henry Mancini; Maurice Jarre; Larry Adler; Frank Chacksfield",
+        "title_raw": "20 Great Movie Themes: Raindrops Keep Falling on My Head; Gigi; The Shadow of Your Smile; The Man with the Golden Arm; Borsalino; Love Story; The Magnificent Seven; Lawrence of Arabia; Born Free; Walk on the Wild Side; To Kill a Mockingbird; Baby Elephant Walk; Exodus; The Pink Panther; Spellbound; Alfie; Hawaii; Lara's Theme; Charade; Tara's Theme",
+        "year_raw": null,
+        "side": "SIDE 1; SIDE 2",
+        "other_numbers": [
+          "20",
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "9",
+          "10"
+        ],
+        "unreadable": [],
+        "rotate_cw": {
+          "458-4.jpg": 270,
+          "458-5.jpg": 270
+        }
+      },
+      "truthPreexisting": false
+    },
+    "459": {
+      "fields": {
+        "catno_raw": "6370 550",
+        "label_raw": "Philips",
+        "name_raw": "The Jacques Loussier Trio; J. S. Bach; J. Loussier; Bob Auger",
+        "title_raw": "In Concert at the Royal Festival Hall: Toccata in D minor; Fugue No. 5 in D major; Esquisse; Jesu, Joy of Man's Desiring; Fantasie in C minor; Prelude No. 1 in C major",
+        "year_raw": null,
+        "side": "SIDE ONE; SIDE TWO",
+        "other_numbers": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "No. 5",
+          "No. 1",
+          "10.30",
+          "6.27",
+          "4.32",
+          "5.00",
+          "3.29",
+          "3.33"
+        ],
+        "unreadable": [],
+        "rotate_cw": {}
+      },
+      "truthPreexisting": false
+    },
+    "460": {
+      "fields": {
+        "catno_raw": "CFP 140",
+        "label_raw": "CFP",
+        "name_raw": "Colin Davis; Sinfonia of London; Wagner; Brahms; Haydn; Beethoven; Mendelssohn",
+        "title_raw": "Wagner: Siegfried Idyll; Brahms: Variations on a theme of Haydn (St. Antoni Chorale); Beethoven: Fidelio Overture; Mendelssohn: Hebrides Overture (Fingal's Cave)",
+        "year_raw": null,
+        "side": "Side one; Side two",
+        "other_numbers": [
+          "Op. 56a",
+          "Op. 72b",
+          "Op. 26",
+          "1870",
+          "1",
+          "2"
+        ],
+        "unreadable": [],
+        "rotate_cw": {
+          "460-2.jpg": 270,
+          "460-3.jpg": 270,
+          "460-4.jpg": 270,
+          "460-5.jpg": 270
+        }
+      },
+      "truthPreexisting": false
+    },
+    "461": {
+      "fields": {
+        "catno_raw": "NW 309",
+        "label_raw": "New World Records; Recorded Anthology of American Music",
+        "name_raw": "New York Philharmonic; Zubin Mehta; Stanley Drucker; John Corigliano; Samuel Barber",
+        "title_raw": "Concerto for Clarinet and Orchestra; Third Essay for Orchestra, opus 47",
+        "year_raw": "℗ 1981; © 1981",
+        "side": "Side One; Side Two",
+        "other_numbers": [
+          "I",
+          "II",
+          "III",
+          "17:35",
+          "8:54",
+          "8:36",
+          "19:46",
+          "8:59",
+          "10:40",
+          "1980",
+          "80-750482",
+          "10022"
+        ],
+        "unreadable": [],
+        "rotate_cw": {
+          "461-1.jpg": 270,
+          "461-2.jpg": 270,
+          "461-3.jpg": 270,
+          "461-4.jpg": 270,
+          "461-5.jpg": 270
+        }
+      },
+      "truthPreexisting": false
+    },
+    "462": {
+      "fields": {
+        "catno_raw": "436 286-1DH",
+        "label_raw": "Decca",
+        "name_raw": "Kiri Te Kanawa; Crispian Steele-Perkins; English Chamber Orchestra; Barry Rose; The Utah Symphony Orchestra; Julius Rudel; Lynn Harrell and Cello Ensemble; Jeffrey Tate; The Mormon Tabernacle Choir; London Philharmonic Orchestra; Sir Georg Solti; Vienna Philharmonic Orchestra; Roger Vignoles; Chicago Symphony Orchestra; National Philharmonic Orchestra; Montreal Symphony Orchestra; Charles Dutoit",
+        "title_raw": "The Essential Kiri: Let The Bright Seraphim; Ave Maria; Aria (Cantilena); The Nuns' Chorus; Dove Sono; Beim Schlafengehen; Vocalise; You'll Never Walk Alone; I Know That My Redeemer Liveth; Porgi Amor; Vissi D'Arte; Pie Jesu",
+        "year_raw": null,
+        "side": "Side 1; Side 2",
+        "other_numbers": [
+          "15",
+          "No. 5",
+          "Op. 34, No. 14",
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "436 286-2",
+          "436 286-4",
+          "28943628617",
+          "LC 0171",
+          "PY 281",
+          "1970"
+        ],
+        "unreadable": [],
+        "rotate_cw": {
+          "462-1.jpg": 270,
+          "462-2.jpg": 270,
+          "462-3.jpg": 270
+        }
+      },
+      "truthPreexisting": false
+    },
+    "463": {
+      "fields": {
+        "catno_raw": "SEOM 12",
+        "label_raw": "EMI; His Master's Voice",
+        "name_raw": "Ralph Vaughan Williams; Janet Baker; Sir Adrian Boult; King's College Choir, Cambridge; Neville Marriner; Ian Partridge; André Previn; John Shirley-Quirk; Sheila Armstrong; John Carol Case; London Philharmonic Orchestra; London Philharmonic Choir; Gerald Moore; The Music Group of London; Jennifer Partridge; Bournemouth Symphony Orchestra; Norman del Mar; London Symphony Orchestra; English Chamber Orchestra; David Willcocks; Susan Longfield; Christopher Bishop",
+        "title_raw": "RVW vocal choral and orchestral music: March Past of the Kitchen Utensils (from The Wasps); Linden Lea; Fantasia on Greensleeves; Gloria (from Mass in G Minor); Rise, heart; March and Reprise; The Pilgrim's Progress — Act 4 Scene 3 and Epilogue — Allelujah; Dance of Job's Comforters; A Vision of Satan; Folk-Songs — Wassail Song; An acre of land",
+        "year_raw": "EMI Records 1972",
+        "side": "SIDE ONE; SIDE TWO",
+        "other_numbers": [
+          "Ralph Vaughan Williams 1872/1958",
+          "1E 045-02358",
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "ASD 2458",
+          "℗ 1967",
+          "HQS 1091",
+          "1597-1961",
+          "ASD 2784",
+          "Op. 40",
+          "No. 1",
+          "Op. 11",
+          "℗ 1969",
+          "HQS 1236",
+          "℗ 1968",
+          "SLS 780",
+          "ASD 2673",
+          "℗ 1971",
+          "HQS 1215",
+          "℗ 1970",
+          "SLS 959",
+          "℗ 1972"
+        ],
+        "unreadable": [],
+        "rotate_cw": {
+          "463-1.jpg": 270,
+          "463-2.jpg": 270,
+          "463-3.jpg": 270,
+          "463-4.jpg": 270,
+          "463-5.jpg": 270
+        }
+      },
+      "truthPreexisting": false
+    },
+    "464": {
+      "fields": {
+        "catno_raw": "6856 010",
+        "label_raw": "Philips",
+        "name_raw": "Pergolesi; A. Soresina; Evelyn Lear; Christa Ludwig; Women's Voices of the RIAS Chamber Choir; RSO Berlin; Lorin Maazel",
+        "title_raw": "Stabat Mater",
+        "year_raw": null,
+        "side": null,
+        "other_numbers": [],
+        "unreadable": [],
+        "rotate_cw": {
+          "464-1.jpg": 270
+        }
+      },
+      "truthPreexisting": false
+    },
+    "465": {
+      "fields": {
+        "catno_raw": "MFP Mono 2035",
+        "label_raw": "Music for Pleasure; EMI",
+        "name_raw": "Rachmaninov; Mendelssohn; Moura Lympany; Nicolai Malko; Philharmonia Orchestra",
+        "title_raw": "Rachmaninov: Piano Concerto No. 2 in C minor, Op. 18; Mendelssohn: Capriccio Brillant in B Minor, Op. 22",
+        "year_raw": null,
+        "side": null,
+        "other_numbers": [
+          "No. 2",
+          "Op. 18",
+          "Op. 22",
+          "33⅓ RPM"
         ],
         "unreadable": [],
         "rotate_cw": {}

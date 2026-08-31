@@ -1,0 +1,38 @@
+[
+  {
+    "row_id": 463,
+    "catno_raw": "SEOM 12",
+    "label_raw": "EMI; His Master's Voice",
+    "name_raw": "Ralph Vaughan Williams; Janet Baker; Sir Adrian Boult; King's College Choir, Cambridge; Neville Marriner; Ian Partridge; André Previn; John Shirley-Quirk; Sheila Armstrong; John Carol Case; London Philharmonic Orchestra; London Philharmonic Choir; Gerald Moore; The Music Group of London; Jennifer Partridge; Bournemouth Symphony Orchestra; Norman del Mar; London Symphony Orchestra; English Chamber Orchestra; David Willcocks; Susan Longfield; Christopher Bishop",
+    "title_raw": "RVW vocal choral and orchestral music: March Past of the Kitchen Utensils (from The Wasps); Linden Lea; Fantasia on Greensleeves; Gloria (from Mass in G Minor); Rise, heart; March and Reprise; The Pilgrim's Progress — Act 4 Scene 3 and Epilogue — Allelujah; Dance of Job's Comforters; A Vision of Satan; Folk-Songs — Wassail Song; An acre of land",
+    "year_raw": "EMI Records 1972",
+    "side": "SIDE ONE; SIDE TWO",
+    "other_numbers": ["Ralph Vaughan Williams 1872/1958", "1E 045-02358", "1", "2", "3", "4", "5", "6", "ASD 2458", "℗ 1967", "HQS 1091", "1597-1961", "ASD 2784", "Op. 40", "No. 1", "Op. 11", "℗ 1969", "HQS 1236", "℗ 1968", "SLS 780", "ASD 2673", "℗ 1971", "HQS 1215", "℗ 1970", "SLS 959", "℗ 1972"],
+    "unreadable": [],
+    "rotate_cw": {"463-1.jpg": 270, "463-2.jpg": 270, "463-3.jpg": 270, "463-4.jpg": 270, "463-5.jpg": 270}
+  },
+  {
+    "row_id": 464,
+    "catno_raw": "6856 010",
+    "label_raw": "Philips",
+    "name_raw": "Pergolesi; A. Soresina; Evelyn Lear; Christa Ludwig; Women's Voices of the RIAS Chamber Choir; RSO Berlin; Lorin Maazel",
+    "title_raw": "Stabat Mater",
+    "year_raw": null,
+    "side": null,
+    "other_numbers": [],
+    "unreadable": [],
+    "rotate_cw": {"464-1.jpg": 270}
+  },
+  {
+    "row_id": 465,
+    "catno_raw": "MFP Mono 2035",
+    "label_raw": "Music for Pleasure; EMI",
+    "name_raw": "Rachmaninov; Mendelssohn; Moura Lympany; Nicolai Malko; Philharmonia Orchestra",
+    "title_raw": "Rachmaninov: Piano Concerto No. 2 in C minor, Op. 18; Mendelssohn: Capriccio Brillant in B Minor, Op. 22",
+    "year_raw": null,
+    "side": null,
+    "other_numbers": ["No. 2", "Op. 18", "Op. 22", "33⅓ RPM"],
+    "unreadable": [],
+    "rotate_cw": {}
+  }
+]

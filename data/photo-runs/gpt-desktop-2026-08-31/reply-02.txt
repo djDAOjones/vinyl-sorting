@@ -1,0 +1,26 @@
+[
+  {
+    "row_id": 453,
+    "catno_raw": "ACL 45; MFP 2024",
+    "label_raw": "Ace of Clubs; Decca; Music for Pleasure; EMI",
+    "name_raw": "Tchaikovsky; Minkus; Weber-Berlioz; Anatole Fistoulari; London Symphony Orchestra; New Symphony Orchestra of London; Paris Conservatoire Orchestra; St. Louis Symphony Orchestra; Vladimir Golschmann",
+    "title_raw": "Nights at the Ballet: Swan Lake; Don Quixote; The Sleeping Beauty; Le Spectre de la Rose; Romeo & Juliet (Fantasy Overture); Francesca da Rimini (Fantasy After Dante)",
+    "year_raw": null,
+    "side": "Side 1; Side 2",
+    "other_numbers": ["Op. 20", "Act 2, No. 10", "Act 2, No. 13d", "Act 1, No. 4b", "Act 2, No. 13b", "Act 2, No. 13e", "1875", "1876", "1877", "1893", "1822-1910", "1894", "1895", "1827", "1853-55", "1861", "1872", "Act 3, No. 25", "Act 1, No. 6", "December, 1888", "1682-1703", "1697", "1890", "January 13th, 14th, or 15th", "Op. 65", "1841", "1819", "Op. 32", "33⅓ RPM"],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": 454,
+    "catno_raw": "138 923",
+    "label_raw": "Deutsche Grammophon",
+    "name_raw": "Claude Debussy; Maurice Ravel; Karlheinz Zöller; Berlin Philharmonic Orchestra; Herbert von Karajan",
+    "title_raw": "La mer; Prélude à l'après-midi d'un faune; Daphnis et Chloé, suite no 2",
+    "year_raw": null,
+    "side": "SIDE 1; SIDE 2",
+    "other_numbers": ["suite no 2", "1862-1918", "1", "2", "3", "1875-1937", "1909-1912"],
+    "unreadable": [],
+    "rotate_cw": {"454-2.jpg": 270, "454-3.jpg": 270, "454-4.jpg": 270, "454-5.jpg": 270}
+  }
+]

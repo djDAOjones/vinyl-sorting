@@ -1,0 +1,38 @@
+[
+  {
+    "row_id": 458,
+    "catno_raw": "PLE 7009",
+    "label_raw": "Pickwick Records",
+    "name_raw": "The Royal Philharmonic Orchestra; David Rose; Muir Mathieson; Elmer Bernstein; Henry Mancini; Maurice Jarre; Larry Adler; Frank Chacksfield",
+    "title_raw": "20 Great Movie Themes: Raindrops Keep Falling on My Head; Gigi; The Shadow of Your Smile; The Man with the Golden Arm; Borsalino; Love Story; The Magnificent Seven; Lawrence of Arabia; Born Free; Walk on the Wild Side; To Kill a Mockingbird; Baby Elephant Walk; Exodus; The Pink Panther; Spellbound; Alfie; Hawaii; Lara's Theme; Charade; Tara's Theme",
+    "year_raw": null,
+    "side": "SIDE 1; SIDE 2",
+    "other_numbers": ["20", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+    "unreadable": [],
+    "rotate_cw": {"458-4.jpg": 270, "458-5.jpg": 270}
+  },
+  {
+    "row_id": 459,
+    "catno_raw": "6370 550",
+    "label_raw": "Philips",
+    "name_raw": "The Jacques Loussier Trio; J. S. Bach; J. Loussier; Bob Auger",
+    "title_raw": "In Concert at the Royal Festival Hall: Toccata in D minor; Fugue No. 5 in D major; Esquisse; Jesu, Joy of Man's Desiring; Fantasie in C minor; Prelude No. 1 in C major",
+    "year_raw": null,
+    "side": "SIDE ONE; SIDE TWO",
+    "other_numbers": ["1", "2", "3", "4", "No. 5", "No. 1", "10.30", "6.27", "4.32", "5.00", "3.29", "3.33"],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": 460,
+    "catno_raw": "CFP 140",
+    "label_raw": "CFP",
+    "name_raw": "Colin Davis; Sinfonia of London; Wagner; Brahms; Haydn; Beethoven; Mendelssohn",
+    "title_raw": "Wagner: Siegfried Idyll; Brahms: Variations on a theme of Haydn (St. Antoni Chorale); Beethoven: Fidelio Overture; Mendelssohn: Hebrides Overture (Fingal's Cave)",
+    "year_raw": null,
+    "side": "Side one; Side two",
+    "other_numbers": ["Op. 56a", "Op. 72b", "Op. 26", "1870", "1", "2"],
+    "unreadable": [],
+    "rotate_cw": {"460-2.jpg": 270, "460-3.jpg": 270, "460-4.jpg": 270, "460-5.jpg": 270}
+  }
+]
