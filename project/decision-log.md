@@ -2,6 +2,70 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-31 — DATASET-EDIT: a person may correct their own reading
+
+**Decision:** Built as signed off. Two routes, `POST
+/api/items/:id/field` and `.../promote`, behind a shared `EDIT_TOKEN`
+header; four operations on the browse detail — correct a capture field,
+correct a physical item field, confirm a value unchanged, promote a
+photo reading. AGENTS.md and `001-init.sql` are reworded in the same
+commit: **machine writes over `capture` stay barred**, human correction
+is permitted.
+
+**The amendment is the load-bearing part, and it is narrow.** The bar
+exists so duplicate detection runs on what a person read rather than on
+what a bad match wrote — a bar on machine writes, which is what it
+always meant. Nothing in `match/` or `review.ts` may reach `edit.ts`,
+and `review.ts` still says `capture` is never touched. The accepted
+cost, taken with the sign-off: the previous reading is gone, surviving
+in `data/deep-groove-v1.csv` for the 446 imported rows and nowhere for
+app captures.
+
+**What a write actually lands.** The value, and a `field_source` row
+with source `shelf`, `confirmed_by` and `confirmed_at` set — upserted
+on `UNIQUE (entity, entity_id, field)`, in the shape `resolveRun`
+already uses, so confirming twice re-stamps rather than duplicating.
+`insertCapture` deliberately writes `shelf` UNCONFIRMED, because typing
+at a crate is not verifying a pressing; saying at a screen that a value
+is right is the different act `confirmed_by` was added for.
+
+**It makes nothing decision-eligible**, and a test asserts it.
+`v_decision_eligible_item` needs a confirmed `release_id` on the ITEM,
+which only the review queue writes — so `release_id` is the one field
+the panel shows and will not edit. Correcting capture text improves what
+the matcher searches with; it is not a verdict about a pressing.
+
+**Promotion writes a new row rather than laundering the old one.** The
+`raw_value` row keeps its `vision` provenance untouched, so what the
+model read stays on record and stays outside `v_confirmed_field`.
+Re-labelling the reading as confirmed would erase the difference between
+a machine's answer and a person's, which is the difference this project
+exists to keep.
+
+**Three things the build found.** An unset `EDIT_TOKEN` answers 503, not
+200: an absent secret must never read as an unlocked door. The guard is
+attached per route rather than as a mounted sub-app — a wildcard
+middleware answered before the 404 fallthrough, so every unnamed path
+started replying 401 and advertising that a passphrase exists. And a
+401 clears the stored passphrase instead of retrying with it, or a
+secret rotated on the Worker fails every edit for the rest of the
+session in the same silent way.
+
+**Field names come from allow-lists, never from the request** — they
+reach a column position in the SQL, where values are bound. `release_id`
+and `decision` are absent on purpose; a grade outside the Goldmine set
+is refused before the CHECK constraint sees it.
+
+**Verify:** typecheck clean; 258 tests, 222 pass, the same 10
+pre-existing environmental failures as the parent. Eleven new Worker
+tests, including the four the record named. Driven against the real
+Worker over node:sqlite: a locked screen refuses, a wrong passphrase is
+cleared with the reason, correcting a crate updates the row in the table
+above it, Escape puts a value back untouched, an emptied field is
+removed and provenance recorded, unchanged text is filed as a
+confirmation rather than a correction, and promoting a `vision` reading
+fills the label while leaving the reading unconfirmed.
+
 ## 2026-08-31 — DATASET-VIEWER: a third screen, minus the photographs
 
 **Decision:** `/browse` ships — a filterable list of the whole

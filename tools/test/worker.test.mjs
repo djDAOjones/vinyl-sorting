@@ -318,6 +318,180 @@ test('item detail carries its provenance, so trust is visible', async () => {
   assert.ok(body.provenance.every((p) => p.confirmed_at === null));
 });
 
+// -- correcting a reading, behind the passphrase -------------------
+
+const SECRET = 'a shared household passphrase';
+const editEnv = () => Object.assign(makeEnv(), { EDIT_TOKEN: SECRET });
+const edit = (env, id, body, token = SECRET, path = 'field') => app.request(
+  `/api/items/${id}/${path}`,
+  {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...(token ? { 'x-edit-token': token } : {}) },
+    body: JSON.stringify(body),
+  }, env);
+
+test('DATASET-EDIT: a write without the passphrase is refused', async () => {
+  const env = editEnv();
+  await post(env, { clientId: 'c1', catnoRaw: 'SXL 6113' });
+
+  // Not `${SECRET} `: HTTP trims header values in transport, so a
+  // trailing space never reaches the comparison. The passphrase must
+  // not depend on surrounding whitespace being significant, and this
+  // list is the set that genuinely differs.
+  for (const token of [null, 'wrong', SECRET.toUpperCase(), SECRET.slice(0, -1), `${SECRET}x`]) {
+    const res = await edit(env, 1,
+      { entity: 'capture', field: 'label_raw', value: 'Decca', confirmedBy: 'Joe' }, token);
+    assert.equal(res.status, 401, `token ${JSON.stringify(token)}`);
+  }
+  const row = env.DB.raw.prepare('SELECT label_raw FROM capture WHERE item_id = 1').get();
+  assert.equal(row.label_raw, null, 'and nothing was written on the way to the refusal');
+});
+
+test('DATASET-EDIT: an unset secret means unavailable, not unlocked', async () => {
+  const env = makeEnv();                     // no EDIT_TOKEN
+  await post(env, { clientId: 'c1', catnoRaw: 'SXL 6113' });
+  const res = await edit(env, 1, { entity: 'capture', field: 'label_raw', value: 'Decca', confirmedBy: 'Joe' });
+  assert.equal(res.status, 503, 'an absent secret must never read as an open door');
+});
+
+test('DATASET-EDIT: capture and the photo upload stay open', async () => {
+  // The offline queue must not acquire a way to fail, and adding a row
+  // is not the risk that rewriting 465 is.
+  const env = editEnv();
+  assert.equal((await post(env, { clientId: 'c1', catnoRaw: 'SXL 6113' })).status, 201);
+  const photo = await app.request('/api/photos/open.jpg',
+    { method: 'PUT', headers: { 'content-type': 'image/jpeg' }, body: new Uint8Array([1]) }, env);
+  assert.equal(photo.status, 201);
+});
+
+test('DATASET-EDIT: an edit lands as a CONFIRMED shelf value with a name on it', async () => {
+  const env = editEnv();
+  await post(env, { clientId: 'c1', catnoRaw: 'SXL 6113' });
+
+  // insertCapture writes `shelf` unconfirmed: typing at a crate is not
+  // verifying a pressing.
+  const before = env.DB.raw.prepare(
+    "SELECT source, confirmed_by FROM field_source WHERE entity='capture' AND field='catno_raw'").get();
+  assert.equal(before.source, 'shelf');
+  assert.equal(before.confirmed_by, null);
+
+  const res = await edit(env, 1, { entity: 'capture', field: 'label_raw', value: '  Decca  ', confirmedBy: 'Joe' });
+  assert.equal(res.status, 200);
+  assert.equal((await res.json()).value, 'Decca', 'trimmed, because surrounding space says nothing');
+
+  assert.equal(env.DB.raw.prepare('SELECT label_raw FROM capture WHERE item_id = 1').get().label_raw, 'Decca');
+  const src = env.DB.raw.prepare(
+    "SELECT source, confirmed_by, confirmed_at FROM field_source WHERE entity='capture' AND field='label_raw'").get();
+  assert.equal(src.source, 'shelf');
+  assert.equal(src.confirmed_by, 'Joe');
+  assert.ok(src.confirmed_at, 'a confirmation says when as well as who');
+});
+
+test('DATASET-EDIT: editing the same field twice upserts rather than duplicating', async () => {
+  const env = editEnv();
+  await post(env, { clientId: 'c1', catnoRaw: 'SXL 6113' });
+  await edit(env, 1, { entity: 'capture', field: 'label_raw', value: 'Deca', confirmedBy: 'Joe' });
+  await edit(env, 1, { entity: 'capture', field: 'label_raw', value: 'Decca', confirmedBy: 'Jen' });
+
+  const rows = env.DB.raw.prepare(
+    "SELECT confirmed_by FROM field_source WHERE entity='capture' AND field='label_raw'").all();
+  assert.equal(rows.length, 1, 'UNIQUE (entity, entity_id, field) is what makes this safe');
+  assert.equal(rows[0].confirmed_by, 'Jen', 'and the latest person is the one on record');
+});
+
+test('DATASET-EDIT: confirming changes no value, which is the common case', async () => {
+  const env = editEnv();
+  await post(env, { clientId: 'c1', catnoRaw: 'SXL 6113' });
+  const res = await edit(env, 1, { entity: 'capture', field: 'catno_raw', confirmedBy: 'Joe' });
+  assert.equal(res.status, 200);
+  assert.equal((await res.json()).value, 'SXL 6113', 'the value already there, read back');
+
+  assert.equal(env.DB.raw.prepare('SELECT catno_raw FROM capture WHERE item_id = 1').get().catno_raw,
+    'SXL 6113', 'untouched');
+  assert.equal(env.DB.raw.prepare(
+    "SELECT confirmed_by FROM field_source WHERE entity='capture' AND field='catno_raw'").get().confirmed_by,
+  'Joe');
+});
+
+test('DATASET-EDIT: an item with no capture row still gets its label filled', async () => {
+  // Label is captured on 0% of the backlog. Filling it is most of why
+  // this screen exists, so "no capture row yet" cannot be a refusal.
+  const env = editEnv();
+  env.DB.raw.exec("INSERT INTO item (import_ref) VALUES ('legacy:1')");
+  const res = await edit(env, 1, { entity: 'capture', field: 'label_raw', value: 'Decca', confirmedBy: 'Joe' });
+  assert.equal(res.status, 200);
+  assert.equal(env.DB.raw.prepare('SELECT label_raw FROM capture WHERE item_id = 1').get().label_raw, 'Decca');
+});
+
+test('DATASET-EDIT: only allow-listed fields can be named', async () => {
+  const env = editEnv();
+  await post(env, { clientId: 'c1', catnoRaw: 'SXL 6113' });
+  for (const body of [
+    { entity: 'item', field: 'release_id', value: '9', confirmedBy: 'Joe' },
+    { entity: 'item', field: 'decision', value: 'sell', confirmedBy: 'Joe' },
+    { entity: 'capture', field: 'id', value: '9', confirmedBy: 'Joe' },
+    { entity: 'capture', field: "label_raw = 'x' --", value: 'y', confirmedBy: 'Joe' },
+    { entity: 'release', field: 'title', value: 'x', confirmedBy: 'Joe' },
+  ]) {
+    assert.equal((await edit(env, 1, body)).status, 400, JSON.stringify(body));
+  }
+  assert.equal(
+    (await edit(env, 1, { entity: 'item', field: 'media_grade', value: 'AAA', confirmedBy: 'Joe' })).status,
+    400, 'a grade outside the Goldmine set is refused before the CHECK constraint sees it');
+  assert.equal((await edit(env, 1, { entity: 'capture', field: 'label_raw', value: 'Decca' })).status,
+    400, 'an unattributed confirmation is a script marking its own homework');
+});
+
+test('DATASET-EDIT: an edit makes nothing decision-eligible', async () => {
+  const env = editEnv();
+  await post(env, { clientId: 'c1', catnoRaw: 'SXL 6113' });
+  await edit(env, 1, { entity: 'capture', field: 'label_raw', value: 'Decca', confirmedBy: 'Joe' });
+  await edit(env, 1, { entity: 'item', field: 'crate', value: 'B4', confirmedBy: 'Joe' });
+
+  const eligible = env.DB.raw.prepare('SELECT COUNT(*) AS n FROM v_decision_eligible_item').get();
+  assert.equal(eligible.n, 0,
+    'only a confirmed release_id on the ITEM does that, and only the queue writes one');
+});
+
+test('DATASET-EDIT: promoting a reading writes a NEW shelf row, never launders the vision one', async () => {
+  const env = editEnv();
+  await post(env, { clientId: 'c1', catnoRaw: 'SXL 6113' });
+  env.DB.raw.exec(`
+    INSERT INTO raw_value (item_id, field, value) VALUES (1, 'label_raw', 'Decca');
+    INSERT INTO field_source (entity, entity_id, field, source)
+      VALUES ('raw_value', 1, 'label_raw', 'vision');`);
+
+  const res = await edit(env, 1, { field: 'label_raw', confirmedBy: 'Joe' }, SECRET, 'promote');
+  assert.equal(res.status, 200);
+  assert.equal(env.DB.raw.prepare('SELECT label_raw FROM capture WHERE item_id = 1').get().label_raw, 'Decca');
+
+  // The reading is left exactly as it was: what the model read stays on
+  // record, and stays out of every decision view.
+  const vision = env.DB.raw.prepare(
+    "SELECT source, confirmed_at FROM field_source WHERE entity='raw_value' AND field='label_raw'").get();
+  assert.equal(vision.source, 'vision',
+    're-labelling it would erase the difference this project exists to keep');
+  assert.equal(vision.confirmed_at, null);
+  assert.equal(env.DB.raw.prepare(
+    "SELECT COUNT(*) AS n FROM v_confirmed_field WHERE source='vision'").get().n, 0);
+
+  // And the person's assertion is its own confirmed row.
+  const shelf = env.DB.raw.prepare(
+    "SELECT source, confirmed_by FROM field_source WHERE entity='capture' AND field='label_raw'").get();
+  assert.deepEqual([shelf.source, shelf.confirmed_by], ['shelf', 'Joe']);
+
+  assert.equal((await edit(env, 1, { field: 'title_raw', confirmedBy: 'Joe' }, SECRET, 'promote')).status,
+    404, 'nothing to promote is a 404, not an empty write');
+});
+
+test('DATASET-EDIT: editing an item that does not exist is a 404', async () => {
+  const env = editEnv();
+  assert.equal(
+    (await edit(env, 999, { entity: 'item', field: 'crate', value: 'B4', confirmedBy: 'Joe' })).status, 404);
+  assert.equal(env.DB.raw.prepare('SELECT COUNT(*) AS n FROM field_source').get().n, 0,
+    'no provenance is created for an item that is not there');
+});
+
 test('a missing item is a 404', async () => {
   assert.equal((await app.request('/api/items/999', {}, makeEnv())).status, 404);
 });

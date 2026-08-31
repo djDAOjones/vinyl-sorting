@@ -47,10 +47,17 @@ CREATE TABLE item (
   import_ref      TEXT UNIQUE
 );
 
--- What a HUMAN read off the disc. Never machine-written: Discogs data
+-- What a HUMAN read off the disc. Never MACHINE-written: Discogs data
 -- lands in `release`, and the two stay separate for ever so duplicate
 -- detection runs on what a person read rather than on what a bad match
 -- wrote (AGENTS.md, project boundaries).
+--
+-- A person may correct their own reading here, through the browse
+-- screen and nowhere else (DATASET-EDIT, maintainer sign-off
+-- 2026-08-31). Such an edit writes a `field_source` row with source
+-- `shelf`, confirmed, and a name — so a corrected value is
+-- distinguishable from an original one afterwards. The matcher and the
+-- review queue still may not touch this table at all.
 CREATE TABLE capture (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
   item_id        INTEGER NOT NULL REFERENCES item(id) ON DELETE CASCADE,

@@ -34,22 +34,32 @@ npm run dev     # the capture app on :5173, proxying /api
 npm run gate    # tsc --noEmit + the whole test suite
 ```
 
-Two screens: capture at `/`, the review queue at `/review` (Cloudflare
-drops the `.html`).
+Three screens: capture at `/`, the review queue at `/review`, and the
+collection at `/browse` (Cloudflare drops the `.html`; Vite's dev server
+does not, so link to `/browse.html` locally).
 `npm run api -- --demo` seeds a few review items so the queue has work
-in it.
+in it, and `DG_EDIT_TOKEN=anything npm run api -- --demo` also turns on
+the edit routes locally.
 
-### Photographing a whole crate
+### Walking a crate
 
-Capture has two modes. One disc at a time, with the label and catalogue
-number typed; or **Photograph a whole crate** — pick or shoot many, and
-each photo becomes its own row with nothing typed at all.
+One disc at a time, photographed as many times as it needs. The
+crate-in-one-pass mode was withdrawn on 2026-08-31: it wrote one row per
+photograph, and more than one photograph is always wanted — label,
+sleeve, runout — so a crate walked that way manufactured three discs
+where one stood.
+
+Type your first name once on a device and it goes on every row captured
+there; tap it in the header to hand the phone over.
 
 Capture opens a live camera that takes the whole screen: one tap per
 photograph, no "Use Photo" to confirm, and the viewfinder never closes.
 In landscape the controls sit on the right-hand edge, where they cost
-width rather than the height a phone has little of. **Done** ends
-the viewfinder, **Queue it** uploads the lot. The torch button is always offered and tried on the first tap, rather
+width rather than the height a phone has little of. **Next disc** files
+the disc in hand and keeps the viewfinder open — so a crate is N shutter
+taps plus one per disc, and the camera never restarts; a mis-tap is
+recallable for five seconds from the toast. **Done** ends the viewfinder
+for the form, **Queue it** files from there. The torch button is always offered and tried on the first tap, rather
 than gated on a capability report that under-reports on some browsers.
 Where the browser refuses — Safari on iOS does — it hides itself and
 says what does work: the system torch from Control Centre stays lit
@@ -65,19 +75,31 @@ described", because there is no consistency to describe and any other
 value would be an invented fact. Order is kept in the key, since order
 is the one thing actually known.
 
-A bulk row carries exactly three things: the crate, the position, and
-who is capturing. Every other box on the form is a claim about one
-disc, and copying a catalogue number across twenty rows would invent
-nineteen wrong ones — the 9% error M0 measured, manufactured rather
-than inherited. Position counts down the crate from a number you type
-and stays empty if you type nothing, because photographing in order
-makes positions sequential but choosing the start would be a guess.
-
 Photos are downscaled to 1568 px before they are queued, so a crate of
 twenty is ~16 MB in IndexedDB rather than ~80 MB. And a photo the
 server refuses no longer blocks the crate behind it: the drain stops
 for a shared failure (offline, 5xx) and moves on past one that is only
 about that row (4xx).
+
+## Browse and correct the collection
+
+`/browse` lists every row with its catalogue number, label, crate, match
+state and photograph count, filterable by state, by whether a photograph
+exists, and by free text. Opening one shows every field with **where the
+value came from** and whether a person has confirmed it — read at the
+shelf, from Discogs, read off a photograph, legacy import, guess, or
+nothing recorded at all — plus the match history behind the row: each
+run, the candidates it weighed and the verdict if there is one.
+
+Editing is behind a shared passphrase. Click a value to correct it in
+place, tick it to confirm it unchanged, or promote a reading taken off a
+photograph into the field it belongs to. Every write lands as a
+confirmed `shelf` value with a name on it, and none of it makes anything
+decision-eligible — only the review queue can confirm a release.
+
+Photographs are listed by key rather than shown: serving one needs a
+Worker route a sign-in-free v1 deliberately does not have. Use
+`tools/photos-pull.mjs` to fetch them to a desk.
 
 ## Re-verify the existing matches
 
@@ -233,11 +255,15 @@ yours to do:
 
 ```bash
 npx wrangler secret put DISCOGS_TOKEN
+npx wrangler secret put EDIT_TOKEN     # the browse-screen passphrase
 ```
 
-The token is in `Pre August 2026/Windsurf Projects/`. Until it is set,
-the cron matcher logs a warning and does nothing; everything else
-works.
+The Discogs token is in `Pre August 2026/Windsurf Projects/`. Until it
+is set, the cron matcher logs a warning and does nothing; everything
+else works. `EDIT_TOKEN` is a passphrase you choose: until it is set the
+edit routes answer 503, because an unset secret must never read as an
+unlocked door. Capture and photo upload stay open either way — an
+offline queue in a loft must not acquire a way to fail.
 
 **Already verified locally, so it should not surprise you:** the Worker
 bundles at 95 KiB with all three bindings resolving, both migrations

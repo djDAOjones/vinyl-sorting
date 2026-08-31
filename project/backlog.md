@@ -35,12 +35,6 @@
   deployed matcher work, but a majority of queries still fail, costing
   recall; the gap is now tunable without a deploy and every run records
   its failures, so the remaining work is measuring rather than building.
-- [ ] **DATASET-EDIT Correct a reading and confirm it, from the browse
-  screen** [security] (2026-08-31) — The editable half of browse — fix
-  what was misread, fill the label captured on 0% of the backlog, promote
-  a photo reading, confirm a value already right; every edit lands as a
-  confirmed `shelf` value behind a shared passphrase, and because it
-  writes to `capture` it amends a hard rule in the same commit.
 - [ ] **BROWSE-PHOTOS May a route serve a label photograph, now that
   browse wants to show one?** [sign-off] (2026-08-31) — DATASET-VIEWER
   asked for GET /api/photos/:key so the browse screen could render the

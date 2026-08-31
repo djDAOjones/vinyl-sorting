@@ -1,10 +1,12 @@
 import { Hono } from 'hono';
+import type { MiddlewareHandler } from 'hono';
 import type { Env } from './env.ts';
 import { insertCapture, parseCapture } from './capture.ts';
 import { DiscogsClient } from './discogs.ts';
 import { RateLimiter } from './rate-limit.ts';
 import { matchRow, pendingRows, persistRun } from './match/run.ts';
 import { parseResolve, resolveRun } from './review.ts';
+import { applyEdit, parseEdit, parsePromote, promoteReading, tokenMatches } from './edit.ts';
 
 /**
  * Vinyl sorter Worker.
@@ -165,6 +167,55 @@ export function createApp() {
         };
       }),
     });
+  });
+
+  /**
+   * Correcting a reading, and confirming one — the only routes that
+   * write `capture` after the fact, and the only ones behind the shared
+   * passphrase. See `edit.ts` for why the hard rule permits it.
+   *
+   * `POST /api/captures` and the photo upload stay OPEN on purpose: an
+   * offline queue in a loft must not acquire a way to fail, and adding
+   * a row is not the risk that rewriting 465 is.
+   */
+  //
+  // The guard is attached PER ROUTE rather than as a mounted sub-app: a
+  // wildcard middleware answered before the 404 fallthrough, so every
+  // unnamed path started replying 401/503 — which both leaks that a
+  // passphrase exists everywhere and breaks "an unnamed route is
+  // refused rather than falling through".
+  const guard: MiddlewareHandler<{ Bindings: Env }> = async (c, next) => {
+    // An unset secret means editing is unavailable, not unlocked.
+    if (!c.env.EDIT_TOKEN) {
+      return c.json({ error: 'editing is not configured on this deployment' }, 503);
+    }
+    if (!tokenMatches(c.env.EDIT_TOKEN, c.req.header('x-edit-token') ?? null)) {
+      return c.json({ error: 'a passphrase is required to change a reading' }, 401);
+    }
+    await next();
+  };
+
+  app.post('/api/items/:id{[0-9]+}/field', guard, async (c) => {
+    let body: unknown;
+    try { body = await c.req.json(); } catch { return c.json({ error: 'body must be JSON' }, 400); }
+    const parsed = parseEdit(body);
+    if (!parsed.ok) return c.json({ error: parsed.error }, 400);
+
+    const result = await applyEdit(c.env, Number(c.req.param('id')), parsed.value);
+    if (!result) return c.json({ error: 'not found' }, 404);
+    return c.json(result);
+  });
+
+  app.post('/api/items/:id{[0-9]+}/promote', guard, async (c) => {
+    let body: unknown;
+    try { body = await c.req.json(); } catch { return c.json({ error: 'body must be JSON' }, 400); }
+    const parsed = parsePromote(body);
+    if (!parsed.ok) return c.json({ error: parsed.error }, 400);
+
+    const result = await promoteReading(c.env, Number(c.req.param('id')), parsed.value);
+    if (result === 'no-reading') return c.json({ error: 'no reading held for that field' }, 404);
+    if (!result) return c.json({ error: 'not found' }, 404);
+    return c.json(result);
   });
 
   /**

@@ -14,8 +14,10 @@
  * shown, which the provenance rule expressly permits, and are shown as
  * unconfirmed.
  *
- * Read-only. Correcting a value is DATASET-EDIT, which this exists to
- * make possible.
+ * EDITING lives here too (DATASET-EDIT): click a value to correct it,
+ * tick it to confirm it unchanged, promote a photo reading into the
+ * field it belongs to. Every write lands as a confirmed `shelf` value
+ * with a name on it, and every write needs the shared passphrase.
  *
  * THE PHOTOGRAPHS ARE LISTED, NOT SHOWN, and that is parked rather than
  * unfinished. Rendering one needs a `GET /api/photos/:key` on the
@@ -28,6 +30,8 @@
  * how many exist, when they were taken, and their keys, which is what
  * `photos-pull` needs to fetch them to a desk.
  */
+
+import { storedCapturer } from './who.ts';
 
 const app = document.getElementById('browse')!;
 const API = '/api';
@@ -71,6 +75,54 @@ interface Detail {
 let rows: Row[] = [];
 let openId: number | null = null;
 
+/**
+ * The shared passphrase, held beside `dg.who` on this device.
+ *
+ * Not sign-in and it does not pretend to be — OPEN-V1-AUTH decided v1
+ * has none. It is a bolt on the one drawer worth bolting: adding a row
+ * is not the risk that rewriting 465 is.
+ */
+const editToken = {
+  get(): string { try { return localStorage.getItem('dg.edit') ?? ''; } catch { return ''; } },
+  set(v: string): void { try { localStorage.setItem('dg.edit', v); } catch { /* asked again */ } },
+  clear(): void { try { localStorage.removeItem('dg.edit'); } catch { /* nothing held */ } },
+};
+
+/**
+ * One write, and what to do when the door is shut.
+ *
+ * A 401 clears the stored passphrase rather than retrying with it: a
+ * secret that has been changed on the Worker must stop being sent, or
+ * every edit for the rest of the session fails silently the same way.
+ */
+async function write(path: string, body: unknown): Promise<boolean> {
+  const token = editToken.get();
+  if (!token) { flash('Unlock editing first.', 'err'); return false; }
+  const res = await fetch(`${API}${path}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-edit-token': token },
+    body: JSON.stringify(body),
+  });
+  if (res.status === 401) {
+    editToken.clear();
+    flash('That passphrase was refused. Unlock again.', 'err');
+    return false;
+  }
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({})) as { error?: string };
+    flash(detail.error ?? `Refused: HTTP ${res.status}`, 'err');
+    return false;
+  }
+  return true;
+}
+
+function flash(message: string, kind: 'ok' | 'err' = 'ok'): void {
+  const el = document.getElementById('bflash');
+  if (!el) return;
+  el.innerHTML = `<p class="flash${kind === 'err' ? ' err' : ''}">${esc(message)}</p>`;
+  setTimeout(() => { el.innerHTML = ''; }, kind === 'ok' ? 2400 : 5000);
+}
+
 const esc = (s: unknown): string => String(s ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -102,6 +154,18 @@ const SOURCE_LABEL: Record<string, string> = {
  * a run, which is a different thing from a run that found nothing and
  * must not be shown as if it were the same.
  */
+/**
+ * The capture fields a reading may be promoted into.
+ *
+ * `worker/edit.ts` holds the authority; this is the display copy that
+ * decides whether a promote button appears. Diverging costs a missing
+ * button and never a bad write — the Worker allow-lists the field again
+ * and answers 400 for anything outside its own list.
+ */
+const CAPTURE_FIELDS = [
+  'catno_raw', 'label_raw', 'name_raw', 'title_raw', 'year_raw', 'matrix_runout',
+] as const;
+
 const STATES = ['auto-accepted', 'needs-review', 'rejected', 'error', 'unmatched'] as const;
 const stateOf = (r: Row): string => r.match_state ?? 'unmatched';
 
@@ -193,7 +257,8 @@ function render(): void {
     </table>
     ${shown.length ? '' : '<p class="empty-note">Nothing matches those filters.</p>'}
 
-    <div class="detail" id="detail" hidden></div>`;
+    <div class="detail" id="detail" hidden></div>
+    <div id="bflash"></div>`;
 
   const on = (id: string, ev: string, fn: (el: HTMLInputElement) => void): void => {
     const el = document.getElementById(id) as HTMLInputElement;
@@ -258,7 +323,112 @@ async function openDetail(id: number): Promise<void> {
     panel.hidden = true;
     for (const tr of app.querySelectorAll('tr.open')) tr.classList.remove('open');
   });
+  wireEditing(panel, id);
   panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+/**
+ * The four operations, bound after the panel is painted.
+ *
+ * Every one of them RELOADS rather than patching the DOM in place. The
+ * provenance mark is the thing that changed and showing it stale would
+ * be worse than the round trip is slow — and the row in the table above
+ * carries the same value, so a detail that refreshed alone left a
+ * corrected crate reading its old value two inches higher up.
+ */
+async function afterWrite(message: string): Promise<void> {
+  // `load` repaints the list and re-opens the detail, which also
+  // rebuilds the toast element — so the message goes up afterwards.
+  await load();
+  flash(message);
+}
+function wireEditing(panel: HTMLElement, id: number): void {
+  const unlock = panel.querySelector<HTMLFormElement>('#unlock');
+  panel.querySelector('#lockBtn')?.addEventListener('click', () => {
+    if (!unlock) return;
+    unlock.hidden = !unlock.hidden;
+    if (!unlock.hidden) panel.querySelector<HTMLInputElement>('#tokenBox')?.focus();
+  });
+  unlock?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const box = panel.querySelector<HTMLInputElement>('#tokenBox');
+    if (!box?.value) return;
+    editToken.set(box.value);
+    box.value = '';
+    unlock.hidden = true;
+    void openDetail(id);
+  });
+
+  /** A name is required: an unattributed confirmation is nobody's. */
+  const who = (): string | null => {
+    const name = storedCapturer();
+    if (!name) flash('Set your name on the review queue first — a confirmation must say who made it.', 'err');
+    return name;
+  };
+
+  for (const btn of panel.querySelectorAll<HTMLButtonElement>('button.ok')) {
+    btn.addEventListener('click', async () => {
+      const name = who();
+      if (!name) return;
+      const ok = await write(`/items/${id}/field`, {
+        entity: btn.dataset.entity, field: btn.dataset.field, confirmedBy: name,
+      });
+      if (ok) await afterWrite(`${btn.dataset.field} confirmed.`);
+    });
+  }
+
+  for (const btn of panel.querySelectorAll<HTMLButtonElement>('button.promote')) {
+    btn.addEventListener('click', async () => {
+      const name = who();
+      if (!name) return;
+      const ok = await write(`/items/${id}/promote`, { field: btn.dataset.field, confirmedBy: name });
+      if (ok) await afterWrite(`${btn.dataset.field} taken from the photograph.`);
+    });
+  }
+
+  for (const btn of panel.querySelectorAll<HTMLButtonElement>('button.edit')) {
+    btn.addEventListener('click', () => {
+      const cell = btn.closest('dd');
+      if (!cell || cell.querySelector('input')) return;
+      const entity = btn.dataset.entity ?? '';
+      const field = btn.dataset.field ?? '';
+      const before = btn.dataset.value ?? '';
+
+      // In place, per the maintainer's decision: the value becomes a
+      // box where it stands, Enter saves and Escape puts it back.
+      const editor = document.createElement('form');
+      editor.className = 'inline';
+      editor.innerHTML = `<input value="${esc(before)}" autocomplete="off" spellcheck="false">
+        <button type="submit" class="tiny ok-save" title="Save">save</button>
+        <button type="button" class="tiny cancel" title="Leave it alone">cancel</button>`;
+      const kept = cell.innerHTML;
+      cell.innerHTML = '';
+      // `appendChild`, not `append`: with @cloudflare/workers-types in
+      // scope the bare `append` resolves to the Worker FormData one.
+      cell.appendChild(editor);
+      const box = editor.querySelector('input')!;
+      box.focus();
+      box.select();
+
+      const restore = (): void => { cell.innerHTML = kept; wireEditing(panel, id); };
+      editor.querySelector('button.cancel')?.addEventListener('click', restore);
+      box.addEventListener('keydown', (e) => { if (e.key === 'Escape') restore(); });
+      editor.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = who();
+        if (!name) return;
+        // Unchanged text is a confirmation, not a correction, and it is
+        // filed as one — the schema cannot tell them apart afterwards,
+        // so the distinction has to be made here or not at all.
+        const value = box.value.trim();
+        const body: Record<string, unknown> = { entity, field, confirmedBy: name };
+        if (value !== before.trim()) body.value = value === '' ? null : value;
+        const ok = await write(`/items/${id}/field`, body);
+        if (ok) await afterWrite(value === before.trim() ? `${field} confirmed.` : `${field} corrected.`);
+        else restore();
+      });
+    });
+  }
 }
 
 /**
@@ -285,16 +455,46 @@ function detailHtml(d: Detail): string {
   const provOf = (entity: string, entityId: number, field: string): Provenance | undefined =>
     d.provenance.find((p) => p.entity === entity && p.entity_id === entityId && p.field === field);
 
-  const line = (label: string, value: unknown, entity: string, entityId: number, field: string):
-  string => `<dt>${esc(label)}</dt><dd>${
-    value === null || value === undefined || value === '' ? '<span class="empty">—</span>' : esc(value)
-  }<br>${mark(provOf(entity, entityId, field))}</dd>`;
+  /**
+   * One field: its value, its provenance, and the two things a person
+   * can say about it.
+   *
+   * `data-*` rather than closures because the panel is rebuilt from a
+   * string; the handlers are bound once, after.
+   */
+  const line = (label: string, value: unknown, entity: string, entityId: number, field: string,
+    editable = true): string => {
+    const shown = value === null || value === undefined || value === ''
+      ? '<span class="empty">—</span>' : esc(value);
+    const tools = editable
+      ? `<span class="ftools">
+          <button type="button" class="tiny edit" data-entity="${entity}" data-field="${field}"
+            data-value="${esc(value ?? '')}" title="Correct this value">✎</button>
+          <button type="button" class="tiny ok" data-entity="${entity}" data-field="${field}"
+            title="Confirm this value is right">✓</button>
+        </span>`
+      : '';
+    return `<dt>${esc(label)}</dt><dd data-field-cell="${entity}.${field}">${shown}${tools}<br>${
+      mark(provOf(entity, entityId, field))}</dd>`;
+  };
 
   return `
     <div class="dhead">
       <h2>Item ${esc(item.id)}</h2>
-      <button type="button" id="closeDetail" class="ghost">Close</button>
+      <div class="dtools">
+        <span class="prov">${storedCapturer()
+    ? `editing as ${esc(storedCapturer())}`
+    : '<span class="warnish">no name on this device — set one on the review queue</span>'}</span>
+        <button type="button" id="lockBtn" class="ghost">${
+  editToken.get() ? 'Editing unlocked' : 'Unlock editing'}</button>
+        <button type="button" id="closeDetail" class="ghost">Close</button>
+      </div>
     </div>
+    <form class="unlock" id="unlock" hidden>
+      <label><span>Passphrase</span><input id="tokenBox" type="password"
+        autocomplete="current-password"></label>
+      <button type="submit" class="ghost">Keep on this device</button>
+    </form>
 
     <div class="dsplit">
       <section>
@@ -317,7 +517,12 @@ function detailHtml(d: Detail): string {
           ${line('Position', item.position, 'item', Number(item.id), 'position')}
           ${line('Media', item.media_grade, 'item', Number(item.id), 'media_grade')}
           ${line('Sleeve', item.sleeve_grade, 'item', Number(item.id), 'sleeve_grade')}
-          ${line('Release', item.release_id, 'item', Number(item.id), 'release_id')}
+          ${line('Notes', item.notes, 'item', Number(item.id), 'notes')}
+          ${/* Not editable here: only the review queue may confirm a
+                release, which is the one thing that opens the decision
+                views. A screen that could set it would route around the
+                corroboration gate entirely. */ ''}
+          ${line('Release', item.release_id, 'item', Number(item.id), 'release_id', false)}
           <dt>Captured by</dt><dd>${item.captured_by ? esc(item.captured_by) : '<span class="empty">—</span>'}
             ${item.captured_at ? `<br><span class="prov">${esc(item.captured_at)}</span>` : ''}</dd>
           <dt>Imported from</dt><dd>${item.import_ref ? esc(item.import_ref) : '<span class="empty">—</span>'}</dd>
@@ -327,8 +532,11 @@ function detailHtml(d: Detail): string {
         <h3>Readings not yet in the model</h3>
         <p class="empty-note">Held in <code>raw_value</code> — displayed, and unreachable from
           any cluster, coverage check or sell list until a person confirms one.</p>
-        <dl>${d.readings.map((r) => `<dt>${esc(r.field)}</dt><dd>${esc(r.value)}<br>${
-    mark(provOf('raw_value', r.id, r.field))}</dd>`).join('')}</dl>` : ''}
+        <dl>${d.readings.map((r) => `<dt>${esc(r.field)}</dt><dd>${esc(r.value)}${
+    (CAPTURE_FIELDS as readonly string[]).includes(r.field)
+      ? `<span class="ftools"><button type="button" class="tiny promote" data-field="${esc(r.field)}"
+           title="Yes, that is what the label says">promote</button></span>`
+      : ''}<br>${mark(provOf('raw_value', r.id, r.field))}</dd>`).join('')}</dl>` : ''}
       </section>
 
       <section>

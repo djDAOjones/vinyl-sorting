@@ -25,9 +25,14 @@ Project boundaries, same force as the above:
 
 - `Pre August 2026/` is a read-only archive. Never edit, move or
   rename anything inside it; every import reads and writes elsewhere.
-- Never write back over `capture`. Discogs data lands in `release`;
-  the two stay separate for ever, so duplicate detection runs on what
-  a human read rather than on what a bad match wrote.
+- Never let a MACHINE write over `capture`. Discogs data lands in
+  `release`; the two stay separate for ever, so duplicate detection
+  runs on what a human read rather than on what a bad match wrote. A
+  PERSON may correct their own reading through the browse screen —
+  maintainer sign-off, 2026-08-31 — and that edit lands as a confirmed
+  `shelf` value carrying the name of whoever made it. The bar is on
+  machine writes, which is what it always meant; the accepted cost is
+  that the previous reading is gone.
 - The provenance rule: a value sourced `guess` or `legacy`, or an
   unconfirmed `discogs` value, may be displayed anywhere but may
   never feed a cluster, a coverage check, a sell list or a shortlist
