@@ -52,3 +52,8 @@ data/photo-packs/
 # photos-pull writes this when ground-truth.csv already has rows: a
 # merge helper, not evidence. ground-truth.csv itself stays committed.
 data/label-photos/ground-truth.from-captures.csv
+
+# Agent worktrees. Isolation directories for parallel sessions —
+# transient, and a gitlink to one turns this repo into an accidental
+# submodule host.
+.claude/worktrees/
