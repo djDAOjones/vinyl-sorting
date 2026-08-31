@@ -147,6 +147,12 @@ const field = (label: string, value: string | null): string =>
  *
  * Click one to open it full size; a label's catalogue number is often
  * smaller than the thumbnail can carry.
+ *
+ * NOT `loading="lazy"`. A dozen small thumbnails on a card a person
+ * opened deliberately gain nothing from it, and it cost the feature
+ * once: the images sat unrequested behind an intersection observer
+ * that never fired, which looks exactly like a broken gate and sent me
+ * hunting the wrong bug.
  */
 function photosHtml(item: QueueItem): string {
   const keys = (item.photo_keys ?? '').split('\n').map((k) => k.trim()).filter(Boolean);
@@ -155,7 +161,7 @@ function photosHtml(item: QueueItem): string {
   }
   return `<div class="shots">${keys.map((k, i) => `
     <a class="shot" href="${API}/photos/${encodeURI(k)}" target="_blank" rel="noopener">
-      <img loading="lazy" src="${API}/photos/${encodeURI(k)}"
+      <img src="${API}/photos/${encodeURI(k)}"
            alt="Photograph ${i + 1} of item ${item.item_id}">
     </a>`).join('')}</div>`;
 }

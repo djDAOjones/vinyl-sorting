@@ -558,7 +558,7 @@ function detailHtml(d: Detail): string {
         ${d.photos.length
     ? `<div class="shots">${d.photos.map((p, i) => `
          <figure class="shotfig">
-           <img loading="lazy" src="${API}/photos/${encodeURI(p.r2_key)}"
+           <img src="${API}/photos/${encodeURI(p.r2_key)}"
                 alt="Photograph ${i + 1} of item ${d.item.id}">
            <figcaption><span class="n">${i + 1}</span>
              ${esc(p.added_at)}${p.kind === 'other' ? '' : ` · ${esc(p.kind)}`}</figcaption>
