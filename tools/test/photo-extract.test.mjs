@@ -441,6 +441,55 @@ test('re-packing rebuilds the packs and keeps replies already collected', () => 
   assert.match(readFileSync(join(packs, 'row-ids.csv'), 'utf8'), /^b,b\.jpg$/m, 'and the new photo is packed');
 });
 
+test('a pack is capped by images as well as records, and never splits a record', () => {
+  // Records-only batching made a pack of 53 images from 10 records —
+  // far past any chat's per-message limit, and it would have failed
+  // halfway through an upload. But splitting a record across two packs
+  // asks the reader to describe half a disc and call it whole, which is
+  // the misattribution the row ids exist to prevent.
+  const dir = scratch();
+  const photos = join(dir, 'photos');
+  // Three records of 6, 6 and 6 photographs.
+  const names = [];
+  for (const id of ['A', 'B', 'C']) for (let i = 1; i <= 6; i++) names.push(`${id}-${i}.jpg`);
+  makePhotos(photos, names);
+  writeFileSync(join(photos, 'row-ids.csv'),
+    `file,row_id\n${names.map((n) => `${n},${n[0]}`).join('\n')}\n`);
+
+  execFileSync(process.execPath, ['tools/photo-pack.mjs', '--photos', photos,
+    '--out', join(dir, 'packs'), '--batch', '10', '--max-images', '8'], { encoding: 'utf8' });
+
+  const packs = readdirSync(join(dir, 'packs')).filter((f) => /^pack-\d+$/.test(f)).sort();
+  assert.equal(packs.length, 3, 'the image cap splits what the record cap would not');
+  for (const pack of packs) {
+    const imgs = readdirSync(join(dir, 'packs', pack)).filter((f) => f.endsWith('.jpg'));
+    assert.ok(imgs.length <= 8, `${pack} holds ${imgs.length} images, over the cap`);
+    // Every image in a pack belongs to exactly one record, and all of
+    // that record's images are here.
+    const ids = new Set(imgs.map((f) => f[0]));
+    assert.equal(ids.size, 1, `${pack} mixes records unnecessarily`);
+    assert.equal(imgs.length, 6, 'the record arrived whole');
+  }
+});
+
+test('a record bigger than the image cap still gets a pack of its own', () => {
+  // Otherwise the loop would never place it and the photographs would
+  // vanish from every pack — silently, which is the worst kind.
+  const dir = scratch();
+  const photos = join(dir, 'photos');
+  const names = Array.from({ length: 9 }, (_, i) => `BIG-${i + 1}.jpg`);
+  makePhotos(photos, names);
+  writeFileSync(join(photos, 'row-ids.csv'),
+    `file,row_id\n${names.map((n) => `${n},BIG`).join('\n')}\n`);
+
+  execFileSync(process.execPath, ['tools/photo-pack.mjs', '--photos', photos,
+    '--out', join(dir, 'packs'), '--max-images', '4'], { encoding: 'utf8' });
+
+  const imgs = readdirSync(join(dir, 'packs', 'pack-01')).filter((f) => f.endsWith('.jpg'));
+  assert.equal(imgs.length, 9, 'over the cap, but whole and present');
+  assert.equal(readdirSync(join(dir, 'packs')).filter((f) => /^pack-\d+$/.test(f)).length, 1);
+});
+
 test('packing refuses two photos that would share one row id', () => {
   const dir = scratch();
   const photos = join(dir, 'photos');

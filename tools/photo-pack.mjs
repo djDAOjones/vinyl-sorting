@@ -36,7 +36,8 @@
  *
  * Usage:
  *   node tools/photo-pack.mjs [--photos data/label-photos]
- *                             [--out data/photo-packs] [--batch 10]   (records, not images)
+ *                             [--out data/photo-packs] [--batch 10]   (records)
+ *                             [--max-images 20]
  *                             [--ids data/label-photos/row-ids.csv]
  *                             [--long-edge 1568]
  */
@@ -53,6 +54,7 @@ const argOf = (n, d) => { const i = args.indexOf(n); return i >= 0 && args[i + 1
 const photoDir = argOf('--photos', 'data/label-photos');
 const outDir = argOf('--out', 'data/photo-packs');
 const batchSize = Number(argOf('--batch', '10'));
+const maxImages = Number(argOf('--max-images', '20'));
 const idsPath = argOf('--ids', join(photoDir, 'row-ids.csv'));
 const longEdge = Number(argOf('--long-edge', '1568'));
 
@@ -128,11 +130,31 @@ for (const entry of readdirSync(outDir)) {
   }
 }
 
-// Batched by record rather than by image: splitting a record's
-// photographs across two packs would ask the reader to describe half a
-// disc and call it whole.
+/**
+ * Batched by record, and capped by image count as well.
+ *
+ * A record's photographs are never split: asking a reader to describe
+ * half a disc and call it whole is the misattribution the row ids exist
+ * to prevent. But records-only batching ignored how many images that
+ * came to — eighteen records of five or twelve photographs each made a
+ * pack of 53, which is far past any chat's per-message limit and would
+ * fail halfway through an upload.
+ *
+ * So a batch closes when EITHER cap would be exceeded, and a single
+ * record larger than the image cap still gets its own pack whole. The
+ * caps bound a browser upload; reading a pack in place has no limit at
+ * all, which is the cheaper path anyway.
+ */
 const batches = [];
-for (let i = 0; i < records.length; i += batchSize) batches.push(records.slice(i, i + batchSize));
+let batch = [];
+let images = 0;
+for (const rec of records) {
+  const wouldExceed = batch.length >= batchSize || (images + rec.files.length > maxImages && batch.length);
+  if (wouldExceed) { batches.push(batch); batch = []; images = 0; }
+  batch.push(rec);
+  images += rec.files.length;
+}
+if (batch.length) batches.push(batch);
 
 const pad = (n) => String(n).padStart(2, '0');
 for (const [i, batch] of batches.entries()) {

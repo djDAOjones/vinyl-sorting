@@ -60,7 +60,7 @@ the run on a single occurrence.
 node tools/photo-pack.mjs
 ```
 
-Packs of 10 **records**, not images. A record may have been
+Packs of at most 10 **records** and 20 images, whichever comes first. A record may have been
 photographed once or five times; its shots are never split across two
 packs, they are named `<row_id>-<n>.jpg`, and the prompt tells the
 reader that several images may be one record and asks for one object
