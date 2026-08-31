@@ -15,7 +15,7 @@
   door — capture sits at the root, so the collection and the review queue
   are reachable only from each other, and a new screen has nowhere to be
   announced.
-- [ ] **APP-RENAME Move the app to vinyl-sorter.joe-2d2.workers.dev**
+- [~] **APP-RENAME Move the app to vinyl-sorter.joe-2d2.workers.dev**
   (2026-08-31) — The product was renamed in August and the URL never
   followed; the Worker name IS the workers.dev hostname, so this is a
   redeploy under a new name — and the data does not move with it, which is

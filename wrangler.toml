@@ -6,22 +6,35 @@
 # `wrangler secret put DISCOGS_TOKEN` — never in this file, never in
 # the repo. In M1 no route reads it at all; a test enforces that.
 
-# THE RESOURCE NAMES BELOW STAY `deep-groove` DELIBERATELY. The product
-# was renamed to Vinyl sorter on 2026-08-30; these are not display
-# names, they are identities, and renaming each one costs something
-# real:
+# THE WORKER'S NAME IS THE URL, and it moved on 2026-08-31. The
+# product was renamed to Vinyl sorter on 2026-08-30 and the address
+# spent a day disagreeing with it; APP-RENAME closed that.
 #
-#   name           the live URL. Changing it deploys a SECOND Worker at
-#                  vinyl-sorter.*.workers.dev and orphans the first,
-#                  along with every bookmark and home-screen icon.
-#   database_name  D1 has no rename. It means a new database and moving
-#                  448 items and 446 match runs into it.
-#   bucket_name    R2 has no rename either, and the photographs are in
-#                  the existing bucket.
+# THE DATA DID NOT MOVE, and the file used to claim it would. Bindings
+# reference resources, not this script:
 #
-# None of that is visible to anyone using the app. If the URL should
-# change, that is a deliberate migration, not a find-and-replace.
-name = "deep-groove"
+#   database_id   a UUID. Any Worker binding it gets the same D1, with
+#                 all 484 items and their match runs. There is no
+#                 rename because there is nothing to rename.
+#   bucket_name   an account-level bucket. Same photographs, same keys.
+#   kv id         likewise.
+#
+# So the D1 database, the R2 bucket and the KV namespace all still say
+# `deep-groove`. They are identities rather than labels, none of them
+# is visible in the app, and renaming them WOULD cost a migration.
+# Leave them.
+#
+# What the rename did cost is the ORIGIN, and that bill was paid once:
+# every phone re-added the home-screen icon, re-typed its name into
+# localStorage, and re-entered the edit passphrase, because the browser
+# scopes all three to the hostname. Anything queued offline on a phone
+# at the moment of the cut was at the old origin and unreachable from
+# here — which is why the old script was left running until the last
+# phone had synced, and only then deleted.
+#
+# Worker SECRETS are per-script too: DISCOGS_TOKEN and EDIT_TOKEN were
+# set again on this name. They did not come across.
+name = "vinyl-sorter"
 main = "worker/index.ts"
 compatibility_date = "2026-08-01"
 

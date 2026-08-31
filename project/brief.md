@@ -59,7 +59,8 @@ open proxy, and auth is revisited before M2 puts the Discogs token
 behind a public endpoint.
 
 A Worker is not optional: the Discogs API sends no CORS headers, and a
-static site cannot hold a secret.
+static site cannot hold a secret. Live at
+`vinyl-sorter.joe-2d2.workers.dev` since 2026-08-31.
 
 ## Constraints
 
