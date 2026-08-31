@@ -18,10 +18,10 @@
  * on 0% of the backlog and caused the 9% match error rate M0 measured.
  */
 
-import { putEntry, allEntries } from './queue.ts';
+import { putEntry, allEntries, deleteEntry } from './queue.ts';
 import {
-  CAPTURED_KIND, PHOTO_LONG_EDGE, scaleTo, summarise, torchSupported,
-  videoConstraints, type QueuedCapture, type QueuedPhoto,
+  CAPTURED_KIND, PHOTO_LONG_EDGE, UNDO_MS, heldForUndo, scaleTo, summarise,
+  torchSupported, videoConstraints, type QueuedCapture, type QueuedPhoto,
 } from './queue-logic.ts';
 import { startSync, drain } from './sync.ts';
 
@@ -75,8 +75,13 @@ function render(): void {
 
     <div class="cam" id="cam" hidden>
       <video id="video" playsinline muted autoplay></video>
+      <!-- Out of the bar and into the corner. The torch is set once on the
+           way into the loft; everything left in the bar is used per disc or
+           per photograph, and the column it vacated is the one Next disc
+           needed. -->
+      <button class="torch" id="torch" type="button" hidden aria-pressed="false">🔦</button>
       <div class="camBar">
-        <button class="torch" id="torch" type="button" hidden aria-pressed="false">🔦</button>
+        <button class="next" id="nextDisc" type="button" disabled>Next disc</button>
         <button class="shutter" id="shutter" type="button" aria-label="Take a photograph"></button>
         <button class="camOff" id="camOff" type="button">Done</button>
       </div>
@@ -162,6 +167,10 @@ function render(): void {
   $('shot').addEventListener('click', () => { void startCamera(); });
   $('shutter').addEventListener('click', () => { void grabFrame(); });
   $('camOff').addEventListener('click', () => stopCamera());
+  // One tap files the disc in hand and leaves the viewfinder open, so a
+  // crate costs N shutter taps plus one instead of N plus three, and the
+  // camera never restarts between discs.
+  $('nextDisc').addEventListener('click', () => { void save('camera'); });
   file.addEventListener('change', () => {
     // `multiple` as well, so a phone that offers the camera roll can
     // hand over a run of shots in one go.
@@ -194,7 +203,7 @@ function render(): void {
   });
 
   renderPhotos();
-  $('save').addEventListener('click', () => { void save(); });
+  $('save').addEventListener('click', () => { void save('form'); });
   $('clear').addEventListener('click', () => {
     // Clear sits a thumb's width from "Queue it" and there is no undo
     // anywhere: a mis-tap threw away every photograph of the disc in
@@ -456,6 +465,18 @@ function renderPhotos(): void {
   const queueBtn = document.getElementById('save');
   if (queueBtn) queueBtn.textContent = n ? `Queue it · ${n} photo${n === 1 ? '' : 's'}` : 'Queue it';
 
+  // Next disc carries its count for the same reason, and is inert until
+  // there is one: inside the viewfinder the shutter is the ONLY way to
+  // put something in hand, so a tap with nothing behind it could not be
+  // anything but a mis-tap. This is also the last word on the button's
+  // enabled state — `save` disables it while a write is in flight and
+  // then calls back here rather than re-enabling it blindly.
+  const next = document.getElementById('nextDisc') as HTMLButtonElement | null;
+  if (next) {
+    next.textContent = n ? `Next disc · ${n}` : 'Next disc';
+    next.disabled = n === 0;
+  }
+
   strip.innerHTML = photos.map((p, i) =>
     `<figure class="thumb"><img src="${p.url}" alt="Photograph ${i + 1}">
       <figcaption>${i + 1}</figcaption>
@@ -471,10 +492,76 @@ function renderPhotos(): void {
   }
 }
 
-function flash(message: string, kind: 'ok' | 'err' = 'ok'): void {
+/**
+ * A toast over everything, including the fullscreen viewfinder.
+ *
+ * With an `undo` handler it carries a button and does NOT fade on its
+ * own timer: the offer has to outlive the window it belongs to, and a
+ * toast that clears itself two seconds into a five-second undo is worse
+ * than offering no undo at all. `closeUndo` takes it down instead.
+ */
+function flash(message: string, kind: 'ok' | 'err' = 'ok', undo?: () => void): void {
   const el = document.getElementById('flash')!;
-  el.innerHTML = `<p class="flash${kind === 'err' ? ' err' : ''}">${message}</p>`;
+  const button = undo ? '<button type="button" class="undo" id="undoBtn">Undo</button>' : '';
+  el.innerHTML = `<p class="flash${kind === 'err' ? ' err' : ''}">${message}${button}</p>`;
+  if (undo) {
+    document.getElementById('undoBtn')?.addEventListener('click', () => { void undo(); });
+    return;
+  }
   if (kind === 'ok') setTimeout(() => { el.innerHTML = ''; }, 2600);
+}
+
+/**
+ * The disc just filed, still recallable.
+ *
+ * Next disc is one tap that says "this is one record", and there is no
+ * un-queue afterwards — so a mis-tap between two photographs of the
+ * same disc would file half of it and turn the other half into a SECOND
+ * record. That is precisely the fault the crate mode was deleted for,
+ * arriving one tap at a time instead of one crate at a time.
+ *
+ * The window is bounded by `heldForUndo`, which delays the send and
+ * nothing else. The entry is on disk immediately, as it always was.
+ */
+let undoable: { clientId: string; shots: Shot[]; fields: Record<string, string> } | null = null;
+let undoTimer = 0;
+
+/** Stop offering Undo: the disc belongs to the queue now, so let it go. */
+function closeUndo(): void {
+  if (undoTimer) { clearTimeout(undoTimer); undoTimer = 0; }
+  const settled = undoable;
+  undoable = null;
+  if (!settled) return;
+  for (const s of settled.shots) URL.revokeObjectURL(s.url);
+  const el = document.getElementById('flash');
+  if (el?.querySelector('.undo')) el.innerHTML = '';
+  // The hold expired with it, so send now rather than waiting out the
+  // fifteen-second tick with a finished disc sitting in the queue.
+  void drain().then(refreshStatus);
+}
+
+/**
+ * Put the filed disc back in hand.
+ *
+ * Its photographs go in FRONT of anything shot since, so a tap that
+ * landed between two frames of one disc loses neither. Typed values are
+ * restored only into boxes that are still empty: undoing a mis-tap must
+ * never delete something typed in the seconds after it.
+ */
+async function undoQueued(): Promise<void> {
+  const back = undoable;
+  if (!back) return;
+  if (undoTimer) { clearTimeout(undoTimer); undoTimer = 0; }
+  undoable = null;
+  await deleteEntry(back.clientId);
+  photos = [...back.shots, ...photos];
+  for (const [id, value] of Object.entries(back.fields)) {
+    const el = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null;
+    if (el && !el.value) el.value = value;
+  }
+  renderPhotos();
+  flash('Put back — still the same disc.');
+  void refreshStatus();
 }
 
 function readFields(): Record<string, string> {
@@ -496,7 +583,7 @@ function readFields(): Record<string, string> {
 /** True while a queue write is in flight. See `save`. */
 let saving = false;
 
-async function save(): Promise<void> {
+async function save(from: 'form' | 'camera' = 'form'): Promise<void> {
   const fields = readFields();
   if (!photos.length && !fields.catnoRaw?.trim()) {
     return flash('Photograph the label, or type a catalogue number.', 'err');
@@ -506,12 +593,19 @@ async function save(): Promise<void> {
   // tap would write a second disc with the same photographs.
   if (saving) return;
   saving = true;
-  const btn = document.getElementById('save') as HTMLButtonElement | null;
-  if (btn) btn.disabled = true;
+  const saveBtn = document.getElementById('save') as HTMLButtonElement | null;
+  const nextBtn = document.getElementById('nextDisc') as HTMLButtonElement | null;
+  if (saveBtn) saveBtn.disabled = true;
+  if (nextBtn) nextBtn.disabled = true;
+  // Whatever was filed before this one is settled now. One window at a
+  // time, so the Undo on screen always names the disc it would recall.
+  closeUndo();
 
   try {
     const clientId = uid();
-    const entry: QueuedCapture = {
+    // Held back from the drain for the undo window — a delayed SEND, not
+    // a delayed write. See `heldForUndo`.
+    const entry: QueuedCapture = heldForUndo({
       clientId,
       createdAt: Date.now(),
       msToCapture: Date.now() - startedAt,
@@ -528,7 +622,7 @@ async function save(): Promise<void> {
       state: 'pending',
       attempts: 0,
       nextAttemptAt: 0,
-    };
+    }, Date.now());
 
     // On disk before anything else. The UI never awaits the network:
     // this is the whole offline guarantee, and it is why a hard refresh
@@ -538,13 +632,29 @@ async function save(): Promise<void> {
     // empty read must not wipe a name typed on an earlier build.
     if (fields.capturedBy) sticky.who = fields.capturedBy;
 
-    flash(`Queued — ${Math.round(entry.msToCapture / 1000)}s. Next disc.`);
+    // The previews are handed to Undo rather than revoked, and `photos`
+    // is emptied HERE so `resetForm` has nothing left to free — the
+    // images have to outlive the reset for the recall to have anything
+    // to put back.
+    const shots = photos;
+    photos = [];
+    undoable = { clientId, shots, fields };
+    undoTimer = setTimeout(closeUndo, UNDO_MS) as unknown as number;
+
+    flash(from === 'camera'
+      ? `Filed — ${shots.length} photo${shots.length === 1 ? '' : 's'}. Next disc.`
+      : `Queued — ${Math.round(entry.msToCapture / 1000)}s. Next disc.`, 'ok', undoQueued);
     resetForm();
     void refreshStatus();
-    void drain().then(refreshStatus);   // opportunistic, never awaited by the form
+    // No drain here any more: the entry is deliberately not due yet, so
+    // a pass now would skip it and the one `closeUndo` fires sends it.
   } finally {
     saving = false;
-    if (btn) btn.disabled = false;
+    if (saveBtn) saveBtn.disabled = false;
+    // `nextDisc` is enabled by the photograph count rather than by this,
+    // so let renderPhotos have the last word — including on the throw
+    // path, where the disc is still in hand.
+    renderPhotos();
   }
 }
 

@@ -9,9 +9,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  BULK_CARRIED, CAPTURED_KIND, PHOTO_LONG_EDGE, bulkFields, markFailed,
-  medianMs, nextBackoffMs, scaleTo, selectDrainable, shouldStopDraining, summarise,
-  toRequestBody, torchSupported, videoConstraints,
+  BULK_CARRIED, CAPTURED_KIND, PHOTO_LONG_EDGE, UNDO_MS, bulkFields, heldForUndo,
+  markFailed, medianMs, nextBackoffMs, scaleTo, selectDrainable, shouldStopDraining,
+  summarise, toRequestBody, torchSupported, videoConstraints,
 } from '../../src/queue-logic.ts';
 
 const entry = (over = {}) => ({
@@ -39,6 +39,30 @@ test('only due, unsent entries drain — oldest first', () => {
   ];
   const due = selectDrainable(entries, 1_000).map((e) => e.clientId);
   assert.deepEqual(due, ['retry-now', 'old', 'new'], 'FIFO, and nothing already sent or in flight');
+});
+
+test('CAPTURE-NEXT-DISC: an undone disc is held back from the drain, not from disk', () => {
+  const held = heldForUndo(entry({ clientId: 'just-filed' }), 100_000);
+
+  // The entry itself is untouched apart from when it may first be sent:
+  // it is on disk, complete, with its photographs — the offline
+  // guarantee does not bend for the undo window.
+  assert.equal(held.state, 'pending');
+  assert.equal(held.clientId, 'just-filed');
+  assert.equal(held.attempts, 0);
+  assert.equal(held.nextAttemptAt, 100_000 + UNDO_MS);
+
+  // Nothing new teaches the drain to skip it — `nextAttemptAt` is the
+  // field it already honours for backoff, so the hold cannot leak.
+  assert.deepEqual(selectDrainable([held], 100_000 + UNDO_MS - 1), [],
+    'inside the window the send waits');
+  assert.deepEqual(selectDrainable([held], 100_000 + UNDO_MS).map((e) => e.clientId),
+    ['just-filed'], 'and goes out the moment the window closes');
+
+  // A tab closed mid-window leaves an ordinary pending entry, which the
+  // next tick sends. An undo window must never strand a capture.
+  assert.deepEqual(selectDrainable([held], 100_000 + 60_000).map((e) => e.clientId),
+    ['just-filed']);
 });
 
 test('a failure keeps the entry and schedules a retry', () => {

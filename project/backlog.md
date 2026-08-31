@@ -10,13 +10,6 @@
 
 <!-- Intent: M2, the photo path and the browse screen, side by side. M2 is deployed and every row now carries a match_run, so its remaining work is maintainer work — clearing 287 needs-review by keyboard. Migration 004 reached production on 2026-08-31, so a photo reading can now be promoted there. The photo path was promoted out of the icebox on 2026-08-30 because it is the buildable work, and because the brief's stated risk is building the app instead of cataloguing the records; DATASET-VIEWER and DATASET-EDIT joined it on 2026-08-31, because 465 catalogued rows can currently be neither seen nor corrected anywhere in the app. -->
 
-- [ ] **CAPTURE-NEXT-DISC Queue from inside the viewfinder, so a crate
-  never leaves the camera** (2026-08-31) — Photographing one disc costs
-  three taps that are not the shutter and restarts the camera every time,
-  so a Next disc control goes in the camera bar — one tap files the disc,
-  zeroes the count and keeps the viewfinder open, while Done keeps its
-  current meaning because a Done that also queued would split one disc
-  into two on any mis-tap.
 - [ ] **CAPTURE-WHO A name typed once at the start — crude gate, and the
   logger for who captured what** (2026-08-31) — capturedBy lost its box
   when the More block was parked, so a phone that has never had a name

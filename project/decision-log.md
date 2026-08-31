@@ -2,6 +2,67 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-31 — CAPTURE-NEXT-DISC: the crate never leaves the camera
+
+**Decision:** A third control, **Next disc · N**, goes in the camera
+bar. One tap files the disc in hand, zeroes the count and leaves the
+viewfinder open. Done keeps its meaning exactly — leave the camera for
+the form, photographs intact. The torch moves out of the bar to the
+top-left corner of the viewfinder to make room.
+
+**Rationale:** Photographing one disc cost N shutter taps plus three
+that were not — Photograph, Done, Queue it — and restarted the camera,
+black frame and fresh `getUserMedia`, every disc. It is now N + 1, and
+after the first the camera never closes. Typing moved behind Done, which
+makes typing the exception rather than the default: what photo-first has
+meant all along.
+
+**Done still does not queue.** Done is what you press to check a frame,
+to type a catalogue number, because somebody spoke to you. A premature
+one would file a disc with two of its four photographs and turn the
+other two into a SECOND disc — the fault CAPTURE-ONE-SCREEN deleted the
+crate mode for, arriving one tap at a time.
+
+**The undo is the drain's own backoff field, not new machinery.** A
+filed entry is written to IndexedDB immediately, as always, but with
+`nextAttemptAt` five seconds out. `selectDrainable` already refuses an
+entry whose attempt time has not arrived, so the hold cannot leak and
+nothing new had to learn about undo. The offline guarantee is untouched:
+the WRITE never waits, only the send. A tab closed inside the window
+leaves an ordinary pending entry that goes out on the next tick.
+
+Undo puts the disc's photographs back in FRONT of anything shot since,
+so a tap between two frames of one disc loses neither, and it restores
+typed values only into boxes still empty — it must never delete
+something typed in the seconds after the mis-tap. It covers Queue it
+too: one code path rather than two, and the double-tap fault the last
+pass found lives on both.
+
+**Geometry, measured rather than asserted.** Next disc sits bottom-LEFT,
+Done bottom-right. A phone is held in one hand and shot with that thumb,
+so the near corner is reached without thinking and the far one needs a
+stretch: Done costs a tap when mis-hit, Next disc files a disc, so Next
+disc is the one put out of reach — 44 px clear of the shutter at 375 px
+wide. In landscape the bar runs down the right edge, where end-aligning
+put Next disc 8 px from the shutter; centred in its row it is 49 px away
+and Done is left where it was.
+
+**Costs, stated.** A viewfinder open across a crate costs battery and
+keeps the camera indicator lit; Done is still there for a pause. Every
+capture's first send is five seconds later than it was.
+
+**Verify:** typecheck clean; 239 tests, 203 pass. The 10 failures are
+pre-existing and environmental — `matcher.test.mjs` and
+`photo-extract.test.mjs` read `Pre August 2026/`, gitignored and so
+absent from any worktree; the identical 10 fail on this commit's parent.
+Driven at 375x812, 667x375 and 375x667 against a canvas-backed fake
+camera with `/api` failing the way a loft fails: one tap files the disc
+and the viewfinder stays open, the count zeroes, the entry lands with a
+5,003 ms hold, Undo deletes it and returns three photographs and the
+typed label, the toast passes taps to the shutter while its own button
+takes them, the offer goes when the window closes, and Done still
+reaches the form with the photographs intact.
+
 ## 2026-08-31 — CAPTURE-ONE-SCREEN: one disc, one screen
 
 **Decision:** "Photograph a whole crate" is removed. Condition grading

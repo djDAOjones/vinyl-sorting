@@ -105,6 +105,31 @@ export function selectDrainable(entries: QueuedCapture[], now: number): QueuedCa
     .sort((a, b) => a.createdAt - b.createdAt);
 }
 
+/**
+ * How long a filed disc is held back from the network so Undo is real.
+ *
+ * There is no un-queue once an entry has been sent — captures drain on
+ * their own and the Worker has them for good — so the only honest undo
+ * is one taken before the send. Five seconds is long enough to notice a
+ * mis-tap on a control a thumb's width from the shutter and short
+ * enough that nobody waits for it.
+ */
+export const UNDO_MS = 5_000;
+
+/**
+ * Queue an entry, but hold its first send until the undo window closes.
+ *
+ * The entry is on disk the instant it is written, so the offline
+ * guarantee is untouched: only the SEND waits, and it waits in
+ * `nextAttemptAt`, the field the drain already honours for backoff.
+ * That is the whole mechanism — no new state, nothing to leak. A tab
+ * closed inside the window leaves an ordinary pending entry that goes
+ * out on the next tick.
+ */
+export function heldForUndo(entry: QueuedCapture, now: number): QueuedCapture {
+  return { ...entry, nextAttemptAt: now + UNDO_MS };
+}
+
 /** True median — with an even count, the mean of the middle two. */
 export function medianMs(values: number[]): number | null {
   if (values.length === 0) return null;
