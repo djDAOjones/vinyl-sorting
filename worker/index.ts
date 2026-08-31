@@ -1,9 +1,9 @@
 import { Hono } from 'hono';
 import type { Env } from './env.ts';
 import { insertCapture, parseCapture } from './capture.ts';
-import { DiscogsClient } from './discogs.ts';
+import { DiscogsClient, SUBREQUEST_BUDGET } from './discogs.ts';
 import { RateLimiter } from './rate-limit.ts';
-import { matchRow, pendingRows, persistRun } from './match/run.ts';
+import { claimRow, matchRow, pendingRows, persistRun } from './match/run.ts';
 import { parseResolve, resolveRun } from './review.ts';
 
 /**
@@ -260,37 +260,52 @@ export const WRITE_BUDGET_PER_TICK = 200;
  * scored candidates exist, so this is the observed average, not the
  * worst case.
  */
-export const QUERIES_PER_ROW = 5;
+export const QUERIES_PER_ROW = 12;
 
 /**
  * Wall-clock a tick may spend waiting on the Discogs spacing.
  *
- * 40s of a five-minute tick, which is exactly what four rows at the
- * current 2s gap already cost — so at today's pacing this changes
- * nothing. It exists so that WIDENING the gap narrows the batch
- * automatically: at 4s a tick takes two rows, not four, and the
- * invocation stays the same length instead of quietly doubling.
- * Tuning the interval without this would silently retune the tick.
+ * 40s of a five-minute tick. It exists so that WIDENING the gap
+ * narrows the batch automatically, keeping the invocation the same
+ * length instead of quietly doubling.
+ *
+ * QUERIES_PER_ROW was 5, estimated before there was anything to
+ * measure. On 2026-08-31, sixteen rows carrying promoted photo
+ * readings ran 9.4-12 queries each: a reading supplies label, title and
+ * name as well as a catalogue number, so the ladder has far more
+ * permutations to walk than a capture-only row did at 4.7. Batch
+ * sizing was dividing by a number that had stopped being true, so a
+ * tick took twice the rows it had budgeted for.
  */
-export const TICK_WORK_BUDGET_MS = 40_000;
+export const TICK_WORK_BUDGET_MS = 240_000;
 
 /** How often the cron fires. One row must always fit inside this. */
 export const CRON_PERIOD_MS = 300_000;
 
 /**
- * Rows per tick at a given gap.
+ * Rows per tick: the smaller of what time allows and what Cloudflare
+ * allows.
  *
- * Never zero, and that floor deliberately outranks the soft budget: at
- * gaps beyond 8s a single row costs more than TICK_WORK_BUDGET_MS, and
- * a tick that rounded down to no rows would stall the matcher for good
- * — worse than a long tick. Waiting is not CPU, so a long tick costs
- * nothing against cpu_ms; it only has to finish inside CRON_PERIOD_MS,
- * which is what caps the override at 60s (5 queries x 60s = one full
- * period, the point past which a row could not complete at all).
+ * TWO CEILINGS, and the tight one changes with the gap. Time was the
+ * only one considered before, at a 40s budget, which was really a
+ * proxy for "do not run long" — but waiting is not CPU and the actual
+ * constraint is finishing inside CRON_PERIOD_MS, so the budget is now
+ * 240s of that 300s and time binds only at wide gaps.
+ *
+ * The other ceiling is Cloudflare's per-invocation subrequest cap,
+ * which time cannot buy any relief from: at 12 queries a row and 36
+ * attempts to spend, three rows is the most an invocation can attempt
+ * however slowly it goes. That is the ceiling the matcher actually hit
+ * on 2026-08-31, and no amount of widening would have helped.
+ *
+ * The floor of one row deliberately outranks both: a tick rounding
+ * down to no rows would stall the matcher for good, which is worse
+ * than a long tick or a truncated ladder.
  */
-export const batchSizeFor = (minIntervalMs: number): number => Math.max(
-  1, Math.floor(TICK_WORK_BUDGET_MS / (QUERIES_PER_ROW * Math.max(1, minIntervalMs))),
-);
+export const batchSizeFor = (minIntervalMs: number): number => Math.max(1, Math.min(
+  Math.floor(TICK_WORK_BUDGET_MS / (QUERIES_PER_ROW * Math.max(1, minIntervalMs))),
+  Math.floor(SUBREQUEST_BUDGET / QUERIES_PER_ROW),
+));
 
 export interface MatchBatchOptions {
   batchSize?: number;
@@ -337,8 +352,19 @@ export async function runMatchBatch(
       stoppedShort = true;
       break;
     }
+    // Stop taking NEW rows once the invocation's outbound budget is
+    // nearly gone. A row started with nothing left to spend produces an
+    // error run and burns a claim for no information.
+    if (client.budgetSpent?.()) {
+      stoppedShort = true;
+      break;
+    }
+    // Claimed before the search, so an invocation that overruns the
+    // cron period cannot have the next tick pick the same row up.
+    const runId = await claimRow(env, row.itemId);
+    rowsWritten += 1;
     const result = await matchRow(row, client);
-    rowsWritten += await persistRun(env, row, result);
+    rowsWritten += await persistRun(env, row, result, runId);
     processed += 1;
   }
 

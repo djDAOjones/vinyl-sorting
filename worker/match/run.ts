@@ -76,8 +76,14 @@ export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
   let queriesRun = 0;
   let queryErrors = 0;
   let lastError = '';
+  let budgetStopped = false;
   for (const q of queries) {
     if (seen.size >= ENOUGH) break;
+    // Stop before spending Cloudflare's per-invocation subrequest cap.
+    // A row that stops here keeps whatever it found and is recorded
+    // honestly; a row that hits the cap kills the invocation and loses
+    // every row in the tick with it.
+    if (client.budgetSpent?.()) { budgetStopped = true; break; }
     queriesRun++;
     let results: SearchResult[];
     try {
@@ -99,11 +105,13 @@ export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
   const gate = applyGate(scored);
 
   // Nothing found AND something went wrong is not a negative result.
-  if (scored.length === 0 && queryErrors > 0) {
+  if (scored.length === 0 && (queryErrors > 0 || budgetStopped)) {
     return {
       outcome: {
         itemId: row.itemId, verdict: 'error',
-        reason: `all ${queryErrors} of ${queriesRun} queries failed; last: ${lastError}`,
+        reason: budgetStopped && queryErrors === 0
+          ? `stopped after ${queriesRun} of ${queries.length} queries: subrequest budget spent`
+          : `all ${queryErrors} of ${queriesRun} queries failed; last: ${lastError}`,
         chosenDiscogsId: null, queriesRun, queryErrors, candidates: 0,
       },
       gate: null, queries,
@@ -114,7 +122,14 @@ export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
     outcome: {
       itemId: row.itemId,
       verdict: gate.verdict,
-      reason: queryErrors ? `${gate.reason} (${queryErrors} query error(s))` : gate.reason,
+      // A verdict reached on a shortened ladder is still a verdict, but
+      // it was reached on less evidence than the row deserved and must
+      // say so — otherwise a budget-truncated "nothing found" is
+      // indistinguishable from a real one.
+      reason: [gate.reason,
+        queryErrors ? `(${queryErrors} query error(s))` : '',
+        budgetStopped ? `(stopped at ${queriesRun} of ${queries.length} queries: subrequest budget)` : '',
+      ].filter(Boolean).join(' '),
       chosenDiscogsId: gate.verdict === 'verified' ? gate.chosen?.id ?? null : null,
       queriesRun,
       queryErrors,
@@ -131,10 +146,41 @@ export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
  * the only metered line the matcher can move far enough to cost money
  * (OPS-SPEND-GUARD) — the caller keeps a per-tick budget against it.
  */
+/**
+ * Claim a row before searching it, and return the run id.
+ *
+ * THE BUG THIS FIXES: `pendingRows` excludes items that already have a
+ * `match_run`, and the run was written only AFTER the search finished.
+ * A row taking longer than the five-minute cron period was therefore
+ * still in flight when the next tick selected it — item 451 collected
+ * two runs on 2026-08-31, 10:50:12 and 10:54:48, and paid the Discogs
+ * rate limit twice to reach two verdicts for one disc. Nothing in the
+ * schema forbids that: `match_run` has no unique constraint on
+ * `item_id`, and adding one would fail the honest case where a row is
+ * deliberately re-queued.
+ *
+ * The claim is a `pending` run — the state the schema has always had a
+ * default for and nothing has used until now. It excludes the row from
+ * the next tick immediately, and `persistRun` updates it in place.
+ *
+ * A claim left behind by an invocation that died mid-row is a row
+ * stuck in `pending` rather than a row searched twice. That is the
+ * better failure: it is visible, and re-queueing is already a normal
+ * operation here.
+ */
+export async function claimRow(env: Env, itemId: number): Promise<number> {
+  const run = await env.DB.prepare(
+    "INSERT INTO match_run (item_id, state) VALUES (?, 'pending') RETURNING id",
+  ).bind(itemId).first<{ id: number }>();
+  if (!run) throw new Error('match_run claim returned no id');
+  return run.id;
+}
+
 export async function persistRun(
   env: Env,
   row: MatchRow,
   result: Awaited<ReturnType<typeof matchRow>>,
+  runId: number,
 ): Promise<number> {
   let written = 0;
   const state = result.outcome.verdict === 'verified' ? 'auto-accepted'
@@ -149,11 +195,12 @@ export async function persistRun(
     written += up.written;
   }
 
-  const run = await env.DB.prepare(
-    `INSERT INTO match_run (item_id, state, queries_json, chosen_release_id)
-     VALUES (?, ?, ?, ?) RETURNING id`,
+  // UPDATE, not INSERT: the row was claimed before the search began.
+  await env.DB.prepare(
+    `UPDATE match_run SET state = ?, queries_json = ?, chosen_release_id = ?, ran_at = datetime('now')
+      WHERE id = ?`,
   ).bind(
-    row.itemId, state,
+    state,
     // queriesRun/queryErrors ride in the existing JSON rather than new
     // columns: M2-DISCOGS-PACING has to measure failures PER ROW to
     // pick an interval, and match-report already reads this column
@@ -165,15 +212,15 @@ export async function persistRun(
       queryErrors: result.outcome.queryErrors,
     }),
     releaseId,
-  ).first<{ id: number }>();
-  if (!run) throw new Error('match_run insert returned no id');
+    runId,
+  ).run();
   written += 1;
 
   const top5 = (result.gate?.ranked ?? []).slice(0, 5);
   if (top5.length) {
     await env.DB.batch(top5.map((c, i) => env.DB.prepare(
       'INSERT INTO match_candidate (match_run_id, rank, discogs_id, score, signals_json) VALUES (?, ?, ?, ?, ?)',
-    ).bind(run.id, i + 1, c.id, c.score, JSON.stringify({ families: c.families, signals: c.signals }))));
+    ).bind(runId, i + 1, c.id, c.score, JSON.stringify({ families: c.families, signals: c.signals }))));
     written += top5.length;
   }
 

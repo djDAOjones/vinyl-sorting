@@ -35,11 +35,52 @@ export class DiscogsError extends Error {
   }
 }
 
+/**
+ * Outbound attempts one invocation may spend.
+ *
+ * Cloudflare allows 50 subrequests per invocation on the Free plan.
+ * 36 leaves headroom for the release fetches an accepted match makes
+ * after the ladder, and for anything else the tick does — the cap is
+ * per INVOCATION, not per client, so spending it all on search would
+ * kill the write that records the result.
+ */
+export const SUBREQUEST_BUDGET = 36;
+
 export class DiscogsClient {
   readonly #token: string;
   readonly #limiter: RateLimiter;
   readonly #fetch: typeof fetch;
   readonly #sleep: (ms: number) => Promise<void>;
+
+  /**
+   * Outbound HTTP attempts made by this client, and the ceiling.
+   *
+   * Cloudflare caps subrequests PER INVOCATION — 50 on the Free plan —
+   * and that is a different wall from the Discogs rate limit. Spacing
+   * requests further apart does not help: the cap counts requests, not
+   * time. On 2026-08-31 a single row spent twelve ladder rungs at up to
+   * four retry attempts each and hit it, killing the whole invocation
+   * with "Too many subrequests by single Worker invocation".
+   *
+   * Counted here because this is the one file that makes an outbound
+   * request, so it is the only place the number can be right. Every
+   * ATTEMPT counts, including retries — a retried 429 is a subrequest
+   * to Cloudflare however it looks to Discogs.
+   */
+  #attempts = 0;
+  #budget: number;
+
+  /** Attempts spent so far this invocation. */
+  get attempts(): number { return this.#attempts; }
+
+  /**
+   * True once the ladder should stop rather than risk killing the tick.
+   *
+   * Declared optional at the call sites: a client that does not track a
+   * budget genuinely has none, and requiring every test double to grow
+   * this method would be the tail wagging the dog.
+   */
+  budgetSpent(): boolean { return this.#attempts >= this.#budget; }
 
   /**
    * `fetchImpl` defaults to a WRAPPER around the global fetch, not to
@@ -55,11 +96,13 @@ export class DiscogsClient {
     limiter: RateLimiter,
     fetchImpl: typeof fetch = (input, init) => fetch(input, init),
     sleep: (ms: number) => Promise<void> = (ms) => new Promise((r) => { setTimeout(r, ms); }),
+    budget: number = SUBREQUEST_BUDGET,
   ) {
     this.#token = token;
     this.#limiter = limiter;
     this.#fetch = fetchImpl;
     this.#sleep = sleep;
+    this.#budget = budget;
   }
 
   /**
@@ -84,6 +127,13 @@ export class DiscogsClient {
     // Discogs enforces its own limit too, and answers 429 with a
     // Retry-After. Honour it rather than hammering.
     for (let attempt = 1; attempt <= 4; attempt++) {
+      // Refused BEFORE the request, so the invocation survives to write
+      // what it already found. Hitting Cloudflare's cap instead kills
+      // the whole tick and loses every row in it.
+      if (this.budgetSpent()) {
+        throw new DiscogsError(429, `${path} -> subrequest budget spent (${this.#attempts})`);
+      }
+      this.#attempts += 1;
       await this.#awaitBudget();
       const res = await this.#fetch(url.toString(), {
         headers: { Authorization: `Discogs token=${this.#token}`, 'User-Agent': USER_AGENT },

@@ -14,7 +14,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { persistRun } from '../../worker/match/run.ts';
+import { claimRow, persistRun } from '../../worker/match/run.ts';
 import { WRITE_BUDGET_PER_TICK, runMatchBatch } from '../../worker/index.ts';
 import { makeEnv } from './helpers/bindings.mjs';
 
@@ -61,8 +61,15 @@ test('persistRun reports exactly the number of rows it wrote', async () => {
   env.DB.raw.exec("INSERT INTO item (crate) VALUES ('B4')");
   env.DB.raw.exec("INSERT INTO capture (item_id, catno_raw) VALUES (1, 'SXL 6113')");
 
+  // The claim is the caller's line, not persistRun's — runMatchBatch
+  // counts it separately — so it is taken before the snapshot.
+  const claimedAt = written(env);
+  const runId = await claimRow(env, 1);
+  assert.equal(written(env) - claimedAt, 1, 'a claim costs exactly one write');
+
   const before = written(env);
-  const reported = await persistRun(env, { itemId: 1, catnoRaw: 'SXL 6113' }, verifiedResult(1));
+  const reported = await persistRun(env, { itemId: 1, catnoRaw: 'SXL 6113' },
+    verifiedResult(1), runId);
   const actual = written(env) - before;
 
   // An accounting that drifts from reality is worse than none: the
@@ -76,9 +83,10 @@ test('a release already known is not written twice, and is not counted twice', a
   env.DB.raw.exec("INSERT INTO item (crate) VALUES ('B4'), ('B5')");
   env.DB.raw.exec("INSERT INTO capture (item_id, catno_raw) VALUES (1, 'SXL 6113'), (2, 'SXL 6113')");
 
-  const first = await persistRun(env, { itemId: 1 }, verifiedResult(1));
+  const first = await persistRun(env, { itemId: 1 }, verifiedResult(1), await claimRow(env, 1));
+  const runId2 = await claimRow(env, 2);
   const before = written(env);
-  const second = await persistRun(env, { itemId: 2 }, verifiedResult(2));
+  const second = await persistRun(env, { itemId: 2 }, verifiedResult(2), runId2);
   const actual = written(env) - before;
 
   assert.equal(second, actual, 'the second run also reports truthfully');

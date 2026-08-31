@@ -78,9 +78,22 @@ const lastKey = (upstream: string) => `rl:${upstream}:last`;
  */
 export const minIntervalKey = (upstream: string) => `rl:${upstream}:min-interval`;
 
-/** Nothing may sit longer than this between requests; a fat-fingered
- *  override should slow the matcher, never wedge it for an hour. */
-const MAX_MIN_INTERVAL_MS = 60_000;
+/**
+ * Nothing may sit longer than this between requests; a fat-fingered
+ * override should slow the matcher, never wedge it for an hour.
+ *
+ * 20s, lowered from 60s on 2026-08-31. The old figure was derived as
+ * "5 queries x 60s = one cron period", but a row carrying a promoted
+ * photo reading walks about twelve rungs, not five — so 60s would have
+ * meant 720s for a single row against a 300s period, and that row
+ * could never complete at all. 20s x 12 leaves a quarter of the period
+ * spare.
+ *
+ * Kept as a literal rather than imported from the matcher: this module
+ * is the one every upstream call funnels through, and it must not
+ * depend on the thing it limits.
+ */
+export const MAX_MIN_INTERVAL_MS = 20_000;
 
 /**
  * Fixed-window counter. Chosen over a sliding log because the state is

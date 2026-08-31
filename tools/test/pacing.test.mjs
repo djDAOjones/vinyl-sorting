@@ -14,11 +14,14 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BUDGETS, RateLimiter, minIntervalKey } from '../../worker/rate-limit.ts';
+import {
+  BUDGETS, MAX_MIN_INTERVAL_MS, RateLimiter, minIntervalKey,
+} from '../../worker/rate-limit.ts';
 import {
   CRON_PERIOD_MS, QUERIES_PER_ROW, TICK_WORK_BUDGET_MS, batchSizeFor,
 } from '../../worker/index.ts';
-import { persistRun } from '../../worker/match/run.ts';
+import { claimRow, persistRun } from '../../worker/match/run.ts';
+import { SUBREQUEST_BUDGET } from '../../worker/discogs.ts';
 import { makeEnv, makeKv } from './helpers/bindings.mjs';
 
 const DEFAULT = BUDGETS.discogs.minIntervalMs;
@@ -73,17 +76,30 @@ test('the gap in force is the gap actually enforced, not just reported', async (
   assert.equal(second.retryAfterMs, 5000);
 });
 
-test('widening the gap narrows the batch, so a tick stays the same length', () => {
-  // Today's shipped pacing must keep today's batch exactly.
-  assert.equal(batchSizeFor(2000), 4, '2s must still mean four rows');
-  assert.ok(batchSizeFor(4000) < batchSizeFor(2000), '4s must mean fewer rows');
-  assert.ok(batchSizeFor(6000) < batchSizeFor(4000));
+test('widening the gap narrows the batch, and Cloudflare caps it regardless', () => {
+  // Two ceilings now. At tight gaps the binding one is Cloudflare's
+  // per-invocation subrequest cap, which no amount of waiting relieves
+  // — that is the wall the matcher actually hit on 2026-08-31.
+  assert.equal(batchSizeFor(2000), Math.floor(SUBREQUEST_BUDGET / QUERIES_PER_ROW),
+    'at 2s the subrequest cap binds, not the clock');
+  assert.ok(batchSizeFor(2000) * QUERIES_PER_ROW <= SUBREQUEST_BUDGET,
+    'a full tick must never be able to exceed the subrequest cap');
+  // Past the crossover the clock binds again and widening narrows.
+  assert.ok(batchSizeFor(MAX_MIN_INTERVAL_MS) < batchSizeFor(2000), 'a very wide gap means fewer rows');
+  // The widest permitted gap must still leave one row able to finish
+  // inside a cron period — that is what the cap is for.
+  assert.ok(MAX_MIN_INTERVAL_MS * QUERIES_PER_ROW <= CRON_PERIOD_MS,
+    'the widest override must still let a single row complete');
   // And a tick never becomes a no-op, however wide the gap.
   assert.ok(batchSizeFor(60_000) >= 1);
   // A multi-row tick stays inside the soft budget. A single row is
   // allowed to exceed it — past an 8s gap one row costs more than the
   // budget, and stalling the matcher would be the worse failure.
-  for (const gap of [2000, 3000, 4000, 6000, 10_000, 60_000]) {
+  // Every gap the override PERMITS — the set is bounded by
+  // MAX_MIN_INTERVAL_MS, and that bound exists precisely so one row
+  // still fits inside a cron period. Hardcoding a gap past it tested a
+  // configuration that can no longer be reached.
+  for (const gap of [2000, 3000, 4000, 6000, 10_000, MAX_MIN_INTERVAL_MS]) {
     const rows = batchSizeFor(gap);
     const wait = rows * QUERIES_PER_ROW * gap;
     if (rows > 1) {
@@ -102,6 +118,13 @@ test('a run records how many of its queries failed, queryably', async () => {
   env.DB.raw.exec("INSERT INTO item (crate) VALUES ('B4')");
   env.DB.raw.exec("INSERT INTO capture (item_id, catno_raw) VALUES (1, 'SXL 6113')");
 
+  // Claimed first, then completed — the run exists in `pending` from
+  // the moment the search starts, so an overrunning tick cannot have
+  // the next one select the same row.
+  const runId = await claimRow(env, 1);
+  assert.equal(env.DB.raw.prepare('SELECT state FROM match_run WHERE id = ?').get(runId).state,
+    'pending', 'a claim is a pending run, not a verdict');
+
   await persistRun(env, { itemId: 1 }, {
     outcome: {
       itemId: 1, verdict: 'needs_review', reason: 'margin too thin',
@@ -109,7 +132,10 @@ test('a run records how many of its queries failed, queryably', async () => {
     },
     gate: { verdict: 'needs_review', chosen: null, ranked: [] },
     queries: ['catno=SXL+6113'],
-  });
+  }, runId);
+
+  assert.equal(env.DB.raw.prepare('SELECT COUNT(*) n FROM match_run WHERE item_id = 1').get().n, 1,
+    'completing a claim updates it rather than adding a second run');
 
   // Read it the way match-report does — if json_extract cannot see it,
   // the measurement this item needs is not actually available.
