@@ -17,6 +17,13 @@
   zeroes the count and keeps the viewfinder open, while Done keeps its
   current meaning because a Done that also queued would split one disc
   into two on any mis-tap.
+- [ ] **CAPTURE-WHO A name typed once at the start — crude gate, and the
+  logger for who captured what** (2026-08-31) — capturedBy lost its box
+  when the More block was parked, so a phone that has never had a name
+  typed into it sends nothing; the fix is a name typed once at first
+  launch and checked against the six people who capture, which gates the
+  app crudely and stamps every row afterwards without a field in the
+  capture flow.
 - [~] **SPIKE-PHOTO-TO-FIELDS Can a label photograph populate the
   capture fields?** [spike] [blocked: twenty photographed labels with
   typed ground truth] (2026-08-30) — The round trip is built, tested and
@@ -68,18 +75,6 @@
   passage?** [sign-off] (2026-08-30) — Whether the app proposes the
   two-to-three-minute comparison passage from the track listing, or the
   listener always chooses it themselves.
-- [ ] **OPEN-V1-AUTH Does v1 get sign-in, now that the token is behind a
-  public endpoint?** [sign-off] (2026-08-31) — The brief defers auth but
-  commits to revisiting it before M2 puts the Discogs token behind a
-  public endpoint — which has now happened, so the revisit is due on the
-  brief's own terms.
-- [ ] **CAPTURE-WHO A name typed once at the start — crude gate, and the
-  logger for who captured what** (2026-08-31) — capturedBy lost its box
-  when the More block was parked, so a phone that has never had a name
-  typed into it sends nothing; the fix is a name typed once at first
-  launch and checked against the six people who capture, which gates the
-  app crudely and stamps every row afterwards without a field in the
-  capture flow.
 - [ ] **CAPTURE-BULK-REMNANT bulkFields and BULK_CARRIED have no caller
   — decide whether they stay** (2026-08-31) — CAPTURE-ONE-SCREEN removed
   the crate button and saveBulk with it but left bulkFields and

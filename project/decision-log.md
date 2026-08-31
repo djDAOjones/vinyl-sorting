@@ -51,6 +51,56 @@ three, Enter walks the three boxes and releases the keyboard, the queue
 button counts the photographs it is about to send, a queued capture
 resets the form, and the parked ids resolve to null without throwing.
 
+## 2026-08-31 — OPEN-V1-AUTH, DATASET-EDIT: no sign-in, one bolted drawer
+
+**Decision:** Maintainer signed off both on 2026-08-31.
+
+- **v1 gets no sign-in.** Capture and photo upload stay anonymous.
+- **DATASET-EDIT proceeds as written**: a shared `EDIT_TOKEN` on the
+  edit endpoints only, and — in the same commit — the AGENTS.md hard
+  rule reworded from "never write back over `capture`" to bar *machine*
+  writes while permitting human correction.
+- **CAPTURE-WHO is promoted to the current milestone**, on the
+  maintainer's instruction not to lose it. A typed name is the third
+  piece: it gates the app crudely and stamps who captured each row.
+
+Both were signed off with an explicit instruction to leave notes for
+rethinking later, so the revisit triggers below are part of the
+decision rather than a hedge against it.
+
+**Rationale:** The brief defers auth but conditions it — revisit
+"before M2 puts the Discogs token behind a public endpoint". That
+happened, so the revisit was owed and has now been taken rather than
+allowed to lapse quietly, which is the whole value of having written
+the condition down.
+
+What is actually exposed is junk rows and R2 objects, not a credential:
+the Worker exposes named operations, nothing returns the token, and the
+matcher runs from cron with no HTTP entry point. Against that, sign-in
+on capture would put a way to fail into an offline queue on a phone in
+a loft — which is the one place this app must not acquire one.
+
+The asymmetry is the reasoning: **adding a row is not the risk that
+rewriting 465 is.** So the bolt goes on the drawer worth bolting and
+nowhere else. It is not sign-in and the record is explicit that it does
+not pretend to be.
+
+**The hard-rule amendment is the load-bearing part**, and it is narrow.
+The bar exists so duplicate detection runs on what a person read rather
+than on what a bad match wrote — a bar on machine writes. A person
+fixing their own typo is the opposite case, and the sentence as written
+forbade it, so an autonomous session would correctly have stopped.
+Machine writes stay barred. The accepted cost: the previous reading is
+gone, surviving in `data/deep-groove-v1.csv` for the 446 imported rows
+and nowhere for app captures.
+
+**Rethink when any of these:** the passphrase starts feeling like the
+wrong shape; anyone outside the household needs to capture; a junk-row
+flood arrives through the open capture endpoint; or the collection
+becomes worth more than the inconvenience of signing in. Cloudflare
+Access in front of everything is the known next step and was not chosen
+now, not ruled out.
+
 ## 2026-08-31 — PHOTO-PROMOTE: a reading becomes a lead, never a fact
 
 **Decision:** A photo reading is written into `raw_value` with a new

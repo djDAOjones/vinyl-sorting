@@ -4,10 +4,14 @@ name: A name typed once at the start — crude gate, and the logger for who capt
 summary: capturedBy lost its box when the More block was parked, so a phone that has never had a name typed into it sends nothing; the fix is a name typed once at first launch and checked against the six people who capture, which gates the app crudely and stamps every row afterwards without a field in the capture flow.
 status: open
 date: 2026-08-31
-milestone: icebox
-order: 4
+milestone: current
+order: 3
 ---
 # A name typed once at the start
+
+**Promoted to current, 2026-08-31**, on the maintainer's instruction.
+Third piece of one picture: OPEN-V1-AUTH decided nobody signs in,
+DATASET-EDIT bolts the edit drawer, this stamps who read the label.
 
 `capturedBy` has no box on the capture screen. CAPTURE-ONE-SCREEN parked
 the block it lived in, and it was barely reachable before that: a

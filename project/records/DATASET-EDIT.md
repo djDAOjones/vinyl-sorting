@@ -11,6 +11,11 @@ blocked-on: DATASET-VIEWER
 ---
 # Correct a reading and confirm it
 
+**Signed off 2026-08-31**, amendment and passphrase included. Build as
+written. The `security` flag stays because the item touches the write
+surface, not because a ruling is owed. Reasoning and rethink triggers:
+decision log.
+
 Four operations, all on one item, from the detail panel:
 
 - **Correct** a `capture` field — catalogue number, label, name, title,
@@ -25,30 +30,31 @@ Four operations, all on one item, from the detail panel:
 ## What an edit writes
 
 The value, and a `field_source` row: source `shelf`, `confirmed_by` and
-`confirmed_at` set. `insertCapture` deliberately writes `shelf`
-*unconfirmed* — typing at a crate is not verifying a pressing. Deciding
-at a screen that a value is right is a different act, and what
-`confirmed_by` was added for. Upsert on `UNIQUE (entity, entity_id,
-field)`, in the shape `resolveRun` already uses.
+`confirmed_at` set. `insertCapture` writes `shelf` *unconfirmed* —
+typing at a crate is not verifying a pressing, and deciding at a screen
+that a value is right is what `confirmed_by` was added for. Upsert on
+`UNIQUE (entity, entity_id, field)`, as `resolveRun` already does.
 
-This makes nothing decision-eligible: `v_decision_eligible_item`
-requires a confirmed `release_id` on the *item*, which only the review
-queue produces. Confirming capture text improves what the matcher
-searches with; it does not stand in for a verdict.
+Nothing becomes decision-eligible: `v_decision_eligible_item` needs a
+confirmed `release_id` on the *item*, which only the review queue
+produces. This improves what the matcher searches with; it is not a
+verdict.
 
 ## It changes a hard rule
 
 AGENTS.md says "Never write back over `capture`"; `001-init.sql` calls
-the table "Never machine-written". The stated reason is that duplicate
+the table "Never machine-written". The reason is that duplicate
 detection must run on what a person read rather than on what a bad
 match wrote — a bar on *machine* writes. A person fixing their own typo
-is the opposite case, but the sentence as written forbids it, and an
-autonomous session will correctly stop here.
+is the opposite case, but the sentence as written forbids it.
 
 So the boundary is reworded in the same commit — machine writes barred,
 human correction permitted — with the schema comment matched and a
 decision-log entry carrying the reasoning. Ship without it and the
 contract contradicts the code.
+
+**Authorised**, so no longer a stop-and-ask: make the edit, keep it
+narrow, and say in the commit that machine writes stay barred.
 
 The cost, accepted with the decision: the previous reading is gone. For
 the 446 imported rows it survives in `data/deep-groove-v1.csv`; for app
@@ -60,13 +66,14 @@ A shared secret, `EDIT_TOKEN`, set with `wrangler secret put` and sent
 as a header; the client holds it in `localStorage` beside `dg.who`.
 Write endpoints from this record refuse without it, 401.
 
-`POST /api/captures` and the photo upload stay open: the offline queue
+`POST /api/captures` and the photo upload stay open: an offline queue
 must not acquire a way to fail, and adding a record is not the risk
-that rewriting 465 is. The repo is public and its README names the live
-URL, so this door is a real one.
+that rewriting 465 is. The repo is public and names the live URL, so
+this door is a real one.
 
-Not sign-in, and it does not pretend to be. The brief defers auth; this
-is a bolt on the one drawer worth bolting.
+Not sign-in, and it does not pretend to be. OPEN-V1-AUTH closed on
+2026-08-31 deciding exactly this, so it is the settled shape rather
+than an interim one.
 
 ## Out of scope
 
