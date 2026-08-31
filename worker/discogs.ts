@@ -87,13 +87,20 @@ export class DiscogsClient {
   get attempts(): number { return this.#attempts; }
 
   /**
-   * True once the ladder should stop rather than risk killing the tick.
+   * True once the caller should stop rather than risk killing the tick.
+   *
+   * `reserve` holds attempts back for work that comes AFTER the thing
+   * asking. The query ladder reserves the release fetch: without it the
+   * ladder spent the entire budget and the tracklist fetch — which runs
+   * last — found nothing left and silently returned none. Two matches
+   * were accepted on 2026-08-31 with a tracklist that was never asked
+   * for, and the table stayed empty while the code looked correct.
    *
    * Declared optional at the call sites: a client that does not track a
    * budget genuinely has none, and requiring every test double to grow
    * this method would be the tail wagging the dog.
    */
-  budgetSpent(): boolean { return this.#attempts >= this.#budget; }
+  budgetSpent(reserve = 0): boolean { return this.#attempts + reserve >= this.#budget; }
 
   /**
    * `fetchImpl` defaults to a WRAPPER around the global fetch, not to

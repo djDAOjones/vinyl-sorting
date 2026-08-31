@@ -16,6 +16,7 @@
 
 import type { Env } from '../env.ts';
 import type { DiscogsClient, SearchResult } from '../discogs.ts';
+import { MAX_ATTEMPTS_PER_QUERY } from '../discogs.ts';
 import { buildQueries } from './queries.ts';
 import { applyGate, scoreCandidate, type Capture, type GateResult, type Scored } from './score.ts';
 import { checkRow } from './sanity.ts';
@@ -132,7 +133,9 @@ export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
     // A row that stops here keeps whatever it found and is recorded
     // honestly; a row that hits the cap kills the invocation and loses
     // every row in the tick with it.
-    if (client.budgetSpent?.()) { budgetStopped = true; break; }
+    // Reserving the release fetch, which happens after this loop and
+    // would otherwise never have a turn.
+    if (client.budgetSpent?.(MAX_ATTEMPTS_PER_QUERY)) { budgetStopped = true; break; }
     queriesRun++;
     let results: SearchResult[];
     try {
@@ -321,7 +324,22 @@ async function upsertRelease(
 ): Promise<{ id: number; written: number }> {
   const existing = await env.DB.prepare('SELECT id FROM release WHERE discogs_id = ?')
     .bind(discogsId).first<{ id: number }>();
-  if (existing) return { id: existing.id, written: 0 };
+  if (existing) {
+    // A release seen before still gains a tracklist it does not have.
+    // Returning here unconditionally meant the 267 seeded releases —
+    // every record catalogued before the app existed — could never
+    // acquire one, because they are precisely the releases already
+    // present. Nothing is overwritten: tracks are added only when there
+    // are none.
+    if (!tracks.length) return { id: existing.id, written: 0 };
+    const has = await env.DB.prepare('SELECT COUNT(*) AS n FROM release_track WHERE release_id = ?')
+      .bind(existing.id).first<{ n: number }>();
+    if (has?.n) return { id: existing.id, written: 0 };
+    await env.DB.batch(tracks.map((t) => env.DB.prepare(
+      'INSERT INTO release_track (release_id, position, title, duration_s) VALUES (?, ?, ?, ?)',
+    ).bind(existing.id, t.position, t.title, t.durationS)));
+    return { id: existing.id, written: tracks.length };
+  }
 
   // Stored, not discarded. A release row of nothing but an id gives the
   // review screen nothing to display, so a person is asked to confirm a

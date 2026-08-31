@@ -270,6 +270,72 @@ test('an accepted match stores its tracklist, and a failure costs only the track
     'whether a track is a whole work is M3 judgement, not a guess made here');
 });
 
+test('the ladder leaves the tracklist fetch something to spend', async () => {
+  // The fetch runs LAST and begins by checking the budget, so a ladder
+  // that spent everything left it nothing: two matches were accepted on
+  // 2026-08-31 with a tracklist that was never asked for, and the table
+  // stayed empty while the code read as correct.
+  const env = makeEnv();
+  env.DB.raw.exec("INSERT INTO item (crate) VALUES ('B4')");
+  env.DB.raw.exec("INSERT INTO capture (item_id, catno_raw, label_raw, title_raw) "
+    + "VALUES (1, 'SXL 6113', 'Decca', 'Mahler')");
+
+  // A client with just enough budget for a short ladder plus the fetch.
+  let attempts = 0;
+  let releaseFetched = false;
+  const client = {
+    budgetSpent: (reserve = 0) => attempts + reserve >= 6,
+    search: async () => { attempts += 1; return [{ id: 999, catno: 'SXL 6113', label: ['Decca'], title: 'Mahler' }]; },
+    getRelease: async () => {
+      releaseFetched = true;
+      attempts += 1;
+      return { tracklist: [{ position: 'A1', title: 'Allegro', duration: '5:00' }] };
+    },
+  };
+  const row = { itemId: 1, catnoRaw: 'SXL 6113', labelRaw: 'Decca', titleRaw: 'Mahler' };
+  const result = await matchRow(row, client);
+  assert.ok(releaseFetched, 'the ladder must not spend what the fetch needs');
+  assert.equal(result.tracks.length, 1);
+});
+
+test('a release already known still gains a tracklist it lacks', async () => {
+  // Returning early on a known release meant the 267 seeded ones —
+  // every record catalogued before the app existed — could never
+  // acquire a tracklist, because they are exactly the releases already
+  // present.
+  const env = makeEnv();
+  env.DB.raw.exec("INSERT INTO item (crate) VALUES ('B4'), ('B5')");
+  // Enough signal families to VERIFY: the gate refuses a catalogue
+  // number alone, and an unverified row names no release to fetch a
+  // tracklist for.
+  env.DB.raw.exec("INSERT INTO capture (item_id, catno_raw, label_raw, title_raw) "
+    + "VALUES (1,'SXL 6113','Decca','Mahler'), (2,'SXL 6113','Decca','Mahler')");
+  const client = {
+    search: async () => [{ id: 999, catno: 'SXL 6113', label: ['Decca'], title: 'Mahler' }],
+    getRelease: async () => ({ tracklist: [{ position: 'A1', title: 'Allegro', duration: '5:00' }] }),
+  };
+  const row1 = { itemId: 1, catnoRaw: 'SXL 6113', labelRaw: 'Decca', titleRaw: 'Mahler' };
+  await persistRun(env, row1, await matchRow(row1, client), await claimRow(env, 1));
+  const after1 = env.DB.raw.prepare('SELECT COUNT(*) n FROM release_track').get().n;
+  assert.equal(Number(after1), 1, 'the first match creates the release and its tracks');
+
+  // A second item matching the SAME release must not duplicate them.
+  const row2 = { itemId: 2, catnoRaw: 'SXL 6113', labelRaw: 'Decca', titleRaw: 'Mahler' };
+  await persistRun(env, row2, await matchRow(row2, client), await claimRow(env, 2));
+  assert.equal(Number(env.DB.raw.prepare('SELECT COUNT(*) n FROM release_track').get().n), 1,
+    'a release that already has tracks is left alone');
+
+  // But one that has none gains them.
+  env.DB.raw.exec('DELETE FROM release_track');
+  env.DB.raw.exec("INSERT INTO item (crate) VALUES ('B6')");
+  env.DB.raw.exec("INSERT INTO capture (item_id, catno_raw, label_raw, title_raw) "
+    + "VALUES (3,'SXL 6113','Decca','Mahler')");
+  const row3 = { itemId: 3, catnoRaw: 'SXL 6113', labelRaw: 'Decca', titleRaw: 'Mahler' };
+  await persistRun(env, row3, await matchRow(row3, client), await claimRow(env, 3));
+  assert.equal(Number(env.DB.raw.prepare('SELECT COUNT(*) n FROM release_track').get().n), 1,
+    'a known release with no tracklist acquires one');
+});
+
 test('a tracklist that cannot be fetched does not fail the match', async () => {
   // The verdict was reached on the search rungs and stands. Enrichment
   // that fails loses nothing that was ever had.
