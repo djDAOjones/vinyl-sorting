@@ -62,3 +62,10 @@ data/label-photos/ground-truth.from-captures.csv
 # split. The reading it produces is archived under data/photo-runs/.
 data/photo-resplit/
 data/photo-resplit-packs/
+
+# The unread pack: every photographed row with no reading yet, rebuilt
+# from row-ids.csv minus data/photo-extract.json each crate. Transient
+# for the same reason photo-resplit is — the reading it produces is
+# archived under data/photo-runs/.
+data/photo-unread/
+data/photo-unread-packs/

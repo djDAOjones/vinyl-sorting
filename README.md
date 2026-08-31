@@ -49,6 +49,16 @@ photograph, and more than one photograph is always wanted — label,
 sleeve, runout — so a crate walked that way manufactured three discs
 where one stood.
 
+**Photograph the disc label, not only the sleeve.** Ruled on 2026-08-31,
+after the second crate — items 467-483 — came back sleeve-only. The
+sleeve is where the decoys are: a mono and a stereo catalogue number
+printed as a pair, an LP number beside a tape number, an export number
+beside the domestic one, and adverts carrying the catalogue number of a
+different record entirely. Only the disc says which of them is in your
+hand. Those seventeen rows stay as they were shot — the discs have been
+handled once already — and any the reading cannot positively identify is
+mopped up with a disc photograph then, not now.
+
 Type your first name once on a device and it goes on every row captured
 there; tap it in the header to hand the phone over.
 

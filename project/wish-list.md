@@ -13,6 +13,11 @@
   the collection, since keep-several is a first-class outcome.
 - Sampling set-aside copies from large clusters, beyond the one-click
   recall already in M4.
+- Mop up the sleeve-only rows that will not identify. Items 467-483 were
+  photographed sleeve-only, so a shared, ambiguous or advertised
+  catalogue number has nothing to break the tie; re-shoot the disc
+  labels of whatever the reading and the matcher leave unresolved,
+  rather than all seventeen. From the 2026-08-31 capture ruling.
 - Where a sub-£10 shootout loser actually goes. Not sold (below the
   effort floor), not kept (no musical reason) — donate, charity shop,
   or a "not worth selling" pile? Comes up the first session that
