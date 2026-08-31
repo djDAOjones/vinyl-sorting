@@ -35,6 +35,29 @@ export interface CaptureInput {
   photos?: { kind: PhotoKind; r2Key: string }[];
 }
 
+/**
+ * The shape a stored photo key may take.
+ *
+ * `POST /api/captures` is unauthenticated by decision (OPEN-V1-AUTH,
+ * 2026-08-31: capture stays open so an offline queue never acquires a
+ * way to fail), so this value arrives from a stranger and is written
+ * verbatim into `item_photo.r2_key`. Two things dereference it later:
+ * `tools/photos-pull.mjs` interpolates it into a wrangler argv, and
+ * `GET /api/photos/:key` fetches it from R2. A key carrying path
+ * syntax would be a path under a stranger's control in both.
+ *
+ * The client has only ever sent `labels/<clientId>-<n>.jpg` — see
+ * `toRequestBody` — and all 98 keys in production conform, the longest
+ * at 31 characters. So the narrow rule costs nothing and the wide one
+ * was never needed.
+ *
+ * `..` is barred separately: the character class permits a dot, so
+ * `labels/..` would otherwise pass the pattern while still naming a
+ * parent. `PUT /api/photos/:key` already constrains its own path
+ * parameter; this is the other half of the same surface.
+ */
+const R2_KEY = /^labels\/[A-Za-z0-9._-]{1,120}$/;
+
 const isStr = (v: unknown): v is string => typeof v === 'string';
 const trimmed = (v: unknown): string | undefined => {
   if (!isStr(v)) return undefined;
@@ -75,6 +98,9 @@ export function parseCapture(body: unknown): { ok: true; value: CaptureInput } |
         return { ok: false, error: `photo kind must be one of ${PHOTO_KINDS.join(', ')}` };
       }
       if (!r2Key) return { ok: false, error: 'each photo needs an r2Key' };
+      if (!R2_KEY.test(r2Key) || r2Key.includes('..')) {
+        return { ok: false, error: 'r2Key must look like labels/<name>' };
+      }
       photos.push({ kind: kind as PhotoKind, r2Key });
     }
   }

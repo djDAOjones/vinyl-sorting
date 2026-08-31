@@ -253,6 +253,35 @@ test('DATASET-VIEWER: the newest match run wins the list column', async () => {
   assert.equal(items[0].match_state, 'needs-review', 're-verification is a normal operation');
 });
 
+test('a photo key that is a path, not a name, is refused at the door', () => {
+  // POST /api/captures is unauthenticated by decision, so this value
+  // arrives from a stranger and is written verbatim into
+  // item_photo.r2_key. photos-pull interpolates it into a wrangler
+  // argv and GET /api/photos/:key fetches it from R2 — both would be
+  // dereferencing a path somebody else chose.
+  const ok = parseCapture({
+    clientId: 'c1', catnoRaw: 'X',
+    photos: [{ kind: 'other', r2Key: 'labels/mtgeg2xk-fcdp7io0-1.jpg' }],
+  });
+  assert.equal(ok.ok, true, 'the shape the client has always sent must still pass');
+
+  for (const bad of [
+    'labels/../../etc/passwd',
+    'labels/..',                      // the character class permits dots
+    '../labels/x.jpg',
+    '/etc/passwd',
+    'labels/sub/dir.jpg',             // no nesting: the client never makes one
+    'other-prefix/x.jpg',             // and no prefix but labels/
+    'labels/x y.jpg',                 // spaces would need escaping downstream
+    `labels/${'a'.repeat(200)}.jpg`,  // unbounded length
+    'labels/',                        // a prefix is not a name
+  ]) {
+    const r = parseCapture({ clientId: 'c1', catnoRaw: 'X', photos: [{ kind: 'other', r2Key: bad }] });
+    assert.equal(r.ok, false, `accepted a hostile key: ${bad}`);
+    assert.match(r.error, /r2Key/, 'and says which field was wrong');
+  }
+});
+
 test('BROWSE-PHOTOS: a photograph and its key need a name, and R2 never sees an invented key', async () => {
   // Signed off 2026-08-31: serve them, behind the typed name. The gate
   // is a speed bump, not access control — the roster ships in the
