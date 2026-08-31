@@ -1,0 +1,109 @@
+/* Browse is a desk screen, not a loft screen: the collection is read
+   sitting down, next to the review queue, so it may use the width that
+   capture cannot. It shares style.css for the base elements. */
+main#browse { max-width: 76rem; padding-bottom: 4rem; }
+
+.bhead { display: flex; align-items: baseline; justify-content: space-between;
+  gap: 1rem; border-bottom: 1px solid var(--rule); padding-bottom: .7rem; margin-bottom: 1rem; }
+.bhead h1 { font-size: 1rem; }
+.counts { font: 500 .8rem var(--mono); color: var(--muted); }
+.counts b { color: var(--accent); }
+
+.filters { display: flex; flex-wrap: wrap; gap: .8rem; margin-bottom: 1rem; }
+.filters label { margin: 0; }
+.filters span { display: block; font: 600 .68rem var(--mono); letter-spacing: .08em;
+  text-transform: uppercase; color: var(--muted); padding-bottom: .25rem; }
+.filters input, .filters select { min-width: 9rem; }
+.filters label:first-child { flex: 1 1 16rem; }
+.filters label:first-child input { width: 100%; }
+
+/* 465 rows. A table is the honest shape for it, and it scrolls inside
+   its own box rather than taking the page sideways. */
+.rows { width: 100%; border-collapse: collapse; font-size: .86rem; display: block;
+  overflow-x: auto; white-space: nowrap; }
+.rows thead th { position: sticky; top: 0; z-index: 1; text-align: left;
+  font: 600 .68rem var(--mono); letter-spacing: .08em; text-transform: uppercase;
+  color: var(--muted); background: var(--paper); border-bottom: 1px solid var(--rule);
+  padding: .45rem .6rem; }
+.rows td { padding: .4rem .6rem; border-bottom: 1px solid var(--rule); color: var(--ink); }
+.rows td.num { font: 500 .82rem var(--mono); color: var(--body); text-align: right; }
+.rows td.empty, .empty { color: #55636a; font-style: italic; }
+.rows tbody tr { cursor: pointer; }
+.rows tbody tr:hover td { background: var(--card); }
+.rows tbody tr.open td { background: var(--sunk); }
+.rows tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* The match state is the one column worth colouring: it is what the
+   287 needs-review rows are found by. */
+.state { font: 600 .68rem var(--mono); letter-spacing: .04em; border-radius: 4px;
+  padding: .1rem .4rem; background: var(--sunk); color: var(--muted); }
+.state.s-auto-accepted { background: #1c3225; color: var(--good); }
+.state.s-needs-review { background: #332714; color: var(--warn); }
+.state.s-rejected, .state.s-error { background: #3a1f1c; color: var(--bad); }
+.tick { color: var(--good); margin-left: .35rem; }
+
+.empty-note { font-size: .82rem; color: var(--muted); margin: .6rem 0; }
+
+.detail { margin-top: 1.4rem; background: var(--card); border: 1px solid var(--rule);
+  border-radius: 12px; padding: 1rem 1.1rem; }
+.detail[hidden] { display: none; }
+.dhead { display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  border-bottom: 1px solid var(--rule); padding-bottom: .6rem; margin-bottom: .9rem; }
+.dhead h2 { font-size: .95rem; color: var(--ink); margin: 0; }
+
+.dsplit { display: grid; grid-template-columns: minmax(18rem, 26rem) 1fr; gap: 1.6rem;
+  align-items: start; }
+@media (max-width: 52rem) { .dsplit { grid-template-columns: 1fr; } }
+/* A grid item's min-width is `auto`, so the longest unbroken run of
+   text inside a definition list sets a floor the column cannot go
+   below — which pushed the whole PAGE sideways by 22 px on a phone
+   while the table beside it scrolled politely inside its own box. */
+.dsplit > section, .detail dl { min-width: 0; }
+.detail dd { min-width: 0; overflow-wrap: anywhere; }
+
+.detail h3 { font: 600 .7rem var(--mono); letter-spacing: .09em; text-transform: uppercase;
+  color: var(--muted); margin: 1.1rem 0 .6rem; }
+.detail h3:first-child { margin-top: 0; }
+.detail h3 .n { color: var(--accent); }
+.detail dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: .5rem .9rem; }
+/* On a phone the two columns are one, because a 6rem label beside a
+   4rem value is not a table, it is two truncations. */
+@media (max-width: 30rem) {
+  .detail dl { grid-template-columns: 1fr; gap: .15rem; }
+  .detail dt { margin-top: .5rem; }
+}
+.detail dt { font-size: .76rem; color: var(--muted); }
+.detail dd { margin: 0; font-size: .9rem; color: var(--ink); word-break: break-word; }
+
+/* The provenance mark. Small, on every field, and never omitted — a
+   field with nothing recorded says so rather than looking sourced. */
+.prov { font: 500 .68rem var(--mono); color: var(--muted); }
+.prov.ok { color: var(--good); }
+.prov.none { color: var(--warn); }
+
+/* The keys, until a decision is taken about serving the images
+   themselves. A key is not nothing: it is what photos-pull fetches by,
+   and it is how you tell four photographs of one disc from one. */
+.keys { list-style: none; margin: .4rem 0 0; padding: 0; display: grid; gap: .3rem; }
+.keys li { display: grid; grid-template-columns: 1.2rem 1fr; gap: .5rem; align-items: baseline; }
+.keys .n { font: 600 .72rem var(--mono); color: var(--muted); text-align: right; }
+.keys code { font: 500 .76rem var(--mono); color: var(--ink); overflow-wrap: anywhere; }
+.keys .prov { grid-column: 2; }
+
+.run { border: 1px solid var(--rule); border-radius: 10px; padding: .6rem .75rem;
+  margin-bottom: .6rem; background: var(--sunk); }
+.rhead { display: flex; align-items: center; gap: .6rem; }
+.run .why { font-size: .8rem; color: var(--warn); margin: .5rem 0 .4rem; }
+.cand-row { display: grid; grid-template-columns: 1.4rem 9rem 1fr 3rem; gap: .5rem;
+  align-items: center; font-size: .8rem; padding: .2rem 0; }
+.cand-row .rank { font: 600 .72rem var(--mono); color: var(--muted); }
+.cand-row .did { font: 500 .78rem var(--mono); color: var(--ink); }
+.cand-row .score { font: 700 .85rem var(--mono); color: var(--ink); text-align: right; }
+.fam { font: 600 .64rem var(--mono); letter-spacing: .04em; text-transform: uppercase;
+  background: #16323b; color: var(--accent); border-radius: 4px; padding: .1rem .35rem;
+  margin-right: .25rem; }
+.verdict { font-size: .8rem; color: var(--ink); margin: .5rem 0 0; }
+.verdict.none { color: var(--muted); font-style: italic; }
+
+.why-refused { background: #332714; border: 1px solid #4d3a1c; color: var(--warn);
+  border-radius: 8px; padding: .7rem .85rem; font-size: .86rem; }

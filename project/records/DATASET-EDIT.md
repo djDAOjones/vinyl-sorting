@@ -7,14 +7,14 @@ date: 2026-08-31
 milestone: current
 order: 8
 flags: security
-blocked-on: DATASET-VIEWER
 ---
 # Correct a reading and confirm it
 
 **Signed off 2026-08-31**, amendment and passphrase included. Build as
 written. The `security` flag stays because the item touches the write
 surface, not because a ruling is owed. Reasoning and rethink triggers:
-decision log.
+decision log. Unblocked 2026-08-31: DATASET-VIEWER shipped the list, the
+detail panel and the provenance marks this writes through.
 
 Four operations, all on one item, from the detail panel:
 

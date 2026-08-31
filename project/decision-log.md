@@ -2,6 +2,70 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-31 — DATASET-VIEWER: a third screen, minus the photographs
+
+**Decision:** `/browse` ships — a filterable list of the whole
+collection, an item detail, the match history behind every row, and a
+provenance mark on every field. The photographs are LISTED, not shown.
+The route that would render them is split out as BROWSE-PHOTOS, flagged
+`sign-off`, because two live records disagree about whether it may
+exist and that is not this session's call.
+
+**Rationale:** 465 rows were in D1 and the only way to see one was
+`GET /api/items` in a browser tab. The larger cost was that nothing
+showed *why* a row looked the way it did — 287 sit in needs-review and
+nobody could see whether the capture text behind one was a clean reading
+or the label mashed into the catalogue number.
+
+**Provenance is the screen, not a column on it.** Every field carries
+its `field_source` in words — read at the shelf, from Discogs, read off
+a photograph (`vision`), legacy import, guess — and separately whether a
+person confirmed it. A field with NO provenance row says so out loud
+rather than rendering blank: "nothing recorded" and "read at the shelf"
+are exactly the two things a spreadsheet cannot tell apart. Unconfirmed
+values are shown, which the rule permits, and shown as unconfirmed.
+
+**The latent bug the record predicted was real.** `/api/items` LEFT
+JOINed `capture` unaggregated, so an item with two capture rows returned
+twice — a screen that miscounts its own collection. It now takes the
+newest capture explicitly rather than relying on one-per-item holding,
+with a test that inserts a second and asserts one row back.
+
+**Why the photographs are only listed.** Rendering one needs
+`GET /api/photos/:key`. `photos-pull.test.mjs` asserts no such route
+exists, in those words: "with no sign-in that is the household's
+photographs behind a URL". That test belongs to PHOTOS-TO-DESKTOP, and
+the pull tool exists *because* the Worker has a PUT and no GET. The
+route was built, tested and then withdrawn rather than shipped, because
+shipping it meant editing another record's security test — a
+stop-and-ask boundary twice over.
+
+The detail that settles it, written down where the decision gets taken:
+`/api/items/:id` is already open and already returns every `r2_key`, so
+a photo GET is not one unguessable URL per photograph but an enumerable
+archive. Any answer resting on key randomness has the surface wrong.
+
+What ships instead is what can be said honestly — how many photographs
+exist, when each was taken, and its key, which is what `photos-pull`
+fetches by. That the screen is worth having without the images is itself
+evidence for one of BROWSE-PHOTOS' options.
+
+**The screens link to each other**, `.html` and all, because Vite's dev
+server does not serve the extensionless path Pages also accepts. Capture
+is left out of the nav on purpose: every element between the shutter and
+Queue it is a reason to stop cataloguing.
+
+**Verify:** typecheck clean; 247 tests, 211 pass, the same 10
+pre-existing environmental failures as the parent commit. Four new
+Worker tests: one item per row with two captures, the list columns the
+filters need, the newest run winning the state column, and a detail
+payload carrying candidates, a decision and a `vision` reading that is
+still absent from `v_confirmed_field`. Driven at 1200x900 and 375x812
+against the real Worker over node:sqlite: filters by state, by
+photograph and by free text, the search box keeps focus while typing,
+the detail opens with provenance on every field, and the page no longer
+scrolls sideways on a phone — the table scrolls inside its own box.
+
 ## 2026-08-31 — CAPTURE-WHO: a name typed once, checked against a roster
 
 **Decision:** A first-run screen asks for a first name and refuses one

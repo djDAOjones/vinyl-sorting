@@ -73,13 +73,27 @@ export function createApp() {
   app.get('/api/items', async (c) => {
     const limit = Math.min(Number(c.req.query('limit') ?? 100) || 100, 500);
     const after = Number(c.req.query('after') ?? 0) || 0;
+    // ONE ROW PER ITEM. This used to LEFT JOIN `capture` unaggregated,
+    // so an item with two capture rows came back twice — a list that
+    // counts its own collection wrong, and a bug that would have been
+    // found by a duplicate rather than by reading. One capture per item
+    // holds today and nothing enforces it, so the newest is chosen
+    // explicitly instead of relying on that.
     const { results } = await c.env.DB.prepare(
       `SELECT i.id, i.crate, i.position, i.media_grade, i.sleeve_grade, i.decision,
-              i.captured_by, i.captured_at, i.import_ref,
-              c.catno_raw, c.label_raw, c.name_raw, c.title_raw,
-              r.discogs_id, r.label AS release_label
+              i.captured_by, i.captured_at, i.import_ref, i.last_verified_at,
+              c.catno_raw, c.label_raw, c.name_raw, c.title_raw, c.year_raw,
+              r.discogs_id, r.label AS release_label, r.title AS release_title,
+              (SELECT COUNT(*) FROM item_photo p WHERE p.item_id = i.id) AS photo_count,
+              (SELECT m.state FROM match_run m WHERE m.item_id = i.id
+                ORDER BY m.id DESC LIMIT 1) AS match_state,
+              EXISTS (SELECT 1 FROM v_confirmed_field v
+                       WHERE v.entity = 'item' AND v.entity_id = i.id
+                         AND v.field = 'release_id') AS release_confirmed
          FROM item i
-         LEFT JOIN capture c ON c.item_id = i.id
+         LEFT JOIN capture c ON c.id = (SELECT id FROM capture
+                                         WHERE item_id = i.id
+                                         ORDER BY captured_at DESC, id DESC LIMIT 1)
          LEFT JOIN release r ON r.id = i.release_id
         WHERE i.id > ?
         ORDER BY i.id
@@ -94,20 +108,62 @@ export function createApp() {
     const item = await c.env.DB.prepare('SELECT * FROM item WHERE id = ?').bind(id).first();
     if (!item) return c.json({ error: 'not found' }, 404);
 
-    const [captures, photos, provenance] = await Promise.all([
-      c.env.DB.prepare('SELECT * FROM capture WHERE item_id = ?').bind(id).all(),
-      c.env.DB.prepare('SELECT kind, r2_key FROM item_photo WHERE item_id = ?').bind(id).all(),
+    // The match history is what makes a wrong match explicable a month
+    // later. The review queue shows it once and throws it away.
+    const [captures, photos, provenance, readings, runs, decisions] = await Promise.all([
+      c.env.DB.prepare('SELECT * FROM capture WHERE item_id = ? ORDER BY captured_at DESC, id DESC')
+        .bind(id).all(),
+      c.env.DB.prepare('SELECT id, kind, r2_key, added_at FROM item_photo WHERE item_id = ? ORDER BY id')
+        .bind(id).all(),
       c.env.DB.prepare(
-        `SELECT entity, field, source, confirmed_by, confirmed_at FROM field_source
+        `SELECT entity, entity_id, field, source, confidence, confirmed_by, confirmed_at
+           FROM field_source
           WHERE (entity = 'item' AND entity_id = ?)
-             OR (entity = 'capture' AND entity_id IN (SELECT id FROM capture WHERE item_id = ?))`,
-      ).bind(id, id).all(),
+             OR (entity = 'capture' AND entity_id IN (SELECT id FROM capture WHERE item_id = ?))
+             OR (entity = 'raw_value' AND entity_id IN (SELECT id FROM raw_value WHERE item_id = ?))`,
+      ).bind(id, id, id).all(),
+      // Readings that have no home in the four-entity model yet — a
+      // photograph's, or a legacy column's. Displayed and marked as
+      // what they are; the decision views cannot see them at all.
+      c.env.DB.prepare('SELECT id, field, value FROM raw_value WHERE item_id = ? ORDER BY field')
+        .bind(id).all(),
+      c.env.DB.prepare(
+        // Bounded, so the candidate lookup below can never approach
+        // D1's 100-parameter limit however often a row is re-verified.
+        'SELECT id, state, ran_at, queries_json FROM match_run WHERE item_id = ? ORDER BY id DESC LIMIT 20',
+      ).bind(id).all(),
+      c.env.DB.prepare(
+        `SELECT id, match_run_id, choice, discogs_id, decided_by, decided_at, note
+           FROM review_decision WHERE item_id = ? ORDER BY id DESC`,
+      ).bind(id).all(),
     ]);
+
+    const runIds = runs.results.map((r) => (r as { id: number }).id);
+    const candidates = runIds.length
+      ? (await c.env.DB.prepare(
+        `SELECT match_run_id, rank, discogs_id, score, signals_json
+           FROM match_candidate
+          WHERE match_run_id IN (${runIds.map(() => '?').join(',')})
+          ORDER BY match_run_id DESC, rank`,
+      ).bind(...runIds).all()).results
+      : [];
+
     return c.json({
       item,
       captures: captures.results,
       photos: photos.results,
       provenance: provenance.results,
+      readings: readings.results,
+      runs: runs.results.map((r) => {
+        const runId = (r as { id: number }).id;
+        return {
+          ...r,
+          candidates: candidates.filter((x) => (x as { match_run_id: number }).match_run_id === runId),
+          decision: decisions.results.find(
+            (d) => (d as { match_run_id: number }).match_run_id === runId,
+          ) ?? null,
+        };
+      }),
     });
   });
 

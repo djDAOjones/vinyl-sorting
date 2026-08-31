@@ -26,6 +26,12 @@ h1 { font-size: 1.05rem; color: var(--ink); margin: 0; letter-spacing: .01em; }
 .status b { color: var(--accent); font-weight: 600; }
 .status .bad { color: var(--bad); }
 
+/* The three screens are reachable from each other. Capture is
+   deliberately excluded: every element between the shutter and Queue it
+   is a reason to stop cataloguing, and browsing is a desk activity. */
+a.nav { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; }
+a.nav:hover, a.nav:focus-visible { border-bottom-color: var(--accent); }
+
 .shot { display: block; width: 100%; border: 1px dashed var(--rule); background: var(--sunk);
   border-radius: 14px; color: var(--muted); padding: 0; overflow: hidden; cursor: pointer;
   min-height: 8.5rem; font: 600 .95rem var(--f); }

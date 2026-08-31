@@ -206,6 +206,93 @@ test('a photo key cannot escape its prefix', async () => {
 
 // ── reads ─────────────────────────────────────────────────────────
 
+test('DATASET-VIEWER: an item with two captures is still ONE row', async () => {
+  // The list used to LEFT JOIN `capture` unaggregated, so a second
+  // capture row on one item returned the item twice — a screen that
+  // counts its own collection wrong. One capture per item holds today
+  // and nothing enforces it, so this is fixed before a duplicate
+  // teaches it rather than after.
+  const env = makeEnv();
+  await post(env, { clientId: 'c1', crate: 'B4', catnoRaw: 'SXL 6113' });
+  env.DB.raw.exec(
+    "INSERT INTO capture (item_id, catno_raw, label_raw, captured_at) "
+    + "VALUES (1, 'SXL 6113A', 'Decca', '2030-01-01T00:00:00Z')",
+  );
+
+  const page = await (await app.request('/api/items?limit=100', {}, env)).json();
+  assert.equal(page.items.length, 1, 'one item, one row');
+  assert.equal(page.items[0].catno_raw, 'SXL 6113A', 'and it is the newest capture');
+  assert.equal(page.items[0].label_raw, 'Decca');
+});
+
+test('DATASET-VIEWER: the list carries what the screen filters on', async () => {
+  const env = makeEnv();
+  await post(env, {
+    clientId: 'c1', crate: 'B4', catnoRaw: 'SXL 6113',
+    photos: [{ kind: 'other', r2Key: 'labels/c1-1.jpg' }],
+  });
+  await post(env, { clientId: 'c2', crate: 'B4', catnoRaw: 'CFP 40001' });
+  env.DB.raw.exec("INSERT INTO match_run (item_id, state, queries_json) VALUES (1, 'needs-review', '{}')");
+
+  const { items } = await (await app.request('/api/items?limit=100', {}, env)).json();
+  const [one, two] = items;
+  assert.equal(one.photo_count, 1);
+  assert.equal(two.photo_count, 0, 'a row with no photograph says zero, not null');
+  assert.equal(one.match_state, 'needs-review');
+  assert.equal(two.match_state, null, 'never matched is the absence of a run, not a state');
+  assert.equal(one.release_confirmed, 0, 'nothing is confirmed by capture alone');
+});
+
+test('DATASET-VIEWER: the newest match run wins the list column', async () => {
+  const env = makeEnv();
+  await post(env, { clientId: 'c1', catnoRaw: 'SXL 6113' });
+  env.DB.raw.exec(`
+    INSERT INTO match_run (item_id, state, queries_json) VALUES (1, 'rejected', '{}');
+    INSERT INTO match_run (item_id, state, queries_json) VALUES (1, 'needs-review', '{}');`);
+  const { items } = await (await app.request('/api/items?limit=100', {}, env)).json();
+  assert.equal(items[0].match_state, 'needs-review', 're-verification is a normal operation');
+});
+
+test('DATASET-VIEWER: item detail carries the match history and the readings', async () => {
+  const env = makeEnv();
+  await post(env, {
+    clientId: 'c1', catnoRaw: 'SXL 6113',
+    photos: [{ kind: 'other', r2Key: 'labels/c1-1.jpg' }],
+  });
+  env.DB.raw.exec(`
+    INSERT INTO match_run (item_id, state, queries_json)
+      VALUES (1, 'needs-review', '{"reason":"only 1 signal family"}');
+    INSERT INTO match_candidate (match_run_id, rank, discogs_id, score, signals_json)
+      VALUES (1, 1, 1451234, 73, '{"families":["identifier"]}'),
+             (1, 2, 2298871, 23, '{"families":["label"]}');
+    INSERT INTO review_decision (match_run_id, item_id, choice, discogs_id, decided_by)
+      VALUES (1, 1, 'candidate', 1451234, 'Joe');
+    INSERT INTO raw_value (item_id, field, value) VALUES (1, 'catno_raw', 'SXL 6113');
+    INSERT INTO field_source (entity, entity_id, field, source)
+      VALUES ('raw_value', 1, 'catno_raw', 'vision');`);
+
+  const body = await (await app.request('/api/items/1', {}, env)).json();
+  assert.equal(body.photos.length, 1);
+  assert.equal(body.photos[0].r2_key, 'labels/c1-1.jpg');
+
+  assert.equal(body.runs.length, 1);
+  assert.equal(body.runs[0].state, 'needs-review');
+  assert.deepEqual(body.runs[0].candidates.map((c) => c.rank), [1, 2], 'ranked, so a wrong match is explicable');
+  assert.equal(body.runs[0].decision.choice, 'candidate');
+  assert.equal(body.runs[0].decision.decided_by, 'Joe');
+
+  // A photo reading is DISPLAYED — the provenance rule permits that —
+  // and marked as what it is.
+  assert.deepEqual(body.readings, [{ id: 1, field: 'catno_raw', value: 'SXL 6113' }]);
+  assert.ok(body.provenance.some((p) => p.entity === 'raw_value' && p.source === 'vision'),
+    'the reading arrives with its provenance, not bare');
+
+  // …and it is still unreachable from anything that decides.
+  const confirmed = env.DB.raw.prepare(
+    "SELECT COUNT(*) AS n FROM v_confirmed_field WHERE source = 'vision'").get();
+  assert.equal(confirmed.n, 0);
+});
+
 test('items paginate by keyset and report where to continue', async () => {
   const env = makeEnv();
   for (let i = 0; i < 5; i++) await post(env, { clientId: `c${i}`, crate: 'B4', catnoRaw: `X${i}` });

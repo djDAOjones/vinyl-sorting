@@ -35,19 +35,19 @@
   deployed matcher work, but a majority of queries still fail, costing
   recall; the gap is now tunable without a deploy and every run records
   its failures, so the remaining work is measuring rather than building.
-- [ ] **DATASET-VIEWER A third screen that lists the whole collection,
-  with photographs and provenance** (2026-08-31) — 465 catalogued items
-  cannot be seen anywhere in the app — capture only writes and the review
-  queue shows one match at a time — so this is the browse screen: a
-  filterable list, an item detail with its photographs, and every field
-  labelled with where the value came from and whether a person has
-  confirmed it.
 - [ ] **DATASET-EDIT Correct a reading and confirm it, from the browse
   screen** [security] (2026-08-31) — The editable half of browse — fix
   what was misread, fill the label captured on 0% of the backlog, promote
   a photo reading, confirm a value already right; every edit lands as a
   confirmed `shelf` value behind a shared passphrase, and because it
   writes to `capture` it amends a hard rule in the same commit.
+- [ ] **BROWSE-PHOTOS May a route serve a label photograph, now that
+  browse wants to show one?** [sign-off] (2026-08-31) — DATASET-VIEWER
+  asked for GET /api/photos/:key so the browse screen could render the
+  label photographs, and photos-pull.test.mjs asserts that no such route
+  exists because with no sign-in it puts the household's photographs
+  behind a URL — two live records disagree, so the screen ships listing
+  the keys and the question goes to the maintainer.
 
 ### Next milestone
 

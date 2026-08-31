@@ -45,6 +45,13 @@ const who = {
   get value() { return storedCapturer() ?? ''; },
 };
 
+/**
+ * The other desk screen. `.html` rather than the extensionless path
+ * Cloudflare Pages also serves, because Vite's dev server does not: a
+ * link that only works in production is a link that gets found broken.
+ */
+const NAV = '<a class="nav" href="/browse.html">The collection →</a>';
+
 const esc = (s: unknown): string => String(s ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -69,7 +76,8 @@ function render(): void {
   app.innerHTML = `
     <div class="qhead">
       <h1>Review queue</h1>
-      <div class="progress"><b>${cursor + 1}</b> of ${queue.length} · ${resolvedCount} resolved · item ${item.item_id}</div>
+      <div class="progress"><b>${cursor + 1}</b> of ${queue.length} · ${resolvedCount} resolved ·
+        item ${item.item_id} · ${NAV}</div>
     </div>
 
     ${refusal ? `<p class="why-refused"><strong>Not auto-accepted:</strong> ${esc(refusal)}</p>` : ''}
@@ -145,7 +153,7 @@ function renderWhoAmI(): void {
   // the roster refuses a name that is not one of ours, which is the
   // same crude gate the capture screen puts on the phone.
   app.innerHTML = `
-    <div class="qhead"><h1>Review queue</h1></div>
+    <div class="qhead"><h1>Review queue</h1><div class="progress">${NAV}</div></div>
     <section class="capture">
       <h2>Who is reviewing?</h2>
       <p class="note">A confirmation records who made it. There is no sign-in, so type
@@ -170,7 +178,7 @@ function renderWhoAmI(): void {
 
 function renderDone(): void {
   app.innerHTML = `
-    <div class="qhead"><h1>Review queue</h1></div>
+    <div class="qhead"><h1>Review queue</h1><div class="progress">${NAV}</div></div>
     <div class="done">
       <strong>Queue clear</strong>
       ${resolvedCount} resolved this session. Re-verification is a normal operation —
