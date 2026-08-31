@@ -32,6 +32,9 @@
  */
 
 import { ensureCapturerCookie, storedCapturer } from './who.ts';
+import {
+  bootChrome, esc, headerHtml, parseJson as parse, toast,
+} from './chrome.ts';
 
 /**
  * The header the photo route and the item detail both want.
@@ -130,19 +133,14 @@ async function write(path: string, body: unknown): Promise<boolean> {
   return true;
 }
 
-function flash(message: string, kind: 'ok' | 'err' = 'ok'): void {
-  const el = document.getElementById('bflash');
-  if (!el) return;
-  el.innerHTML = `<p class="flash${kind === 'err' ? ' err' : ''}">${esc(message)}</p>`;
-  setTimeout(() => { el.innerHTML = ''; }, kind === 'ok' ? 2400 : 5000);
-}
+/** The shared toast, which creates its own host if the page has none. */
+const flash = toast;
 
-const esc = (s: unknown): string => String(s ?? '')
-  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-
-const parse = <T,>(json: string | null, fallback: T): T => {
-  try { return json ? JSON.parse(json) as T : fallback; } catch { return fallback; }
-};
+/** What `?` lists for this screen. */
+const SCREEN_KEYS = [
+  { keys: '/', what: 'Jump to the search box' },
+  { keys: 'Esc', what: 'Close the detail panel' },
+];
 
 /**
  * What a source means, said in words rather than in jargon.
@@ -232,47 +230,46 @@ function render(): void {
   const shown = visible();
   const withPhotos = rows.filter((r) => r.photo_count).length;
   app.innerHTML = `
-    <div class="bhead">
-      <h1>The collection</h1>
-      <div class="counts"><b>${shown.length}</b> of ${rows.length} shown ·
-        ${withPhotos} photographed ·
-        <a class="nav" href="/review.html">Review queue →</a></div>
-    </div>
+    ${headerHtml({ here: 'browse', title: 'The collection',
+    aside: `<div class="tally"><b>${shown.length}</b> of ${rows.length} shown<br>
+      ${withPhotos} photographed</div>` })}
 
-    <div class="filters">
-      <label><span>Search</span>
+    <div class="filters controls">
+      <label class="field grow"><span>Search</span>
         <input id="fText" type="search" placeholder="catalogue number, label, name, crate"
           value="${esc(filters.text)}"></label>
-      <label><span>Match state</span>
+      <label class="field"><span>Match state</span>
         <select id="fState">
           <option value="">any</option>
           ${STATES.map((s) => `<option value="${s}"${filters.state === s ? ' selected' : ''}>${s}
             (${rows.filter((r) => stateOf(r) === s).length})</option>`).join('')}
         </select></label>
-      <label><span>Photographs</span>
+      <label class="field"><span>Photographs</span>
         <select id="fPhotos">
           <option value="">any</option>
           <option value="with"${filters.photos === 'with' ? ' selected' : ''}>has one</option>
           <option value="without"${filters.photos === 'without' ? ' selected' : ''}>none</option>
         </select></label>
-      <label><span>Sort</span>
+      <label class="field"><span>Sort</span>
         <select id="fSort">
           <option value="id"${filters.sort === 'id' ? ' selected' : ''}>by id</option>
           <option value="verified"${filters.sort === 'verified' ? ' selected' : ''}>last verified</option>
         </select></label>
     </div>
 
-    <table class="rows">
-      <thead><tr>
-        <th>id</th><th>catalogue</th><th>label</th><th>name</th><th>title</th>
-        <th>crate</th><th>photos</th><th>match</th>
-      </tr></thead>
-      <tbody>${shown.map(rowHtml).join('')}</tbody>
-    </table>
+    <div class="tablewrap">
+      <table class="rows">
+        <thead><tr>
+          <th>id</th><th>catalogue</th><th>label</th><th>name</th><th>title</th>
+          <th>crate</th><th>photos</th><th>match</th>
+        </tr></thead>
+        <tbody>${shown.map(rowHtml).join('')}</tbody>
+      </table>
+    </div>
     ${shown.length ? '' : '<p class="empty-note">Nothing matches those filters.</p>'}
 
     <div class="detail" id="detail" hidden></div>
-    <div id="bflash"></div>`;
+    <div id="toast"></div>`;
 
   const on = (id: string, ev: string, fn: (el: HTMLInputElement) => void): void => {
     const el = document.getElementById(id) as HTMLInputElement;
@@ -299,9 +296,9 @@ function repaintList(): void {
   const shown = visible();
   const body = app.querySelector('tbody');
   if (body) body.innerHTML = shown.map(rowHtml).join('');
-  const counts = app.querySelector('.counts');
+  const counts = app.querySelector('.tally');
   if (counts) {
-    counts.innerHTML = `<b>${shown.length}</b> of ${rows.length} shown · `
+    counts.innerHTML = `<b>${shown.length}</b> of ${rows.length} shown<br>`
       + `${rows.filter((r) => r.photo_count).length} photographed`;
   }
   for (const tr of app.querySelectorAll<HTMLElement>('tr[data-id]')) {
@@ -319,7 +316,7 @@ function rowHtml(r: Row): string {
     ${cell(r.catno_raw)}${cell(r.label_raw)}${cell(r.name_raw)}${cell(r.title_raw)}
     ${cell([r.crate, r.position].filter(Boolean).join(' · '))}
     <td class="num">${r.photo_count || '<span class="empty">—</span>'}</td>
-    <td><span class="state s-${state}">${state}</span>${
+    <td><span class="chip s-${state}">${state}</span>${
     r.release_confirmed ? '<span class="tick" title="release confirmed by a person">✓</span>' : ''}</td>
   </tr>`;
 }
@@ -499,21 +496,21 @@ function detailHtml(d: Detail): string {
         <span class="prov">${storedCapturer()
     ? `editing as ${esc(storedCapturer())}`
     : '<span class="warnish">no name on this device — set one on the review queue</span>'}</span>
-        <button type="button" id="lockBtn" class="ghost">${
+        <button type="button" id="lockBtn" class="btn btn-quiet">${
   editToken.get() ? 'Editing unlocked' : 'Unlock editing'}</button>
-        <button type="button" id="closeDetail" class="ghost">Close</button>
+        <button type="button" id="closeDetail" class="btn btn-quiet">Close</button>
       </div>
     </div>
     <form class="unlock" id="unlock" hidden>
-      <label><span>Passphrase</span><input id="tokenBox" type="password"
+      <label class="field"><span>Passphrase</span><input id="tokenBox" type="password"
         autocomplete="current-password"></label>
-      <button type="submit" class="ghost">Keep on this device</button>
+      <button type="submit" class="btn btn-ghost">Keep on this device</button>
     </form>
 
     <div class="dsplit">
       <section>
         <h3>Read off the disc</h3>
-        <dl>
+        <dl class="facts">
           ${line('Catalogue number', capture.catno_raw, 'capture', captureId, 'catno_raw')}
           ${line('Label', capture.label_raw, 'capture', captureId, 'label_raw')}
           ${line('Name', capture.name_raw, 'capture', captureId, 'name_raw')}
@@ -526,7 +523,7 @@ function detailHtml(d: Detail): string {
     : ''}
 
         <h3>The physical record</h3>
-        <dl>
+        <dl class="facts">
           ${line('Crate', item.crate, 'item', Number(item.id), 'crate')}
           ${line('Position', item.position, 'item', Number(item.id), 'position')}
           ${line('Media', item.media_grade, 'item', Number(item.id), 'media_grade')}
@@ -546,7 +543,7 @@ function detailHtml(d: Detail): string {
         <h3>Readings not yet in the model</h3>
         <p class="empty-note">Held in <code>raw_value</code> — displayed, and unreachable from
           any cluster, coverage check or sell list until a person confirms one.</p>
-        <dl>${d.readings.map((r) => `<dt>${esc(r.field)}</dt><dd>${esc(r.value)}${
+        <dl class="facts">${d.readings.map((r) => `<dt>${esc(r.field)}</dt><dd>${esc(r.value)}${
     (CAPTURE_FIELDS as readonly string[]).includes(r.field)
       ? `<span class="ftools"><button type="button" class="tiny promote" data-field="${esc(r.field)}"
            title="Yes, that is what the label says">promote</button></span>`
@@ -582,7 +579,7 @@ function runHtml(run: Run): string {
     const sig = parse<{ families?: string[] }>(cand.signals_json, {});
     return `<div class="cand-row"><span class="rank">${cand.rank}</span>
         <span class="did">Discogs ${cand.discogs_id}</span>
-        <span class="fams">${(sig.families ?? []).map((f) => `<span class="fam">${esc(f)}</span>`).join('')}</span>
+        <span class="fams">${(sig.families ?? []).map((f) => `<span class="chip accent">${esc(f)}</span>`).join('')}</span>
         <span class="score">${cand.score}</span></div>`;
   }).join('')}
     ${run.decision
@@ -599,7 +596,27 @@ app.innerHTML = '<p class="empty-note">Loading the collection…</p>';
 // in localStorage and none in document.cookie; without this its images
 // stay broken for reasons it cannot see.
 ensureCapturerCookie();
+bootChrome(SCREEN_KEYS);
+
+/**
+ * Escape closes the detail panel.
+ *
+ * `chrome.ts` handles Escape for dialogs and for leaving a field; a
+ * panel that is neither has to say so itself. The order matters: the
+ * shared handler blurs a focused input first, so pressing Escape while
+ * editing a value leaves the editor rather than closing the row under
+ * it.
+ */
+addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape' || openId === null) return;
+  const panel = document.getElementById('detail');
+  if (!panel || panel.hidden) return;
+  if (document.querySelector('dialog[open]')) return;
+  openId = null;
+  panel.hidden = true;
+  for (const tr of app.querySelectorAll('tr.open')) tr.classList.remove('open');
+});
 load().catch((err: unknown) => {
-  app.innerHTML = `<p class="why-refused">Could not load the collection: ${
+  app.innerHTML = `<p class="note-bad">Could not load the collection: ${
     esc(err instanceof Error ? err.message : String(err))}</p>`;
 });

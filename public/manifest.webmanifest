@@ -1,12 +1,17 @@
 {
   "name": "Vinyl sorter — capture",
   "short_name": "Vinyl sorter",
-  "start_url": "/",
+  "start_url": "/capture.html",
   "display": "standalone",
-  "background_color": "#0f1418",
-  "theme_color": "#14191f",
+  "background_color": "#0b0e10",
+  "theme_color": "#0b0e10",
   "description": "Photograph a label, queue it, walk out of the loft.",
   "icons": [
-    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
   ]
 }

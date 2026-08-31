@@ -2,6 +2,68 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-09-01 — APP-HOME-HUB: a front door, and capture keeps its own
+
+**Decision:** `/` is a hub of four tiles — Add vinyl, Resolve entries,
+The collection, Settings — each carrying the number of things waiting
+behind it. Capture moved to `/capture.html`. Every screen wears the
+same header with the same way home in the same place.
+
+**The manifest's `start_url` moved to `/capture.html` with it, and that
+is the load-bearing part.** The brief's stated risk is building the app
+instead of cataloguing the records, and capture is tuned around it:
+nothing between the shutter and Queue it. A menu in front of the camera
+is exactly the tax that principle refuses. So the two audiences get
+different front doors — a phone with the app installed still opens
+straight into the camera, and the hub is for the desk and for anyone
+arriving at the bare URL. Neither pays for the other.
+
+**The service worker's offline fallback had to change or the move would
+have broken the one promise that matters.** It answered every
+uncached navigation with `/index.html`, which was correct while the
+root WAS capture. Unchanged, it would have met "open the camera, I have
+no signal" with a menu. It now falls back on the requested path, and
+the shell caches all five pages.
+
+**Verify:** npm run gate 271 passing; all five screens rendered at
+1100 px and at 375 px in both themes; `g c` navigated from settings to
+the collection; the shortcut card opens on `?`.
+
+## 2026-09-01 — DESIGN-SYSTEM: one language, and dark is the base
+
+**Decision:** `tokens.css` holds every colour, size and duration;
+`app.css` holds every component more than one screen uses; `chrome.ts`
+holds the header, the theme, the toast and the keyboard. The three
+dialects in `style.css`, `browse.css` and `review.css` are gone, and
+what is left in each is only what that screen alone has — the
+viewfinder, the detail panel, the candidate row.
+
+**Dark is the base and light is an override**, rather than the other
+way round. If the theme script never runs — JavaScript blocked, an
+error before paint — the app falls back to the palette the hardest
+environment needs rather than to a white page held over a crate.
+Capture opts out of light entirely with `data-force-dark`: dim light
+and gloves are constraints it was measured against, not a preference.
+
+**Light is a class on `<html>`, set by an inline script before paint.**
+`light-dark()` would have been cleaner and needs Safari 17.5, which is
+not a promise this app can make about whatever phone is to hand; a
+duplicated `prefers-color-scheme` block would have meant writing the
+palette twice and letting the copies drift. Three lines of duplicated
+script is the smaller cost, and `tokens.css` says so where they live.
+
+**The accent is brass, and it marks only what is interactive.** That
+is why `needs-review` stopped being amber and became blue: 296 rows
+sit in that state and every one of them is the app working correctly —
+the corroboration gate refusing to guess. Colouring the most common
+state in the database as a warning said something false about it. An
+accent that also means "careful" stops meaning either.
+
+**Verify:** npm run gate 271 passing; five screens at 1100 px and
+375 px, both themes; the narrow-screen header drops the word "Home"
+and keeps the mark, because at 375 px it was clipping the queue status
+— the one thing on that bar that changes.
+
 ## 2026-08-31 — CAPTURE-BULK-REMNANT: they stay, and the file says so
 
 **Decision:** `bulkFields` and `BULK_CARRIED` stay in

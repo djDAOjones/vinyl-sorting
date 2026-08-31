@@ -1,0 +1,161 @@
+/**
+ * The token layer. Every colour, size and duration in the app resolves
+ * here and nowhere else (DESIGN-SYSTEM).
+ *
+ * DARK IS THE BASE, not a theme. Capture happens in lofts and garages
+ * in dim light, and dark is what that screen needs; light is an
+ * override for the two desk screens. Writing it this way round means
+ * that if the theme script never runs — JavaScript blocked, an error
+ * before paint — the app falls back to the palette the hardest
+ * environment needs, rather than to a white page held over a crate.
+ *
+ * NO `light-dark()` AND NO DUPLICATED MEDIA BLOCK. The first needs
+ * Safari 17.5 and this app is used on whatever phone is to hand; the
+ * second means writing the light palette twice and having the copies
+ * drift. Instead `.light` is a single class on <html>, set before paint
+ * by the inline script in each page's <head>, resolving a stored choice
+ * or `prefers-color-scheme`. See `src/chrome.ts`.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* ── Neutrals ─────────────────────────────────────────────────
+     A ramp, not a set of names: --bg is furthest back, --raise is
+     what sits on top of a card. Anything that needs a surface picks
+     the next step up rather than inventing a hex. */
+  --bg: #0b0e10;
+  --surface: #12171a;
+  --sunk: #171e22;
+  --raise: #1e282e;
+  --line: #26323a;
+  --line-strong: #38474f;
+
+  --text: #e9edef;
+  --text-2: #b4c0c6;
+  --text-3: #7d8e95;
+
+  /* ── Accent ───────────────────────────────────────────────────
+     Brass, which is a record label and not an alarm. It marks things
+     that are INTERACTIVE and nothing else — no state uses it, so a
+     warm glow on this screen always means "you can press that".
+     That is why the match states below are green/blue/red and the
+     old amber `warn` is gone: an accent that also means "careful"
+     stops meaning either. */
+  --accent: #e8b055;
+  --accent-hover: #f2bf6c;
+  --accent-ink: #1d1403;
+  --accent-soft: rgba(232, 176, 85, 0.13);
+  --accent-line: rgba(232, 176, 85, 0.4);
+
+  /* ── Semantic ─────────────────────────────────────────────────
+     `needs-review` is INFORMATION, not a warning. 296 rows sit in
+     that state and every one of them is the app working correctly:
+     the corroboration gate refused to guess. Colouring them amber
+     said something false about the most common state in the
+     database. */
+  --ok: #74c48c;
+  --ok-soft: rgba(116, 196, 140, 0.14);
+  --info: #7ab0e0;
+  --info-soft: rgba(122, 176, 224, 0.14);
+  --danger: #ea8b7e;
+  --danger-soft: rgba(234, 139, 126, 0.14);
+
+  /* ── Type ────────────────────────────────────────────────────
+     A serif for page titles because this is a catalogue, and mono
+     for anything that has to be READ CHARACTER BY CHARACTER — a
+     catalogue number, a matrix code, a count. Mono is functional
+     here rather than decorative: SXL 6113 and SXL 61I3 are the same
+     shape in a proportional face. */
+  --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-title: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --t-xs: 0.72rem;
+  --t-sm: 0.82rem;
+  --t-base: 0.94rem;
+  /* 1.05rem is a FLOOR for anything typed into, not a preference:
+     iOS zooms the page in on any input under 16 px and never zooms
+     back out, so a smaller number costs a pinch after every field. */
+  --t-input: 1.05rem;
+  --t-lg: 1.2rem;
+  --t-xl: 1.55rem;
+  --t-2xl: 2rem;
+
+  /* ── Space, shape, motion ────────────────────────────────────── */
+  --s1: 0.25rem;
+  --s2: 0.5rem;
+  --s3: 0.75rem;
+  --s4: 1rem;
+  --s5: 1.5rem;
+  --s6: 2rem;
+  --s7: 3rem;
+
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-full: 999px;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+
+  --dur: 0.14s;
+  --ease: cubic-bezier(0.2, 0, 0.2, 1);
+
+  /* Row padding, so density is one token rather than a rule per
+     table. `.dense` on <html> tightens the desk screens without
+     touching capture, which is never dense. */
+  --row-y: 0.5rem;
+  --tap: 2.75rem;
+}
+
+/**
+ * Light — the desk palette. Warm paper rather than white, because the
+ * content is photographs of records and a cold white ground makes
+ * every sleeve look grey.
+ */
+:root.light {
+  color-scheme: light;
+
+  --bg: #f8f6f2;
+  --surface: #ffffff;
+  --sunk: #f0ede7;
+  --raise: #e7e3da;
+  --line: #ddd7cb;
+  --line-strong: #bcb4a4;
+
+  --text: #161c20;
+  --text-2: #414c53;
+  --text-3: #6d7981;
+
+  /* Brass has to darken a long way to hold contrast on paper. It
+     stops being a glow and becomes an ink, which is the right
+     register for this screen anyway. */
+  --accent: #8a5a0d;
+  --accent-hover: #6f4809;
+  --accent-ink: #fffdf7;
+  --accent-soft: rgba(138, 90, 13, 0.1);
+  --accent-line: rgba(138, 90, 13, 0.35);
+
+  --ok: #1f7a45;
+  --ok-soft: rgba(31, 122, 69, 0.12);
+  --info: #1a5f9c;
+  --info-soft: rgba(26, 95, 156, 0.12);
+  --danger: #a8342a;
+  --danger-soft: rgba(168, 52, 42, 0.12);
+
+  --shadow: 0 1px 2px rgba(40, 34, 22, 0.1), 0 8px 24px rgba(40, 34, 22, 0.08);
+  --shadow-sm: 0 1px 3px rgba(40, 34, 22, 0.1);
+}
+
+:root.dense {
+  --row-y: 0.3rem;
+  --s4: 0.8rem;
+  --s5: 1.15rem;
+}
+
+/* Someone who has asked for less movement gets none of it. The app
+   uses motion only for feedback, so removing it costs nothing. */
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur: 0s; }
+}

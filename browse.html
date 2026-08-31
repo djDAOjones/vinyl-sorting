@@ -2,14 +2,25 @@
 <html lang="en-GB">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#14191f">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0e10">
 <title>Vinyl sorter — browse</title>
-<link rel="stylesheet" href="/src/style.css">
+<script>
+(function () {
+  try {
+    var d = document.documentElement, t = localStorage.getItem('vs.theme');
+    if ((t === 'light' || (t !== 'dark' && matchMedia('(prefers-color-scheme: light)').matches))
+        && !d.hasAttribute('data-force-dark')) d.classList.add('light');
+    if (localStorage.getItem('vs.density') === 'dense') d.classList.add('dense');
+  } catch (e) { /* dark is the base, which is the safe fallback */ }
+})();
+</script>
+<link rel="stylesheet" href="/src/tokens.css">
+<link rel="stylesheet" href="/src/app.css">
 <link rel="stylesheet" href="/src/browse.css">
 </head>
 <body>
-<main id="browse" aria-live="polite"></main>
+<main id="browse" class="w-full" aria-live="polite"></main>
 <script type="module" src="/src/browse.ts"></script>
 </body>
 </html>

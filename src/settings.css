@@ -1,0 +1,43 @@
+/* Settings (APP-SETTINGS). Only what this screen alone needs. */
+
+/* The theme picker shows the palette rather than naming it: three
+   words are three guesses, and a swatch is the answer. */
+.themes { display: grid; gap: var(--s2); grid-template-columns: 1fr; }
+@media (min-width: 30rem) { .themes { grid-template-columns: repeat(3, 1fr); } }
+
+.themeopt {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: var(--s3);
+  align-items: center;
+  text-align: left;
+  padding: var(--s3);
+  background: var(--sunk);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+.themeopt:hover { border-color: var(--accent); }
+.themeopt.on { border-color: var(--accent); background: var(--accent-soft); }
+.themeopt .tl { font: 600 var(--t-base) var(--font); color: var(--text); }
+.themeopt .th { grid-column: 2; font-size: var(--t-xs); color: var(--text-3); line-height: 1.35; }
+
+/* Fixed colours on purpose: a swatch that followed the tokens would
+   show the CURRENT theme three times over and tell you nothing. */
+.swatch {
+  grid-row: 1 / span 2;
+  width: 2rem; height: 2rem;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+}
+.sw-light { background: linear-gradient(135deg, #f8f6f2 50%, #8a5a0d 50%); }
+.sw-dark { background: linear-gradient(135deg, #0b0e10 50%, #e8b055 50%); }
+.sw-system { background: linear-gradient(135deg, #f8f6f2 0 33%, #8a5a0d 33% 50%, #0b0e10 50% 83%, #e8b055 83%); }
+
+.settings dl.facts dd code { font-size: var(--t-sm); color: var(--accent); }
+
+/* The export pair, once the passphrase is in (APP-SETTINGS tier 3). */
+.exports { display: flex; flex-wrap: wrap; gap: var(--s2); }

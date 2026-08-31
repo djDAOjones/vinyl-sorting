@@ -1,0 +1,424 @@
+/**
+ * The component layer: everything more than one screen needs, defined
+ * once (DESIGN-SYSTEM).
+ *
+ * The rule that keeps this from rotting: a screen's own sheet may
+ * LAY OUT these components and may not restyle them. If browse wants a
+ * different button, the button changes here for everybody, or it is a
+ * genuinely different component and gets a name. The three dialects in
+ * `style.css`, `browse.css` and `review.css` are what this replaces.
+ *
+ * Colours come from `tokens.css`. There are no hex values below this
+ * line, deliberately — a hex here is a token that was never named, and
+ * it is how the light theme silently stops working.
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text-2);
+  font-family: var(--font);
+  font-size: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  padding:
+    env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+::selection { background: var(--accent-soft); color: var(--text); }
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+/* ── Page frame ──────────────────────────────────────────────────
+   Three widths, because the screens genuinely differ: capture is one
+   column held in one hand, review is a two-up comparison, browse is a
+   table of 484 rows. Set on <main> by the page. */
+main { margin: 0 auto; padding: var(--s4) var(--s4) var(--s7); }
+main.w-narrow { max-width: 34rem; }
+main.w-wide   { max-width: 64rem; }
+main.w-full   { max-width: 84rem; }
+
+/* ── The header every screen wears ───────────────────────────────
+   Same shape and same position on all five, so "where am I and how do
+   I get out" is answered without reading. Rendered by `chrome.ts`. */
+.appbar {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding-bottom: var(--s3);
+  margin-bottom: var(--s4);
+  border-bottom: 1px solid var(--line);
+}
+
+/* The way home, on every screen including capture. It is an anchor
+   rather than a button so that middle-click and ⌘-click work, and it
+   carries the mark so the target is bigger than the word. */
+.home {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s1) var(--s2);
+  margin-left: calc(var(--s2) * -1);
+  border-radius: var(--r-sm);
+  color: var(--text-3);
+  text-decoration: none;
+  font: 600 var(--t-sm) var(--font);
+  min-height: var(--tap);
+}
+.home:hover { color: var(--accent); background: var(--accent-soft); }
+.home .mark { flex: none; width: 1.15rem; height: 1.15rem; color: var(--accent); }
+
+.appbar h1 {
+  margin: 0;
+  font: 600 var(--t-lg) var(--font-title);
+  letter-spacing: 0.005em;
+  color: var(--text);
+}
+.appbar .spacer { margin-left: auto; }
+
+/* On a phone the header has four things in it and 375 px to put them
+   in: the way home, the title, who is holding it, and the queue. The
+   word "Home" is the one that can go — the mark is still a 44 px
+   target and still says what it does, and losing it clipped the queue
+   status off the right-hand edge, which is the one thing on that bar
+   that CHANGES. */
+@media (max-width: 26rem) {
+  .home span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .home { gap: 0; padding-left: var(--s1); padding-right: var(--s1); }
+  .appbar { gap: var(--s2); }
+  .appbar h1 { font-size: var(--t-base); }
+}
+
+/* Live counts in the header. Mono, because they are numbers being
+   compared against each other between visits. */
+.tally {
+  font: 500 var(--t-xs) var(--mono);
+  color: var(--text-3);
+  text-align: right;
+  line-height: 1.35;
+}
+.tally b { color: var(--accent); font-weight: 600; }
+.tally .bad { color: var(--danger); }
+
+/* ── Buttons ─────────────────────────────────────────────────────
+   Three, and they are not interchangeable: `primary` writes, `ghost`
+   navigates or reveals, `quiet` is a control that lives inside
+   another control's row. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: var(--tap);
+  padding: var(--s2) var(--s4);
+  border-radius: var(--r-md);
+  border: 1px solid transparent;
+  font: 600 var(--t-base) var(--font);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease),
+              border-color var(--dur) var(--ease);
+}
+.btn-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn-ghost { background: transparent; color: var(--text-2); border-color: var(--line-strong); }
+.btn-ghost:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.btn-quiet {
+  background: var(--sunk);
+  color: var(--text-2);
+  border-color: var(--line);
+  min-height: 1.7rem;
+  padding: var(--s1) var(--s2);
+  font: 600 var(--t-xs) var(--mono);
+}
+.btn-quiet:hover { color: var(--accent); border-color: var(--accent); }
+.btn-danger { background: transparent; color: var(--danger); border-color: var(--danger); }
+.btn:disabled { opacity: 0.42; cursor: not-allowed; }
+.btn:disabled:hover { background: inherit; }
+.btn-block { width: 100%; }
+
+/* ── Fields ──────────────────────────────────────────────────────── */
+.field { display: block; margin-bottom: var(--s3); }
+.field > span,
+.label {
+  display: block;
+  font: 600 var(--t-xs) var(--mono);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: var(--s1);
+}
+
+input, select, textarea {
+  width: 100%;
+  font: 500 var(--t-input) var(--font);
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  padding: var(--s2) var(--s3);
+  min-height: var(--tap);
+}
+input::placeholder { color: var(--text-3); opacity: 0.75; }
+input:focus, select:focus, textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+  border-color: var(--accent);
+}
+/* A checkbox is not a text box and must not inherit the 3rem height. */
+input[type="checkbox"], input[type="radio"] {
+  width: auto; min-height: 0; margin: 0;
+  accent-color: var(--accent);
+  width: 1.15rem; height: 1.15rem;
+}
+
+/* A row of controls that wraps rather than scrolling: on a phone the
+   filters stack, on a desk they sit in a line. */
+.controls { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: flex-end; }
+.controls .field { margin: 0; }
+.controls .grow { flex: 1 1 14rem; min-width: 0; }
+
+/* A switch, for the settings that are on or off. */
+.toggle { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) 0; }
+.toggle:not(:last-child) { border-bottom: 1px solid var(--line); }
+.toggle .txt { flex: 1; min-width: 0; }
+.toggle .txt strong { display: block; color: var(--text); font: 600 var(--t-base) var(--font); }
+.toggle .txt span { display: block; font-size: var(--t-sm); color: var(--text-3); margin-top: 2px; }
+
+/* ── Surfaces ────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: var(--s4);
+}
+.card + .card { margin-top: var(--s3); }
+
+.section { margin-top: var(--s5); }
+.section > h2,
+.subhead {
+  font: 600 var(--t-xs) var(--mono);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin: 0 0 var(--s2);
+}
+
+/* ── Chips and state ─────────────────────────────────────────────
+   One shape for every small labelled fact. The match states get
+   colour; everything else stays neutral, so colour keeps meaning
+   something. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  font: 600 var(--t-xs) var(--mono);
+  letter-spacing: 0.03em;
+  background: var(--sunk);
+  color: var(--text-3);
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  padding: 0.12rem 0.4rem;
+  white-space: nowrap;
+}
+.chip.s-auto-accepted { background: var(--ok-soft); color: var(--ok); }
+.chip.s-needs-review  { background: var(--info-soft); color: var(--info); }
+.chip.s-rejected,
+.chip.s-error         { background: var(--danger-soft); color: var(--danger); }
+.chip.accent          { background: var(--accent-soft); color: var(--accent); }
+.chip.ok              { background: var(--ok-soft); color: var(--ok); }
+.chip.bad             { background: var(--danger-soft); color: var(--danger); }
+
+/* The provenance mark. On every field, never omitted: a field with
+   nothing recorded says so rather than looking sourced. */
+.prov { font: 500 var(--t-xs) var(--mono); color: var(--text-3); }
+.prov.ok { color: var(--ok); }
+.prov.none { color: var(--info); }
+
+.mono { font-family: var(--mono); }
+.muted { color: var(--text-3); }
+.empty { color: var(--text-3); font-style: italic; }
+
+/* ── Notes and empty states ──────────────────────────────────────── */
+.note { font-size: var(--t-sm); color: var(--text-3); margin: var(--s2) 0; }
+.note-info {
+  background: var(--info-soft);
+  border: 1px solid transparent;
+  border-left: 3px solid var(--info);
+  border-radius: var(--r-sm);
+  color: var(--text-2);
+  padding: var(--s2) var(--s3);
+  font-size: var(--t-sm);
+  margin: 0 0 var(--s3);
+}
+.note-bad {
+  background: var(--danger-soft);
+  border-left: 3px solid var(--danger);
+  border-radius: var(--r-sm);
+  color: var(--text-2);
+  padding: var(--s2) var(--s3);
+  font-size: var(--t-sm);
+}
+.blank {
+  text-align: center;
+  padding: var(--s7) var(--s4);
+  color: var(--text-3);
+}
+.blank strong { display: block; font: 600 var(--t-xl) var(--font-title); color: var(--text); margin-bottom: var(--s2); }
+
+/* ── Tables ──────────────────────────────────────────────────────
+   Scrolls inside its own box. A table that takes the PAGE sideways
+   makes every other control on the screen unreachable on a phone. */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
+table.rows { width: 100%; border-collapse: collapse; font-size: var(--t-sm); white-space: nowrap; }
+table.rows thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  text-align: left;
+  font: 600 var(--t-xs) var(--mono);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  background: var(--sunk);
+  border-bottom: 1px solid var(--line);
+  padding: var(--s2) var(--s3);
+  white-space: nowrap;
+}
+table.rows td { padding: var(--row-y) var(--s3); border-bottom: 1px solid var(--line); color: var(--text); }
+table.rows tbody tr:last-child td { border-bottom: 0; }
+table.rows td.num { font: 500 var(--t-sm) var(--mono); color: var(--text-2); text-align: right; }
+table.rows td.mono { font-family: var(--mono); }
+table.rows tbody tr { cursor: pointer; }
+table.rows tbody tr:hover td { background: var(--sunk); }
+table.rows tbody tr.open td { background: var(--accent-soft); }
+
+/* A sortable header says so, and says which way. */
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable:hover { color: var(--accent); }
+th.sortable[aria-sort] { color: var(--accent); }
+th .arrow { opacity: 0.55; }
+
+/* ── Definition lists ────────────────────────────────────────────── */
+dl.facts { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: var(--s2) var(--s3); }
+dl.facts dt { font-size: var(--t-xs); color: var(--text-3); }
+dl.facts dd { margin: 0; font-size: var(--t-base); color: var(--text); min-width: 0; overflow-wrap: anywhere; }
+/* On a phone two columns are one: a 6rem label beside a 4rem value is
+   not a table, it is two truncations. */
+@media (max-width: 30rem) {
+  dl.facts { grid-template-columns: 1fr; gap: 2px; }
+  dl.facts dt { margin-top: var(--s2); }
+}
+
+/* ── Photographs ─────────────────────────────────────────────────
+   NOT `loading="lazy"`, anywhere. A dozen thumbnails on a card
+   somebody opened deliberately gain nothing from it, and it cost this
+   project a day once: the images sat unrequested behind an observer
+   that never fired, which is indistinguishable from a broken gate. */
+.shots { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.shot-link { display: block; border-radius: var(--r-md); overflow: hidden;
+  border: 1px solid var(--line); background: var(--sunk); }
+.shot-link:hover { border-color: var(--accent); }
+.shot-link img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+/* ── Toast ───────────────────────────────────────────────────────
+   Fixed, above everything, and never in the page flow — a message
+   that lands wherever the page happens to end is read by nobody. */
+#toast {
+  position: fixed;
+  left: 0; right: 0;
+  bottom: calc(var(--s4) + env(safe-area-inset-bottom));
+  z-index: 90;
+  padding: 0 var(--s4);
+  pointer-events: none;
+}
+.toast {
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: var(--s2) var(--s3);
+  border-radius: var(--r-md);
+  font-size: var(--t-base);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--accent-line);
+  box-shadow: var(--shadow);
+}
+.toast.err { border-color: var(--danger); color: var(--danger); }
+/* The toast ignores taps so it never eats one meant for the control
+   underneath; anything interactive inside it takes them back. */
+.toast button { pointer-events: auto; }
+
+/* ── Dialog ──────────────────────────────────────────────────────── */
+dialog {
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  color: var(--text-2);
+  padding: 0;
+  max-width: min(34rem, calc(100vw - 2rem));
+  width: 100%;
+  box-shadow: var(--shadow);
+}
+dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
+.dlg-head {
+  display: flex; align-items: center; gap: var(--s3);
+  padding: var(--s4) var(--s4) var(--s2);
+}
+.dlg-head h2 { margin: 0; font: 600 var(--t-lg) var(--font-title); color: var(--text); }
+.dlg-body { padding: 0 var(--s4) var(--s4); }
+.dlg-foot {
+  display: flex; gap: var(--s2); justify-content: flex-end;
+  padding: var(--s3) var(--s4);
+  border-top: 1px solid var(--line);
+  background: var(--sunk);
+}
+
+/* ── Keyboard ────────────────────────────────────────────────────── */
+kbd {
+  font: 600 var(--t-xs) var(--mono);
+  background: var(--raise);
+  border: 1px solid var(--line-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--r-sm);
+  padding: 0.1rem 0.35rem;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* The shortcut card, opened with `?` from anywhere (APP-KEYS). */
+.keycard { display: grid; gap: var(--s4); }
+.keygroup h3 {
+  font: 600 var(--t-xs) var(--mono); letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--text-3); margin: 0 0 var(--s2);
+}
+.keyrow { display: flex; align-items: baseline; gap: var(--s3); padding: 3px 0; font-size: var(--t-sm); }
+.keyrow .k { flex: none; min-width: 5.5rem; }
+.keyrow .d { color: var(--text-2); }
+
+/* The always-visible hint strip on the review queue. */
+.keybar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+  background: var(--sunk);
+  border-top: 1px solid var(--line);
+  padding: var(--s2) var(--s4) calc(var(--s2) + env(safe-area-inset-bottom));
+}
+.keybar .inner {
+  max-width: 64rem; margin: 0 auto;
+  display: flex; flex-wrap: wrap; gap: var(--s3);
+  font: 500 var(--t-xs) var(--mono); color: var(--text-3);
+  align-items: center;
+}
+
+a.link { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; }
+a.link:hover { border-bottom-color: var(--accent); }
+
+.hidden, [hidden] { display: none !important; }

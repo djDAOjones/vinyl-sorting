@@ -9,11 +9,19 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
-    // Three screens: capture at /, the review queue at /review.html and
-    // the collection at /browse.html. Cloudflare Pages drops the .html,
-    // so those are /review and /browse in production.
+    // Five screens. The hub is at / and CAPTURE MOVED to /capture.html
+    // (APP-HOME-HUB) — the manifest's start_url moved with it, so a
+    // phone with the app installed still opens the camera rather than a
+    // menu. Cloudflare drops the .html in production; Vite's dev server
+    // does not, so links are written the long way.
     rollupOptions: {
-      input: { capture: 'index.html', review: 'review.html', browse: 'browse.html' },
+      input: {
+        home: 'index.html',
+        capture: 'capture.html',
+        review: 'review.html',
+        browse: 'browse.html',
+        settings: 'settings.html',
+      },
     },
   },
   server: {

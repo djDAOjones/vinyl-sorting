@@ -10,11 +10,6 @@
 
 <!-- Intent: M2 plus the interface brief of 2026-08-31. M2's own remainder is maintainer work — clearing 287 needs-review by keyboard — and the app moves to its real URL, gains a home page and a settings screen, and is rebuilt on one visual language. The two meet at the review queue: REVIEW-CARD and MATCH-OTHER-NUMBERS exist to make clearing it cheaper, not prettier. -->
 
-- [ ] **APP-HOME-HUB A home page that names the four things the app
-  does** (2026-08-31) — Three screens exist and none of them is a front
-  door — capture sits at the root, so the collection and the review queue
-  are reachable only from each other, and a new screen has nowhere to be
-  announced.
 - [~] **APP-RENAME Move the app to vinyl-sorter.joe-2d2.workers.dev**
   (2026-08-31) — The product was renamed in August and the URL never
   followed; the Worker name IS the workers.dev hostname, so this is a
@@ -25,11 +20,6 @@
   one catalogue number lost to the downscale are the same failure from two
   ends — nobody was told what the shot has to contain, and when a shot did
   contain it the resize threw it away.
-- [ ] **DESIGN-SYSTEM One visual language across every screen, light and
-  dark** (2026-08-31) — Three screens grew separately from one 225-line
-  sheet and now disagree about spacing, controls and density; the
-  maintainer asked for a full redesign, so the palette, type and
-  components are settled once.
 - [ ] **APP-SETTINGS A settings screen that stops short of the dangerous
   half** (2026-08-31) — Settings has to exist for the re-verify toggle,
   the theme and the column choices, and it sits on a URL with no sign-in —

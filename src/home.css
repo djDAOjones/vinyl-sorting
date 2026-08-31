@@ -1,0 +1,124 @@
+/**
+ * The hub (APP-HOME-HUB).
+ *
+ * Four destinations, each carrying the number of things waiting behind
+ * it — a button that says how much work it holds is worth four that do
+ * not, and the count is the only thing on this page that changes.
+ */
+
+.hero {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  padding: var(--s5) 0 var(--s5);
+}
+.hero .disc { flex: none; width: 3.5rem; height: 3.5rem; color: var(--accent); }
+.hero h1 {
+  margin: 0;
+  font: 600 var(--t-2xl) var(--font-title);
+  letter-spacing: -0.01em;
+  color: var(--text);
+  line-height: 1.1;
+}
+.hero p { margin: var(--s1) 0 0; font-size: var(--t-sm); color: var(--text-3); }
+
+@media (max-width: 30rem) {
+  .hero { padding: var(--s4) 0; }
+  .hero .disc { width: 2.5rem; height: 2.5rem; }
+  .hero h1 { font-size: var(--t-xl); }
+}
+
+/* One column on a phone; two from a tablet; three on a desk, so that
+   Add vinyl spans the top and the other three sit in ONE row beneath
+   it. Two columns left Settings alone on a third row, which reads as
+   an afterthought rather than as one of four things the app does. */
+.tiles { display: grid; gap: var(--s3); grid-template-columns: 1fr; }
+@media (min-width: 34rem) { .tiles { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 52rem) { .tiles { grid-template-columns: repeat(3, 1fr); } }
+
+.tile {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr;
+  grid-template-rows: auto auto;
+  column-gap: var(--s3);
+  row-gap: var(--s1);
+  align-items: start;
+  padding: var(--s4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  text-decoration: none;
+  color: inherit;
+  min-height: 6.5rem;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease),
+              transform var(--dur) var(--ease);
+}
+.tile:hover, .tile:focus-visible {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  transform: translateY(-1px);
+  outline: none;
+}
+.tile .ico { grid-row: 1 / span 2; width: 2.5rem; height: 2.5rem; color: var(--accent); }
+.tile .name { font: 600 var(--t-lg) var(--font-title); color: var(--text); }
+.tile .what { font-size: var(--t-sm); color: var(--text-3); line-height: 1.4; }
+
+/* The count, big and mono, in the corner it can be found in without
+   reading the card. Its own line on a phone rather than competing with
+   the title for width. */
+.tile .count {
+  grid-column: 2;
+  font: 600 var(--t-sm) var(--mono);
+  color: var(--accent);
+  margin-top: var(--s1);
+}
+.tile .count.quiet { color: var(--text-3); }
+
+/* The primary action is larger and spans both columns: adding vinyl is
+   the point of the project, and the brief's stated risk is building the
+   app instead of doing it. */
+@media (min-width: 34rem) {
+  .tile.lead { grid-column: 1 / -1; }
+  /* Taller as well as wider: it is the thing the project is for, and
+     the brief's stated risk is building the app instead of doing it. */
+  .tile.lead { min-height: 7.5rem; align-content: center; }
+}
+.tile.lead { border-color: var(--accent-line); background: var(--accent-soft); }
+.tile.lead:hover { background: var(--accent-soft); border-color: var(--accent); }
+
+/* The strip under the tiles: what the database says right now. */
+.pulse {
+  margin-top: var(--s5);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s5);
+  padding-top: var(--s4);
+  border-top: 1px solid var(--line);
+}
+.stat { min-width: 6rem; }
+.stat b {
+  display: block;
+  font: 600 var(--t-xl) var(--mono);
+  color: var(--text);
+  line-height: 1.1;
+}
+.stat span {
+  display: block;
+  font: 600 var(--t-xs) var(--mono);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+.stat.on b { color: var(--info); }
+.stat.good b { color: var(--ok); }
+
+.homefoot {
+  margin-top: var(--s5);
+  font-size: var(--t-xs);
+  color: var(--text-3);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3);
+  align-items: center;
+}

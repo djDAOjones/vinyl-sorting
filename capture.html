@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en-GB" data-force-dark>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0e10">
+<title>Vinyl sorter — capture</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<!-- iOS reads none of the manifest's icons. Without this it uses a
+     screenshot of the page as the home-screen icon, which looks broken.
+     PNG only — apple-touch-icon does not accept SVG — and full-bleed,
+     because iOS applies its own rounded mask and a pre-rounded source
+     gets rounded twice. -->
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Vinyl sorter">
+<!-- Legacy standalone flag. iOS 17+ honours the manifest's `display`,
+     older versions only this, and it costs nothing to say both. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!-- `data-force-dark` on <html> above is what keeps this screen out of
+     the light theme. Capture's palette is not a taste, it is dim light
+     and gloves in a loft, so the density class is honoured here and the
+     colour scheme is not. -->
+<script>
+(function () {
+  try {
+    if (localStorage.getItem('vs.density') === 'dense') document.documentElement.classList.add('dense');
+  } catch (e) { /* comfortable is the default */ }
+})();
+</script>
+<link rel="stylesheet" href="/src/tokens.css">
+<link rel="stylesheet" href="/src/app.css">
+<link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+<main id="app" class="w-narrow" aria-live="polite"></main>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

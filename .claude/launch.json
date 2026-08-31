@@ -19,6 +19,26 @@
         "--strictPort"
       ],
       "port": 5173
+    },
+    {
+      "name": "app-5174",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--port",
+        "5174",
+        "--strictPort"
+      ],
+      "port": 5174
+    },
+    {
+      "name": "api-demo",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "tools/dev-api.mjs",
+        "--demo"
+      ],
+      "port": 8787
     }
   ]
 }

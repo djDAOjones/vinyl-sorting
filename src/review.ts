@@ -12,6 +12,7 @@
  */
 
 import { ensureCapturerCookie, rememberCapturer, resolveCapturer, storedCapturer } from './who.ts';
+import { bootChrome, esc, headerHtml, isTyping, parseJson as parse, toast } from './chrome.ts';
 
 const app = document.getElementById('review')!;
 const API = '/api';
@@ -46,19 +47,14 @@ const who = {
   get value() { return storedCapturer() ?? ''; },
 };
 
-/**
- * The other desk screen. `.html` rather than the extensionless path
- * Cloudflare Pages also serves, because Vite's dev server does not: a
- * link that only works in production is a link that gets found broken.
- */
-const NAV = '<a class="nav" href="/browse.html">The collection →</a>';
-
-const esc = (s: unknown): string => String(s ?? '')
-  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-
-const parse = <T,>(json: string | null, fallback: T): T => {
-  try { return json ? JSON.parse(json) as T : fallback; } catch { return fallback; }
-};
+/** What `?` lists for this screen. Bound at the bottom of the file. */
+const SCREEN_KEYS = [
+  { keys: '1 2 3 4 5', what: 'Accept that candidate' },
+  { keys: 'N', what: 'None of these are it' },
+  { keys: 'S', what: 'Skip — decide later' },
+  { keys: 'B', what: 'Back to the previous item' },
+  { keys: 'M', what: 'Type a Discogs ID by hand' },
+];
 
 async function load(): Promise<void> {
   // Named, so the queue carries the photo keys. Judging a match
@@ -80,18 +76,16 @@ function render(): void {
   const refusal = parse<{ reason?: string }>(item.queries_json, {}).reason ?? '';
 
   app.innerHTML = `
-    <div class="qhead">
-      <h1>Review queue</h1>
-      <div class="progress"><b>${cursor + 1}</b> of ${queue.length} · ${resolvedCount} resolved ·
-        item ${item.item_id} · ${NAV}</div>
-    </div>
+    ${headerHtml({ here: 'review', title: 'Resolve entries',
+    aside: `<div class="tally"><b>${cursor + 1}</b> of ${queue.length} ·
+      ${resolvedCount} resolved<br>item ${item.item_id}</div>` })}
 
-    ${refusal ? `<p class="why-refused"><strong>Not auto-accepted:</strong> ${esc(refusal)}</p>` : ''}
+    ${refusal ? `<p class="note-info"><strong>Not auto-accepted:</strong> ${esc(refusal)}</p>` : ''}
 
     <div class="split">
-      <section class="capture">
-        <h2>What was read off the disc</h2>
-        <dl>
+      <section class="readoff">
+        <h2 class="subhead">What was read off the disc</h2>
+        <dl class="facts">
           ${field('Catalogue', item.catno_raw)}
           ${field('Label', item.label_raw)}
           ${field('Title', item.title_raw)}
@@ -105,7 +99,7 @@ function render(): void {
         <div class="cands">
           ${item.candidates.length
             ? item.candidates.map(renderCandidate).join('')
-            : '<p class="why-refused">No candidate scored above zero. Enter a Discogs ID, or record “none of these”.</p>'}
+            : '<p class="note-info">No candidate scored above zero. Enter a Discogs ID, or record “none of these”.</p>'}
         </div>
         <div class="manual">
           <input id="manual" placeholder="Paste a Discogs release URL or ID, then Enter"
@@ -114,14 +108,16 @@ function render(): void {
       </section>
     </div>
 
-    <div class="keys"><div class="inner">
+    <div class="keybar"><div class="inner">
       <span><kbd>1</kbd>–<kbd>5</kbd> choose</span>
       <span><kbd>N</kbd> none of these</span>
       <span><kbd>S</kbd> skip</span>
       <span><kbd>B</kbd> back</span>
       <span><kbd>M</kbd> manual ID</span>
+      <span><kbd>?</kbd> all shortcuts</span>
       <span style="margin-left:auto">reviewing as <strong>${esc(who.value)}</strong></span>
-    </div></div>`;
+    </div></div>
+    <div id="toast"></div>`;
 
   // Only the left half accepts. The right half is a plain link and
   // needs no handler — which is the point: nothing that opens Discogs
@@ -163,7 +159,7 @@ function photosHtml(item: QueueItem): string {
     return '<p class="note">No photograph — one of the 446 rows imported from the spreadsheet.</p>';
   }
   return `<div class="shots">${keys.map((k, i) => `
-    <a class="shot" href="${API}/photos/${encodeURI(k)}" target="_blank" rel="noopener">
+    <a class="shot-link" href="${API}/photos/${encodeURI(k)}" target="_blank" rel="noopener">
       <img src="${API}/photos/${encodeURI(k)}"
            alt="Photograph ${i + 1} of item ${item.item_id}">
     </a>`).join('')}</div>`;
@@ -205,7 +201,7 @@ function renderCandidate(c: Candidate, i: number): string {
           <span class="title">${heading}</span>
           ${sub ? `<span class="rel">${sub}</span>` : ''}
           <span class="why">
-            ${families.map((f) => `<span class="fam">${esc(f)}</span>`).join('')}
+            ${families.map((f) => `<span class="chip accent">${esc(f)}</span>`).join('')}
             ${Object.entries(signals).map(([k, v]) => `<span class="sig">${esc(k)}: ${esc(v)}</span>`).join(' ')}
           </span>
         </span>
@@ -226,14 +222,14 @@ function renderWhoAmI(): void {
   // the roster refuses a name that is not one of ours, which is the
   // same crude gate the capture screen puts on the phone.
   app.innerHTML = `
-    <div class="qhead"><h1>Review queue</h1><div class="progress">${NAV}</div></div>
-    <section class="capture">
-      <h2>Who is reviewing?</h2>
+    ${headerHtml({ here: 'review', title: 'Resolve entries' })}
+    <section class="readoff">
+      <h2 class="subhead">Who is reviewing?</h2>
       <p class="note">A confirmation records who made it. There is no sign-in, so type
         your first name once.</p>
-      <label><span>Name</span><input id="who" autocomplete="off" autofocus></label>
-      <p class="why-refused" id="whoErr" hidden>Not a name this app knows.</p>
-      <button class="primary" id="start" type="button">Start</button>
+      <label class="field"><span>Name</span><input id="who" autocomplete="off" autofocus></label>
+      <p class="note-bad" id="whoErr" hidden>Not a name this app knows.</p>
+      <button class="btn btn-primary" id="start" type="button">Start</button>
     </section>`;
   const input = document.getElementById('who') as HTMLInputElement;
   const err = document.getElementById('whoErr')!;
@@ -251,7 +247,7 @@ function renderWhoAmI(): void {
 
 function renderDone(): void {
   app.innerHTML = `
-    <div class="qhead"><h1>Review queue</h1><div class="progress">${NAV}</div></div>
+    ${headerHtml({ here: 'review', title: 'Resolve entries' })}
     <div class="done">
       <strong>Queue clear</strong>
       ${resolvedCount} resolved this session. Re-verification is a normal operation —
@@ -303,7 +299,7 @@ function rollback(at: number, why: string): void {
   resolvedCount--;
   cursor = Math.min(cursor, at);
   render();
-  alert(`Could not record that decision (${why}). The item is still in the queue.`);
+  toast(`Could not record that decision (${why}). The item is still in the queue.`, 'err');
 }
 
 const choose = (discogsId: number): Promise<void> => resolve({ choice: 'candidate', discogsId });
@@ -313,12 +309,15 @@ function submitManual(raw: string): void {
   // looked up is a human judgement, not an upstream call: nothing here
   // touches Discogs, so the no-caller-controlled-query rule holds.
   const id = Number((/(\d{3,})/.exec(raw) ?? [])[1]);
-  if (!Number.isInteger(id) || id <= 0) { alert('That does not contain a Discogs release id.'); return; }
+  if (!Number.isInteger(id) || id <= 0) { toast('That does not contain a Discogs release id.', 'err'); return; }
   void resolve({ choice: 'manual', discogsId: id });
 }
 
 addEventListener('keydown', (e) => {
   if (!queue[cursor] || !who.value) return;
+  // Shared with every other screen: a key pressed inside a text field
+  // is text. Typing a Discogs id used to fire four shortcuts.
+  if (isTyping(e.target) || e.metaKey || e.ctrlKey || e.altKey) return;
   const key = e.key.toLowerCase();
 
   if (key >= '1' && key <= '5') {
@@ -333,4 +332,5 @@ addEventListener('keydown', (e) => {
 });
 
 ensureCapturerCookie();
+bootChrome(SCREEN_KEYS);
 void load();

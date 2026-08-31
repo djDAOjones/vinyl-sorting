@@ -27,6 +27,7 @@ import { startSync, drain } from './sync.ts';
 import {
   forgetCapturer, rememberCapturer, resolveCapturer, storedCapturer,
 } from './who.ts';
+import { bootChrome, headerHtml } from './chrome.ts';
 
 const app = document.getElementById('app')!;
 
@@ -80,10 +81,8 @@ const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice
  */
 function renderWhoGate(): void {
   app.innerHTML = `
-    <div class="top">
-      <h1>Vinyl sorter</h1>
-      <div class="status" id="status">queue…</div>
-    </div>
+    ${headerHtml({ here: 'capture', title: 'Add vinyl',
+    aside: '<div class="tally" id="status">queue…</div>' })}
 
     <fieldset>
       <legend>Who is capturing?</legend>
@@ -127,11 +126,10 @@ function render(): void {
   if (!capturer) return renderWhoGate();
 
   app.innerHTML = `
-    <div class="top">
-      <h1>Vinyl sorter</h1>
-      <button class="whoTag" id="whoTag" type="button">${capturer}</button>
-      <div class="status" id="status">queue…</div>
-    </div>
+    ${headerHtml({ here: 'capture', title: 'Add vinyl',
+    aside: `<button class="whoTag" id="whoTag" type="button"
+        title="Hand the phone over">${capturer}</button>
+      <div class="tally" id="status">queue…</div>` })}
 
     <div class="cam" id="cam" hidden>
       <video id="video" playsinline muted autoplay></video>
@@ -794,6 +792,11 @@ async function refreshStatus(): Promise<void> {
 
 render();
 startSync(() => { void refreshStatus(); });
+
+// The go-to keys and the shortcut card, and nothing else: there is no
+// keyboard in a loft, and a phone that shows one has taken the screen
+// away from the viewfinder (APP-KEYS).
+bootChrome();
 
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => { void navigator.serviceWorker.register('/sw.js'); });

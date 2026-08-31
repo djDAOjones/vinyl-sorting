@@ -16,9 +16,9 @@
  *  - /api: never cached. A stale capture list is misleading, and writes
  *    are queued in IndexedDB by the page rather than retried here.
  */
-const CACHE = 'deep-groove-shell-v3';
-const SHELL = ['/', '/index.html', '/review.html', '/manifest.webmanifest',
-  '/icon.svg', '/apple-touch-icon.png'];
+const CACHE = 'vinyl-sorter-shell-v4';
+const SHELL = ['/', '/index.html', '/capture.html', '/review.html', '/browse.html',
+  '/settings.html', '/manifest.webmanifest', '/icon.svg', '/apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE)
@@ -47,9 +47,15 @@ async function networkFirst(request, url) {
   } catch {
     const hit = await caches.match(request);
     if (hit) return hit;
-    // A navigation with no cache entry and no network still opens.
+    // A navigation with no cache entry and no network still opens —
+    // AT THE PAGE IT ASKED FOR. Falling back to /index.html for
+    // everything was right while the root WAS capture; now that the
+    // root is a hub, it would answer "open the camera, I have no
+    // signal" with a menu, which is the one thing the offline
+    // guarantee exists to prevent (APP-HOME-HUB).
     if (request.mode === 'navigate') {
-      const shell = await caches.match('/index.html');
+      const shell = await caches.match(url.pathname.startsWith('/capture')
+        ? '/capture.html' : '/index.html');
       if (shell) return shell;
     }
     return Response.error();
