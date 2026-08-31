@@ -1,6 +1,6 @@
 {
   "source": "chat",
-  "model": "ChatGPT desktop (repo access), 2026-08-31",
+  "model": "ChatGPT desktop (repo access), 2026-08-31 re-read after split",
   "results": {
     "448": {
       "fields": {
@@ -106,19 +106,18 @@
     },
     "453": {
       "fields": {
-        "catno_raw": "ACL 45; MFP 2024",
-        "label_raw": "Ace of Clubs; Decca; Music for Pleasure; EMI",
-        "name_raw": "Tchaikovsky; Minkus; Weber-Berlioz; Anatole Fistoulari; London Symphony Orchestra; New Symphony Orchestra of London; Paris Conservatoire Orchestra; St. Louis Symphony Orchestra; Vladimir Golschmann",
-        "title_raw": "Nights at the Ballet: Swan Lake; Don Quixote; The Sleeping Beauty; Le Spectre de la Rose; Romeo & Juliet (Fantasy Overture); Francesca da Rimini (Fantasy After Dante)",
+        "catno_raw": "ACL 45",
+        "label_raw": "DECCA",
+        "name_raw": "Tchaikovsky; Minkus; Weber-Berlioz; ANATOLE FISTOULARI; LONDON SYMPHONY ORCHESTRA; NEW SYMPHONY ORCHESTRA OF LONDON; PARIS CONSERVATOIRE ORCHESTRA",
+        "title_raw": "NIGHTS AT THE BALLET; SWAN LAKE, Op. 20; DON QUIXOTE, Pas de deux; THE SLEEPING BEAUTY; LE SPECTRE DE LA ROSE, Invitation to the Dance",
         "year_raw": null,
-        "side": "Side 1; Side 2",
+        "side": "SIDE 1; SIDE 2",
         "other_numbers": [
-          "Op. 20",
           "Act 2, No. 10",
           "Act 2, No. 13d",
           "Act 1, No. 4b",
           "Act 2, No. 13b",
-          "Act 2, No. 13e",
+          "Act 1, No. 13e",
           "1875",
           "1876",
           "1877",
@@ -130,18 +129,18 @@
           "1853-55",
           "1861",
           "1872",
+          "1866",
+          "1869",
           "Act 3, No. 25",
           "Act 1, No. 6",
-          "December, 1888",
+          "1888",
           "1682-1703",
           "1697",
           "1890",
-          "January 13th, 14th, or 15th",
-          "Op. 65",
+          "13th, 14th, or 15th",
           "1841",
-          "1819",
-          "Op. 32",
-          "33⅓ RPM"
+          "Op. 65",
+          "1819"
         ],
         "unreadable": [],
         "rotate_cw": {}
@@ -468,6 +467,24 @@
           "Op. 18",
           "Op. 22",
           "33⅓ RPM"
+        ],
+        "unreadable": [],
+        "rotate_cw": {}
+      },
+      "truthPreexisting": false
+    },
+    "466": {
+      "fields": {
+        "catno_raw": "MFP 2024",
+        "label_raw": "mfp music for pleasure; EMI",
+        "name_raw": "TCHAIKOVSKY; St. Louis Symphony Orchestra; Vladimir Golschmann",
+        "title_raw": "ROMEO & JULIET FANTASY OVERTURE; FRANCESCA DA RIMINI Op. 32 'FANTASY AFTER DANTE'",
+        "year_raw": null,
+        "side": "Side 1; Side 2",
+        "other_numbers": [
+          "Op. 32",
+          "33⅓ RPM",
+          "WC2"
         ],
         "unreadable": [],
         "rotate_cw": {}

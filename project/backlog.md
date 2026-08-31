@@ -43,6 +43,13 @@
   4.7, so 5 of 11 rows errored on Discogs throttling or Cloudflare's
   per-invocation subrequest cap, and one item collected two runs because a
   row outlasting the five-minute cron period is selected twice.
+- [ ] **OPEN-RECATALOGUE Photograph the 446 imported rows rather than
+  review them by keyboard?** [sign-off] (2026-08-31) — Every one of the
+  293 items in the review queue is a legacy spreadsheet row and 267 of
+  them have no label, which is exactly why the corroboration gate refuses
+  them — so photographing those discs would supply the missing signal
+  family and shrink the queue, and the question is whether handling 267
+  discs costs less than deciding 293 blind.
 
 ### Next milestone
 
