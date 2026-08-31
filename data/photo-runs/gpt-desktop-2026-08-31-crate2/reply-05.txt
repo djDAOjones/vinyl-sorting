@@ -1,0 +1,38 @@
+[
+  {
+    "row_id": 480,
+    "catno_raw": "SUA ST 50639 Stereo",
+    "label_raw": "Supraphon",
+    "name_raw": "Ludwig van Beethoven; Robert Schumann; Prague Trio; František Rauch; Bruno Bělčík; František Smetana",
+    "title_raw": "Piano Trio in E flat major, Op. 1 No. 1; Piano Trio in F major, Op. 80",
+    "year_raw": "(C) 1965",
+    "side": null,
+    "other_numbers": ["SUA 10639 Mono", "SUA 10485", "Piano Trio in A minor, Op. 50", "I", "II", "III", "IV", "1958", "1791", "1795", "1847", "1851"],
+    "unreadable": [],
+    "rotate_cw": {"480-6.jpg": 270, "480-7.jpg": 270}
+  },
+  {
+    "row_id": 481,
+    "catno_raw": "ACL 8",
+    "label_raw": "Ace of Clubs; Decca",
+    "name_raw": "Chopin; Tchaikovsky; Paris Conservatoire Orchestra; Roger Désormière",
+    "title_raw": "Les Sylphides—Ballet; The Sleeping Beauty—Ballet Suite",
+    "year_raw": null,
+    "side": null,
+    "other_numbers": ["ACL 1", "Symphony No. 5", "Op. 67", "ACL 2", "Symphony No. 6", "ACL 3", "Symphony No. 5", "Op. 64", "ACL 4", "Op. 64", "Symphony No. 4", "ACL 5", "Op. 61", "ACL 6", "Piano Concerto No. 2", "Op. 18", "ACL 7", "ACL 9", "ACL 10", "1812", "1894", "1880-1942", "1908", "1890", "Act 2, Scene 1", "1898", "R.S. 6-59-1081"],
+    "unreadable": [],
+    "rotate_cw": {"481-6.jpg": 270}
+  },
+  {
+    "row_id": 482,
+    "catno_raw": "ATL 4188",
+    "label_raw": "Summit; Combined Record Sales Ltd.",
+    "name_raw": "Brahms; Paganini; Handel; Sergio Fiorentino",
+    "title_raw": "Variations on a Theme of Paganini Op. 35; Variations and Fugue on a Theme of Handel Op. 24",
+    "year_raw": null,
+    "side": "SIDE ONE; SIDE TWO",
+    "other_numbers": ["Band One", "Book 1", "Band Two", "Book 2", "33⅓", "20", "22", "1860", "No. 12", "No. 13", "Nos. 14", "No. 15", "No. 16", "No. 19", "twentieth", "No. 22"],
+    "unreadable": [],
+    "rotate_cw": {}
+  }
+]

@@ -17,7 +17,23 @@
   photographed sleeve-only, so a shared, ambiguous or advertised
   catalogue number has nothing to break the tie; re-shoot the disc
   labels of whatever the reading and the matcher leave unresolved,
-  rather than all seventeen. From the 2026-08-31 capture ruling.
+  rather than all seventeen. Needs a browse filter that names those rows
+  — photographed, read, still unresolved — or the mop-up crate is
+  assembled from memory. From the 2026-08-31 capture ruling.
+- The reading should say which photograph each value came from. A
+  catalogue number read off the disc label is far stronger evidence than
+  the same number in sleeve small print, and nothing currently tells the
+  two apart: the 2026-08-31 crate returned seventeen confident readings
+  with zero fields marked unreadable, so the refusal/wrong distinction
+  the scorer is built around went unused. The pack already sends
+  per-record filenames, so the reply can carry the source photo per
+  field without new plumbing.
+- The matcher should fall back to `other_numbers` when the primary
+  catalogue number finds nothing. Item 480 carries `SUA ST 50639 Stereo`
+  and `SUA 10639 Mono` — the reading recorded both and picked one with
+  nothing on the sleeve to decide it — and item 469 has `642 273 GL`
+  behind `GL5840`. The alternative is already captured; no query ever
+  tries it.
 - Where a sub-£10 shootout loser actually goes. Not sold (below the
   effort floor), not kept (no musical reason) — donate, charity shop,
   or a "not worth selling" pile? Comes up the first session that

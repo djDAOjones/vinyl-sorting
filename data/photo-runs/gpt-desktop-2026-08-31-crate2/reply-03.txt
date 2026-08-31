@@ -1,0 +1,38 @@
+[
+  {
+    "row_id": 474,
+    "catno_raw": "ATL 4052",
+    "label_raw": "Fidelio; The Delta Record Co. Ltd.",
+    "name_raw": "Bizet; Emma Calvé; Titta Ruffo; Enrico Caruso; Charles Dalmores; Geraldine Farrar; Gounod; Maria Ancona; Pol Plançon; John McCormack; Nellie Melba; Mario Sammarco",
+    "title_raw": "A Golden Treasury of the Past Vol. 3; Carmen Excerpts: Habanera; Chanson Bohème; Toreador's Song; Flower Song; Là, bas dans la montagne; Micaela's Aria; Faust Excerpts: Avant de quitter ces lieux; Le veau d'or; Salut demeure; Jewel Song; Mephistopheles' Serenade; Final Trio",
+    "year_raw": null,
+    "side": "SIDE ONE; SIDE TWO",
+    "other_numbers": ["Vol. 3", "1", "2", "3", "4", "5", "6", "1905", "1906", "1907", "1908", "1909", "1910", "1830"],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": 475,
+    "catno_raw": "430 433-1",
+    "label_raw": "Decca; PolyGram",
+    "name_raw": "Carreras; Domingo; Pavarotti; Zubin Mehta; Orchestra del Maggio Musicale Fiorentino; Orchestra del Teatro dell'Opera di Roma",
+    "title_raw": "In concert; Il lamento di Federico (È la solita storia); Ô paradis!; Recondita armonia; Dein ist mein ganzes Herz!; Rondine al nido; Core 'ngrato; Torna a Surriento; Granada; No puede ser!; L'improvviso (Andrea Chénier); E lucevan le stelle; Nessun dorma; Finale Medley: Maria, Tonight, 'O paese d'o sole, Cielito lindo, Memory, Ochi tchorniye, Caminito, La Vie en rose, Mattinata, Wien, Wien, nur du allein!, Amapola, 'O sole mio; Encores: 'O sole mio; Encore: Nessun dorma",
+    "year_raw": "(P) 1990 (C) 1990",
+    "side": "Side 1 - Face 1 - Seite 1 - Lato 1; Side 2 - Face 2 - Seite 2 - Lato 2",
+    "other_numbers": ["7 July 1990", "0 28943 04331 1", "TDC AZ", "BA 640", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "4.10", "2.59", "2.28", "3.23", "3.22", "5.04", "2.40", "3.29", "2.29", "4.57", "2.24", "3.40", "20.11", "2.26", "3.00", "14-22"],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": 476,
+    "catno_raw": "NWKE 3002",
+    "label_raw": "Neue Welt",
+    "name_raw": "Skarabäus Theater Company; Brecht/Weill; Katja Rupé; Tommi Piper; Caroline Chaniolleau; Pola Kinski; Martin Sperr; Esther Hausmann; Hans Peter Cloos",
+    "title_raw": "Die Dreigroschenoper; The Three-Penny Opera; L'Opéra de quat'sous; Ouvertüre; Moritat vom Mackie Messer; Morgenchoral des Peachum; Anstatt-Daß-Song; Seeräuber-Jenny; Kanonensong; Liebeslied; Barbara-Song; Erstes Dreigroschen-Finale; Melodrama und Pollys Lied; Ballade von der sexuellen Hörigkeit; Zuhälterballade; Ballade vom angenehmen Leben; Eifersuchtsduett; Zweites Dreigroschen-Finale; Reminiszenz (Ballade von der sexuellen Hörigkeit); Lied von der Unzulänglichkeit menschlichen Strebens; Salomon-Song; Grabinschrift; Drittes Dreigroschen-Finale: Schlußchoral",
+    "year_raw": "(C) 1979 (P) 1979",
+    "side": "A; B",
+    "other_numbers": ["1979", "Januar 1979", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "2:12", "3:25", "1:26", "1:46", "4:26", "2:10", "2:19", "4:57", "3:07", "1:40", "2:28", "5:05", "2:22", "2:16", "1:33", "1:41", "3:24", "3:35", "1:37", "80", "5000", "1", "0221/12 10 52", "1.50"],
+    "unreadable": [],
+    "rotate_cw": {"476-5.jpg": 180}
+  }
+]

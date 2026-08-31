@@ -1,0 +1,38 @@
+[
+  {
+    "row_id": 471,
+    "catno_raw": "STEREO 2094/2003",
+    "label_raw": "St Michael; CBS Records",
+    "name_raw": "John Williams; Rodrigo; Castelnuovo-Tedesco; Philadelphia Orchestra; Eugene Ormandy",
+    "title_raw": "Concierto de Aranjuez for guitar and orchestra; Concerto in D for guitar and orchestra",
+    "year_raw": "(P) 1978 (C) 1978",
+    "side": "SIDE 1; SIDE 2",
+    "other_numbers": ["Guitar Concerto No. 1", "I", "II", "III", "Op. 99"],
+    "unreadable": [],
+    "rotate_cw": {"471-1.jpg": 270, "471-2.jpg": 270, "471-3.jpg": 270, "471-4.jpg": 270}
+  },
+  {
+    "row_id": 472,
+    "catno_raw": "stereo ASD 3312",
+    "label_raw": "EMI; His Master's Voice",
+    "name_raw": "Brahms; Dvořák; David Oistrakh; Mstislav Rostropovitch; The Cleveland Orchestra; George Szell",
+    "title_raw": "Double Concerto in A minor; Slavonic Dances Nos. 3 & 10; Slavonic Dance No. 10 in E minor; Slavonic Dance No. 3 in A flat major",
+    "year_raw": null,
+    "side": "SIDE ONE; SIDE TWO",
+    "other_numbers": ["Nos. 3 & 10", "OC 063-02 828", "HAY78", "MIDL48-3X", "Op. 102", "band 1", "band 2", "No. 10", "Op. 72 No. 2", "No. 3", "Op. 46 No. 3", "1853", "1887", "1882", "1979"],
+    "unreadable": [],
+    "rotate_cw": {"472-1.jpg": 270, "472-2.jpg": 270, "472-3.jpg": 270, "472-4.jpg": 270, "472-5.jpg": 270}
+  },
+  {
+    "row_id": 473,
+    "catno_raw": "97 SM 12",
+    "label_raw": "Sélection du Reader's Digest; RCA",
+    "name_raw": "Igor Stravinsky; Orchestre du Festival de Londres; René Leibowitz; Debussy",
+    "title_raw": "Hymne à la nature: Du printemps au cœur de l'été; Le Sacre du printemps; Prélude à l'après-midi d'un faune",
+    "year_raw": null,
+    "side": "faces A et B; Face A; Face B",
+    "other_numbers": ["12", "33⅓", "25'00", "11'20", "9'40", "1913"],
+    "unreadable": [],
+    "rotate_cw": {"473-1.jpg": 270}
+  }
+]

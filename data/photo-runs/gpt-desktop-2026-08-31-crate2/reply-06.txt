@@ -1,0 +1,14 @@
+[
+  {
+    "row_id": 483,
+    "catno_raw": "SMS 2341A",
+    "label_raw": "Concert Hall; synchro stereo",
+    "name_raw": "Beethoven; Symphony Orchestra of the Südwestfunk Baden-Baden; Südwestfunk Symphony Orchestra; Paul Kletzki; Schubert; Vienna Festival Orchestra; Josef Krips",
+    "title_raw": "Symphony No. 5 in C minor, Op. 67; Symphony No. 8 in B minor ('Unfinished')",
+    "year_raw": null,
+    "side": null,
+    "other_numbers": ["No. 5", "Op. 67", "No. 8"],
+    "unreadable": [],
+    "rotate_cw": {}
+  }
+]

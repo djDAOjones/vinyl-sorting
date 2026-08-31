@@ -1,0 +1,50 @@
+[
+  {
+    "row_id": 467,
+    "catno_raw": "ALP 1963",
+    "label_raw": "His Master's Voice",
+    "name_raw": "Mozart; Schubert; Vienna Philharmonic Orchestra; Rafael Kubelik",
+    "title_raw": "Eine kleine Nachtmusik; Andante from Cassation in G, K.63; 'Unfinished' Symphony; Symphony No. 8 in B minor ('Unfinished'); Serenade in G major: 'Eine kleine Nachtmusik', K.525",
+    "year_raw": null,
+    "side": "SIDE ONE; SIDE TWO",
+    "other_numbers": ["K.63", "No. 8", "Band 1", "1st Movement", "Band 2", "2nd Movement", "1821", "1822", "1825", "1828", "K.525", "Band 3", "3rd Movement", "Band 4", "4th Movement", "1781"],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": 468,
+    "catno_raw": "LXT 2904",
+    "label_raw": "Decca",
+    "name_raw": "Mendelssohn; Campoli; The London Philharmonic Orchestra; Eduard van Beinum; Bruch; The New Symphony Orchestra; Royalton Kisch",
+    "title_raw": "Concerto in E minor for violin and orchestra; Concerto No. 1 in G minor for violin and orchestra",
+    "year_raw": null,
+    "side": null,
+    "other_numbers": ["Opus 64", "No. 1", "Opus 26"],
+    "unreadable": [],
+    "rotate_cw": {"468-1.jpg": 180, "468-2.jpg": 270, "468-3.jpg": 270}
+  },
+  {
+    "row_id": 469,
+    "catno_raw": "GL5840",
+    "label_raw": "Philips Classical Favourites",
+    "name_raw": "Holst; Vaughan Williams; The Eastman Wind Ensemble; Frederick Fennell",
+    "title_raw": "Hammersmith—Prelude and Scherzo; Suite No. 1 in E flat; Suite No. 2 in F; English Folk Song Suite; March—Seventeen come Sunday; Intermezzo—My Bonny Boy; March—Folk Songs from Somerset; Toccata Marziale",
+    "year_raw": null,
+    "side": null,
+    "other_numbers": ["Op. 52", "No. 1", "Op. 28a", "No. 2", "Op. 28b", "14", "642 273 GL"],
+    "unreadable": [],
+    "rotate_cw": {"469-1.jpg": 270, "469-3.jpg": 270}
+  },
+  {
+    "row_id": 470,
+    "catno_raw": "STEREO 6851 125",
+    "label_raw": "Philips",
+    "name_raw": "Gustav Holst; Benjamin Britten; London Philharmonic Orchestra; Royal Opera House Orchestra, Covent Garden; Bernard Haitink; Colin Davis",
+    "title_raw": "Les Planètes; Interludes marins de Peter Grimes",
+    "year_raw": null,
+    "side": "Face A; Face B",
+    "other_numbers": ["86", "1", "2", "3", "4", "5", "6", "7", "op. 33a", "1874-1934", "1913-1976"],
+    "unreadable": [],
+    "rotate_cw": {"470-1.jpg": 270, "470-2.jpg": 270, "470-3.jpg": 270}
+  }
+]
