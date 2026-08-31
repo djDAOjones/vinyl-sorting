@@ -389,6 +389,48 @@ becomes worth more than the inconvenience of signing in. Cloudflare
 Access in front of everything is the known next step and was not chosen
 now, not ruled out.
 
+## 2026-08-31 — CAPTURE-MERGED-ROWS: one merge, and one false positive
+
+**Decision:** Item 453 was two discs and is split at photograph 7,
+giving item 466. Items 455, 453 and 466 are each **one disc**, on the
+maintainer's inspection. `tools/split-item.mjs` exists for the next
+one.
+
+**Rationale:** The first full reading of the photographed set found two
+rows carrying more than one catalogue number, and both were the rows
+with the most photographs — twelve and eight against a median of five.
+That looked like a clean signature and it was half right.
+
+**453 really was two records.** `453-6` is Ace of Clubs ballet notes
+under Fistoulari; `453-7` is the Music for Pleasure sleeve front for
+Tchaikovsky's *Romeo & Juliet* and *Francesca da Rimini*. The
+maintainer put the boundary at 7 and the photographs agree.
+
+**455 was not.** `M-2314; AM 2314` is one disc printing two numbers — a
+double header. So **two catalogue numbers is not evidence of a merged
+row**, and the count of photographs is not either: a record with
+several pieces earns several photographs honestly. The heuristic that
+found 453 would have destroyed 455, and only a person looking at the
+discs could tell them apart. That is worth remembering the next time a
+tidy signal appears in this data.
+
+**The reader was right both times.** Given twelve photographs of two
+records it reported two catalogue numbers rather than choosing one, and
+given a double header it did the same. Refusing to choose is correct in
+both cases; what the answer means is a fact about the disc, not about
+the reading.
+
+**And the ladder already handles a double header.**
+`normaliseCatno('M-2314; AM 2314')` yields both `M-2314` and `AM 2314`
+as separate search variants, so the matcher tries each. Nothing needed
+building — it was worth checking before promoting rather than
+discovering through a row that matched nothing.
+
+**The prevention shipped separately.** Filing a disc used to mean
+leaving the viewfinder, so a second disc joined the first;
+CAPTURE-NEXT-DISC put that control in the camera bar. This record was
+the repair.
+
 ## 2026-08-31 — BROWSE-PHOTOS: serve the photographs, behind the typed name
 
 **Decision:** `GET /api/photos/:key` exists and requires an

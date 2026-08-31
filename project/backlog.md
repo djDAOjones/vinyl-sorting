@@ -18,12 +18,6 @@
   checks, and the scorer keeps refusals apart from wrong answers; twenty
   photographed labels are now the only thing left, because synthesising
   labels would score the model against its own output.
-- [ ] **CAPTURE-MERGED-ROWS Two discs photographed into one row — split
-  453 and 455** (2026-08-31) — Item 453 was twelve photographs of two
-  records and was split at photograph 7 on maintainer instruction, giving
-  a new item 466; 455 shows the same signature less certainly and still
-  needs a person to look, and neither may be promoted until its reading
-  describes one disc.
 - [~] **PHOTOS-TO-DESKTOP Pull captured photos and their row ids out for
   a chat pack** [detail](records/PHOTOS-TO-DESKTOP.md) (2026-08-30) —
   Built, gated and live — photos-pull reads (item_id, r2_key) pairs from
