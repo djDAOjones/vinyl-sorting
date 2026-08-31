@@ -110,7 +110,16 @@ const rows = query(`
   JOIN item i ON i.id = ip.item_id
   LEFT JOIN capture c ON c.item_id = ip.item_id
   ${kind === 'all' ? '' : `WHERE ip.kind = '${kind}'`}
-  ORDER BY ip.id DESC
+  -- Newest RECORD first, so --limit favours what was just shot; but
+  -- oldest PHOTOGRAPH first within a record, because the number in the
+  -- filename is positional and must not move.
+  --
+  -- With DESC the numbering was both backwards and unstable: a photo
+  -- arriving later for an existing record shifted every number, while
+  -- the files already on disk were skipped as present — so each name
+  -- silently came to describe a different object than its content.
+  -- Ascending, a late arrival simply appends.
+  ORDER BY ip.item_id DESC, ip.id ASC
   ${limit > 0 ? `LIMIT ${limit}` : ''}
 `.trim());
 
