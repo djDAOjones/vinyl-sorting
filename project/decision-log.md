@@ -2,6 +2,59 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-09-01 — MATCH-OTHER-NUMBERS: try the rest of the label
+
+**Decision:** `other_numbers` — extracted into
+`data/photo-extract.json` since the spike and consumed by absolutely
+nothing — is promoted into `raw_value`, read by `pendingRows`, and
+builds a SECOND query ladder that is spent only when the first one
+places nothing.
+
+The maintainer's two worked examples: item **480** carries `SUA 10639
+Mono` behind the stereo number the reading chose as primary; item
+**469** carries `642 273 GL` behind `GL5840`. The right answer was
+sitting in the same JSON as the wrong one.
+
+**It is not in `PHOTO_FIELDS`, deliberately.** That list is the SCORED
+set — what `photo-score.mjs` grades a reading against — and a reading
+cannot be right or wrong about which numbers a label happens to print.
+It is evidence, not an answer, so it is promoted alongside rather than
+added to the graded set.
+
+**The trigger counts FAMILIES, not points, and the first draft got this
+wrong.** A candidate collects 5 points merely for being a vinyl LP, so
+gating on `score > 0` let a field of a dozen unrelated records read as
+"scored something" while having placed nothing at all — a test caught
+it on exactly that row. Families are what the corroboration gate
+spends; a field where not one candidate carries a single family is a
+field the primary number failed to place, which is the population that
+ends as "not found" today. That is what makes the extra rungs free:
+they fall on rows already lost and on no others, and a test asserts a
+row the primary number DID place never pays for them.
+
+**One family, not two.** The alternatives join the scoring variants
+unconditionally — a candidate the first ladder already found may match
+on an alternative number, and refusing to notice would throw away a hit
+already paid for. But they are VARIANTS rather than a new family: two
+numbers printed on one label are one label, and counting them
+separately would let a row satisfy the corroboration gate against
+itself, which is the precise fault the gate exists to prevent.
+
+**And it decides mop-up cases by itself.** For a sleeve-only row with
+two candidate numbers: one matching and the other not is a finished
+row, the tie broken by elimination; neither matching has earned its
+place in the re-shoot crate. Those two outcomes are currently
+indistinguishable — both are "needs review" — and telling them apart is
+worth more than either.
+
+A match found this way says so in its verdict, because it is a fact
+about the READING as much as about the match: the reading picked the
+wrong number as primary.
+
+**Verify:** npm run gate 271+4 passing; four new tests covering the
+held-back ladder, the split on newlines and pipes, the row that must
+not pay, and the row that must.
+
 ## 2026-09-01 — CAPTURE-GUIDANCE: say what to shoot, and let the number survive
 
 **Decision:** three things, and they are one failure seen from three

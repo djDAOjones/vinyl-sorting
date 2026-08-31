@@ -29,6 +29,8 @@ export interface MatchRow {
   titleRaw?: string | null;
   nameRaw?: string | null;
   yearRaw?: string | null;
+  /** Every other number the reading saw (MATCH-OTHER-NUMBERS). */
+  otherNumbers?: string | null;
 }
 
 export interface MatchOutcome {
@@ -40,6 +42,15 @@ export interface MatchOutcome {
   queriesRun: number;
   queryErrors: number;
   candidates: number;
+  /**
+   * True when the primary catalogue number found nothing scoreable and
+   * an ALTERNATIVE number off the same label did.
+   *
+   * Recorded because it changes what the row means to a reviewer: the
+   * reading picked the wrong number as primary, which is worth knowing
+   * about the reading as well as about this match.
+   */
+  usedFallback?: boolean;
 }
 
 /** Stop early once the field is good enough to clear the gate. */
@@ -114,7 +125,7 @@ export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
     };
   }
 
-  const { variants, queries } = buildQueries(row);
+  const { variants, queries, fallback } = buildQueries(row);
   const capture: Capture = {
     catnoVariants: variants,
     labelRaw: row.labelRaw, titleRaw: row.titleRaw,
@@ -127,30 +138,71 @@ export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
   let queryErrors = 0;
   let lastError = '';
   let budgetStopped = false;
-  for (const q of queries) {
-    if (seen.size >= ENOUGH) break;
-    // Stop before spending Cloudflare's per-invocation subrequest cap.
-    // A row that stops here keeps whatever it found and is recorded
-    // honestly; a row that hits the cap kills the invocation and loses
-    // every row in the tick with it.
-    // Reserving the release fetch, which happens after this loop and
-    // would otherwise never have a turn.
-    if (client.budgetSpent?.(MAX_ATTEMPTS_PER_QUERY)) { budgetStopped = true; break; }
-    queriesRun++;
-    let results: SearchResult[];
-    try {
-      results = await client.search(q.params);
-    } catch (err) {
-      // A failed rung is not a failed row: try the next one. But the
-      // failure is COUNTED, because a row that never reached Discogs
-      // has not been searched, and reporting that as "nothing found"
-      // would silently mark it unmatched for ever. A rate-limited run
-      // did exactly that to 53 rows out of 60.
-      queryErrors++;
-      lastError = err instanceof Error ? err.message : String(err);
-      continue;
+
+  /**
+   * Walk one ladder, filling `seen`.
+   *
+   * Lifted out of the loop it used to be so the fallback rungs can be
+   * spent under exactly the same budget, error accounting and stopping
+   * rules as the primary ones — a second copy of this would be a second
+   * place for the swallowed-error fault to come back.
+   */
+  const walk = async (rungs: typeof queries): Promise<void> => {
+    for (const q of rungs) {
+      if (seen.size >= ENOUGH) break;
+      // Stop before spending Cloudflare's per-invocation subrequest cap.
+      // A row that stops here keeps whatever it found and is recorded
+      // honestly; a row that hits the cap kills the invocation and loses
+      // every row in the tick with it.
+      // Reserving the release fetch, which happens after this loop and
+      // would otherwise never have a turn.
+      if (client.budgetSpent?.(MAX_ATTEMPTS_PER_QUERY)) { budgetStopped = true; break; }
+      queriesRun++;
+      let results: SearchResult[];
+      try {
+        results = await client.search(q.params);
+      } catch (err) {
+        // A failed rung is not a failed row: try the next one. But the
+        // failure is COUNTED, because a row that never reached Discogs
+        // has not been searched, and reporting that as "nothing found"
+        // would silently mark it unmatched for ever. A rate-limited run
+        // did exactly that to 53 rows out of 60.
+        queryErrors++;
+        lastError = err instanceof Error ? err.message : String(err);
+        continue;
+      }
+      for (const r of results) if (r?.id && !seen.has(r.id)) seen.set(r.id, r);
     }
-    for (const r of results) if (r?.id && !seen.has(r.id)) seen.set(r.id, r);
+  };
+
+  await walk(queries);
+
+  /**
+   * The other numbers, only now.
+   *
+   * THE TRIGGER IS "NO FAMILY", NOT "NO SCORE", and the difference is
+   * not pedantry. Points and families are different currencies: a
+   * candidate picks up 5 points merely for BEING a vinyl LP, so a
+   * ladder that returned a dozen unrelated records all scoring 5 would
+   * read as "scored something" while having placed nothing whatever.
+   * Families are what the corroboration gate spends, and a field where
+   * not one candidate carries a single family is a field where the
+   * primary catalogue number found nobody — which is exactly the case
+   * a wrong primary number produces, and exactly the population that
+   * ends as "not found" today.
+   *
+   * So it costs nothing that is not already lost, and it decides mop-up
+   * cases by itself: one of two numbers matching is a finished row,
+   * neither matching is a re-shoot, and those two are currently
+   * indistinguishable from each other.
+   */
+  let usedFallback = false;
+  const anyPlaced = (): boolean =>
+    [...seen.values()].some((r) => scoreCandidate(capture, r).families.length > 0);
+  if (fallback.length && !budgetStopped && !anyPlaced()) {
+    const before = seen.size;
+    await walk(fallback);
+    usedFallback = seen.size > before;
   }
 
   const scored: Scored[] = [...seen.values()].map((r) => scoreCandidate(capture, r));
@@ -166,7 +218,7 @@ export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
           : `all ${queryErrors} of ${queriesRun} queries failed; last: ${lastError}`,
         chosenDiscogsId: null, queriesRun, queryErrors, candidates: 0,
       },
-      gate: null, queries, tracks: [],
+      gate: null, queries: [...queries, ...fallback], tracks: [],
     };
   }
 
@@ -185,6 +237,11 @@ export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
       // say so — otherwise a budget-truncated "nothing found" is
       // indistinguishable from a real one.
       reason: [gate.reason,
+        // Said in the verdict, not only in a flag: a reviewer looking
+        // at this row should know the reading's PRIMARY number found
+        // nothing and this came off an alternative, because that is a
+        // fact about the reading as much as about the match.
+        usedFallback ? '(found on an alternative number from the label)' : '',
         queryErrors ? `(${queryErrors} query error(s))` : '',
         budgetStopped ? `(stopped at ${queriesRun} of ${queries.length} queries: subrequest budget)` : '',
       ].filter(Boolean).join(' '),
@@ -192,9 +249,10 @@ export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
       queriesRun,
       queryErrors,
       candidates: scored.length,
+      usedFallback,
     },
     gate,
-    queries,
+    queries: usedFallback ? [...queries, ...fallback] : queries,
   };
 }
 
@@ -268,6 +326,9 @@ export async function persistRun(
       queries: result.queries,
       queriesRun: result.outcome.queriesRun,
       queryErrors: result.outcome.queryErrors,
+      // Only when true, so the column does not grow a key on every one
+      // of the 484 rows to record the ordinary case.
+      ...(result.outcome.usedFallback ? { usedFallback: true } : {}),
     }),
     releaseId,
     runId,
@@ -405,7 +466,12 @@ export async function pendingRows(env: Env, limit: number): Promise<MatchRow[]> 
             COALESCE(c.label_raw, ${raw('label_raw')}) AS labelRaw,
             COALESCE(c.title_raw, ${raw('title_raw')}) AS titleRaw,
             COALESCE(c.name_raw,  ${raw('name_raw')})  AS nameRaw,
-            COALESCE(c.year_raw,  ${raw('year_raw')})  AS yearRaw
+            COALESCE(c.year_raw,  ${raw('year_raw')})  AS yearRaw,
+            -- No COALESCE: other_numbers is a READING-only field.
+            -- Capture has no column for it, because a person typing at
+            -- a crate types the number they judged primary and the rest
+            -- are what a photograph saw (MATCH-OTHER-NUMBERS).
+            ${raw('other_numbers')} AS otherNumbers
        FROM item i
        LEFT JOIN capture c ON c.item_id = i.id
       WHERE NOT EXISTS (SELECT 1 FROM match_run m WHERE m.item_id = i.id)

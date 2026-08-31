@@ -81,6 +81,27 @@ for (const [rowId, result] of Object.entries(run.results ?? {})) {
   const fields = PHOTO_FIELDS
     .map((f) => [f, result?.fields?.[f]])
     .filter(([, v]) => v !== null && v !== undefined && String(v).trim() !== '');
+
+  /**
+   * `other_numbers` comes across too, and it is NOT in PHOTO_FIELDS.
+   *
+   * That list is the SCORED set — what `photo-score.mjs` grades a
+   * reading against — and every number a label happens to print is not
+   * something a reading can be right or wrong about. But it is
+   * evidence, and until now it was extracted into
+   * `data/photo-extract.json` and consumed by nothing at all: item 480
+   * carries `SUA 10639 Mono` behind the stereo number it chose, item
+   * 469 carries `642 273 GL` behind `GL5840`, and no query ever tried
+   * either (MATCH-OTHER-NUMBERS).
+   *
+   * Joined with newlines because that is what `otherCatnoVariants`
+   * splits on, and it survives a number containing a comma.
+   */
+  const others = Array.isArray(result?.fields?.other_numbers)
+    ? result.fields.other_numbers.map((v) => String(v).trim()).filter(Boolean)
+    : [];
+  if (others.length) fields.push(['other_numbers', others.join('\n')]);
+
   if (!fields.length) continue;
   rows.push({ itemId, n: fields.length });
   for (const [field, value] of fields) {

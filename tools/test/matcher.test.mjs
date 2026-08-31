@@ -12,7 +12,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { compactCatno, normaliseCatno } from '../../worker/match/normalise.ts';
 import { checkCatno, checkRow } from '../../worker/match/sanity.ts';
 import { GATE, applyGate, scoreCandidate } from '../../worker/match/score.ts';
-import { buildQueries } from '../../worker/match/queries.ts';
+import { buildQueries, otherCatnoVariants } from '../../worker/match/queries.ts';
 import { claimRow, fetchTracks, matchRow, parseDuration, persistRun } from '../../worker/match/run.ts';
 import { makeEnv } from './helpers/bindings.mjs';
 
@@ -222,6 +222,86 @@ test('a candidate records what the release is, not only how it scored', async ()
   // this is added beside them, not instead of them.
   assert.ok(Array.isArray(stored.families));
   assert.ok(stored.signals);
+});
+
+// ── MATCH-OTHER-NUMBERS ───────────────────────────────────────────
+
+test('the other numbers on a label build their own ladder, held back from the first', () => {
+  // Item 480 carries "SUA 10639 Mono" behind the stereo number the
+  // reading chose; item 469 carries "642 273 GL" behind "GL5840". Both
+  // were captured and no query ever tried either.
+  const { queries, fallback, variants } = buildQueries({
+    catnoRaw: 'GL5840', labelRaw: 'Supraphon', otherNumbers: '642 273 GL',
+  });
+  assert.ok(queries.length, 'the primary ladder is unchanged');
+  assert.ok(!queries.some((q) => JSON.stringify(q.params).includes('642 273')),
+    'an alternative number must NOT be spent on the first pass');
+  assert.ok(fallback.some((q) => JSON.stringify(q.params).includes('642 273')),
+    'it is held in the fallback ladder instead');
+  assert.equal(fallback[0].type, 'label_catno',
+    'label + catno first here too: the only rung that carries two families');
+
+  // ONE FAMILY, NOT TWO. Two numbers printed on one label are one
+  // label; counting them as separate families would let a row satisfy
+  // the corroboration gate against itself, which is the exact fault the
+  // gate exists to prevent.
+  assert.ok(variants.some((v) => compactCatno(v) === '642273GL'),
+    'the alternative still SCORES, so a hit already paid for is not thrown away');
+  const scored = scoreCandidate(
+    { catnoVariants: variants, labelRaw: null, titleRaw: null, nameRaw: null, yearRaw: null },
+    { id: 1, catno: '642 273 GL' });
+  assert.deepEqual(scored.families, ['identifier'], 'an alternative number is the same family');
+});
+
+test('other numbers split on newlines and on pipes, and drop duplicates', () => {
+  const v = otherCatnoVariants('SUA 10639 Mono\nSUA 10639 Mono | ZAL 1234');
+  assert.ok(v.some((x) => compactCatno(x) === 'SUA10639'));
+  assert.ok(v.some((x) => compactCatno(x) === 'ZAL1234'));
+  assert.equal(new Set(v).size, v.length, 'no variant is searched twice');
+});
+
+test('the fallback ladder is not spent when the primary number already scored', async () => {
+  // The cost argument depends entirely on this: the extra rungs fall on
+  // rows that currently end as "not found" and on no others.
+  const asked = [];
+  const client = {
+    search: async (params) => {
+      asked.push(params);
+      return [{ id: 7, catno: 'SXL 6113', label: ['Decca'], format: ['Vinyl', 'LP'] }];
+    },
+    getRelease: async () => ({}),
+  };
+  const res = await matchRow(
+    { itemId: 1, catnoRaw: 'SXL 6113', labelRaw: 'Decca', otherNumbers: 'ZZZ 999' }, client);
+  assert.ok(!asked.some((p) => JSON.stringify(p).includes('ZZZ 999')),
+    'a row the primary number placed must never pay for the alternatives');
+  assert.ok(!res.outcome.usedFallback);
+});
+
+test('a row the primary number cannot place falls through to the alternatives', async () => {
+  const asked = [];
+  const client = {
+    // The primary rungs return a release that carries NO FAMILY — not
+    // an empty result. It still scores 5, purely for being a vinyl LP,
+    // which is why the trigger counts families rather than points: an
+    // earlier draft gated on `score > 0` and this row skipped the
+    // fallback on a format bonus alone.
+    search: async (params) => {
+      asked.push(params);
+      return JSON.stringify(params).includes('SUA 10639')
+        ? [{ id: 42, catno: 'SUA 10639', label: ['Supraphon'], format: ['Vinyl', 'LP'] }]
+        : [{ id: 8, catno: 'NOTHING ALIKE', format: ['Vinyl', 'LP'] }];
+    },
+    getRelease: async () => ({}),
+  };
+  const res = await matchRow(
+    { itemId: 1, catnoRaw: 'SUA 99999', labelRaw: 'Supraphon', otherNumbers: 'SUA 10639 Mono' },
+    client);
+  assert.ok(asked.some((p) => JSON.stringify(p).includes('SUA 10639')),
+    'the alternative number is tried once the primary has produced nothing scoreable');
+  assert.equal(res.outcome.usedFallback, true);
+  assert.match(res.outcome.reason, /alternative number/,
+    'the verdict says so: it is a fact about the READING, not only about the match');
 });
 
 test('a duration is seconds, or absent — never a guessed zero', () => {

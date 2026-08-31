@@ -28,11 +28,6 @@
   checks, and the scorer keeps refusals apart from wrong answers; twenty
   photographed labels are now the only thing left, because synthesising
   labels would score the model against its own output.
-- [ ] **MATCH-OTHER-NUMBERS Try the other catalogue numbers on the label
-  before giving up** (2026-08-31) — The reading already records every
-  number it can see in other_numbers and no query has ever used one — so a
-  row whose primary number was the wrong guess is refused with its right
-  answer sitting unused in the same JSON.
 - [~] **PHOTOS-TO-DESKTOP Pull captured photos and their row ids out for
   a chat pack** [detail](records/PHOTOS-TO-DESKTOP.md) (2026-08-30) —
   Built, gated and live — photos-pull reads (item_id, r2_key) pairs from
