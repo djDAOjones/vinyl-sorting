@@ -17,8 +17,3 @@
   effort floor), not kept (no musical reason) — donate, charity shop,
   or a "not worth selling" pile? Comes up the first session that
   produces one. From OPEN-SELL-THRESHOLD, 2026-08-30.
-- Letting a second capturer name themselves. `capturedBy` lost its box
-  when More was parked, so a phone that has never had one sends nothing.
-  A one-time ask on first launch would cost one interaction ever; it
-  only matters once somebody other than Joe captures. From
-  CAPTURE-ONE-SCREEN, 2026-08-31.
