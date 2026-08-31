@@ -52,10 +52,11 @@
   needs-review, so all that remains is a person clearing the queue by
   keyboard.
 - [~] **M2-DISCOGS-PACING Tune Discogs pacing — 7 of 12 queries still
-  fail in the Worker** (2026-08-30) — Spacing requests 2s apart made the
-  deployed matcher work, but a majority of queries still fail, costing
-  recall; the gap is now tunable without a deploy and every run records
-  its failures, so the remaining work is measuring rather than building.
+  fail in the Worker** (2026-08-30) — Measured on 16 promoted photo
+  readings — a richer reading costs 9.4-12 queries against capture-only's
+  4.7, so 5 of 11 rows errored on Discogs throttling or Cloudflare's
+  per-invocation subrequest cap, and one item collected two runs because a
+  row outlasting the five-minute cron period is selected twice.
 - [ ] **DATASET-VIEWER A third screen that lists the whole collection,
   with photographs and provenance** (2026-08-31) — 465 catalogued items
   cannot be seen anywhere in the app — capture only writes and the review

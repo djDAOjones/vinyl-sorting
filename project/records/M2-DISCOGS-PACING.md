@@ -1,12 +1,12 @@
 ---
 id: M2-DISCOGS-PACING
 name: Tune Discogs pacing — 7 of 12 queries still fail in the Worker
-summary: Spacing requests 2s apart made the deployed matcher work, but a majority of queries still fail, costing recall; the gap is now tunable without a deploy and every run records its failures, so the remaining work is measuring rather than building.
+summary: Measured on 16 promoted photo readings — a richer reading costs 9.4-12 queries against capture-only's 4.7, so 5 of 11 rows errored on Discogs throttling or Cloudflare's per-invocation subrequest cap, and one item collected two runs because a row outlasting the five-minute cron period is selected twice.
 status: in-progress
 milestone: current
 order: 6
 date: 2026-08-30
-blocked-on: needs a deploy and a freshly captured record to measure against; the tuning loop itself is now built
+blocked-on: nothing — measured 2026-08-31, three faults identified and none yet fixed
 ---
 # Tune the Discogs pacing
 
@@ -16,54 +16,67 @@ while 5 succeeded. The row reached a correct verdict anyway, but every
 failed rung is lost recall — the best match may have been in one.
 
 **What was wrong** (maintainer's diagnosis, confirmed): the limiter
-enforced a per-minute budget with no minimum spacing, so a Worker spent
-the whole allowance as an instant burst. Discogs enforces a lower rate
-than it publishes and cares about burstiness; a laptop hid the fault
-because the round-trip paces the calls for you. Now 30/min AND ≥2s
-apart.
-
-**Both things are true.** Spacing was the bug, but the local runner
-managed 446 rows with **zero** failed queries at ~1.25s while the
-Worker still fails a majority at 2s — so the shared egress IP does make
-Discogs stricter. Not the whole story, and not fatal.
+had no minimum spacing, so a Worker spent its per-minute allowance as
+an instant burst. Discogs cares about burstiness; a laptop hid it
+because the round-trip paces the calls. Now 30/min AND ≥2s apart. The
+local runner managed 446 rows with zero failures at ~1.25s while the
+Worker still fails at 2s, so the shared egress IP does make Discogs
+stricter — not the whole story, and not fatal.
 
 ## Done — 2026-08-30
 
-The loop this item describes — widen, measure, repeat — is now
-runnable without a deploy each time round.
+The widen-measure-repeat loop runs without a deploy. The gap is tunable
+from KV (`rl:discogs:min-interval`), **widen-only** — an override that
+could narrow it would let one typo restore the burst Discogs already
+refused us for. `batchSizeFor` derives rows-per-tick from the interval.
+Every run records its failures in `queries_json`; runs predating those
+fields count as **unrecorded**, never as zero.
 
-- **The gap is tunable from KV**:
-  `wrangler kv key put --binding=CACHE rl:discogs:min-interval 3000`.
-  **Widen-only.** An override that could narrow the gap would let one
-  typo restore the burst behaviour Discogs already refused us for, so
-  anything unparseable, narrower than the shipped 2s, or wider than 60s
-  falls back to the default. Failing closed costs recall; failing open
-  costs the token.
-- **The batch follows the gap.** `batchSizeFor` derives rows-per-tick
-  from the interval, so widening the gap no longer silently doubles how
-  long an invocation runs. At today's 2s it still yields exactly four
-  rows, so nothing changes until someone tunes it.
-- **Every run records `queriesRun` and `queryErrors`**, inside the
-  existing `queries_json` — no migration, and `match-report` already
-  reads that column with `json_extract`. The report gained a Pacing
-  section: queries run, failed, percentage, and rows with at least one
-  failure.
+## Measured — 2026-08-31, on 16 promoted photo readings
 
-The report counts runs that predate these fields as **unrecorded**, not
-as zero failures. All 446 current runs are in that bucket — reporting
-them as clean would have manufactured exactly the false green this
-item exists to remove.
+The measurement this asked for, taken on real rows. **A richer reading
+makes the pacing worse, and that is the finding.**
 
-A test pinned an edge worth keeping: past an ~8s gap a single row costs
-more than the 40s tick budget, and the floor of one row deliberately
-wins — a tick rounding down to zero rows would stall the matcher for
-good. Waiting is not CPU, so a long tick is free against `cpu_ms`; it
-only has to finish inside the 5-minute period, which is what caps the
-override at 60s.
+M2-FIRST-RUN measured **4.7 queries per row** on capture-only data,
+where a catalogue number was usually the only signal. A promoted vision
+reading supplies label, title and name as well, so the query ladder has
+far more permutations to walk: **9.4 to 12 queries per row**, roughly
+2.3x. Every extra signal that makes a match more likely also makes the
+row cost more to try.
+
+Of 11 rows attempted: 1 auto-accepted, 3 needs-review, **5 error**.
+
+Two distinct failures, from `queries_json`:
+
+- **`throttled by Discogs after 4 attempts`.** The known fault, now
+  arriving sooner because each row spends twice the requests.
+- **`Too many subrequests by single Worker invocation`** — new, and not
+  a Discogs limit at all. Cloudflare caps subrequests per invocation
+  (50 on Free). Twelve queries with up to four retry attempts each can
+  reach that before Discogs ever refuses. Widening the interval does
+  not help this one; only fewer requests per invocation does.
+
+**A third fault, separate from pacing but caused by it.** Item 451 has
+**two** `match_run` rows, 10:50:12 and 10:54:48 — the first died on the
+subrequest limit, the second was throttled. `pendingRows` excludes rows
+that already have a run, so two cron invocations overlapped: a row
+taking longer than the five-minute period is still in flight when the
+next tick selects it. Nothing in the schema forbids it —
+`match_run` has no unique constraint on `item_id`. Two runs mean two
+verdicts for one item and double the requests spent reaching them.
 
 ## Still open
 
-Measurement, which needs a deploy and a freshly captured record. Widen
-to 3s, run, read the Pacing table; repeat at 4s if failures persist.
+Three things, and the order matters because the second and third are
+not fixed by the first:
 
-**Done when** a freshly captured record matches with no failed queries.
+1. **Widen the interval** — the original plan, still worth doing.
+2. **Cap requests per invocation**, so the subrequest limit cannot be
+   reached: fewer rows per tick, or a shorter ladder when a row already
+   has several signals.
+3. **Stop overlapping invocations double-processing a row** — claim the
+   row before searching rather than after, so a run in flight excludes
+   it.
+
+**Done when** a freshly captured record matches with no failed queries,
+and no item ever carries two runs from one pass.
