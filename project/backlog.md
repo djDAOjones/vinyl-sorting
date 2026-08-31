@@ -8,7 +8,7 @@
 
 ### Current milestone
 
-<!-- Intent: M2, the photo path and the browse screen, side by side. M2 is deployed and every row now carries a match_run, so its remaining work is maintainer work — clearing 287 needs-review by keyboard, and applying migration 004 to a production still reporting schema 3. The photo path was promoted out of the icebox on 2026-08-30 because it is the buildable work, and because the brief's stated risk is building the app instead of cataloguing the records; DATASET-VIEWER and DATASET-EDIT joined it on 2026-08-31, because 465 catalogued rows can currently be neither seen nor corrected anywhere in the app. -->
+<!-- Intent: M2 and the photo path, side by side. M2's remaining work is all maintainer work — all 446 rows already have a match_run from the local runner, so what is left is a deploy and clearing the queue by keyboard. The photo path was promoted out of the icebox on 2026-08-30 because it is the buildable work, and because the brief's stated risk is building the app instead of cataloguing the records. -->
 
 - [ ] **CAPTURE-NEXT-DISC Queue from inside the viewfinder, so a crate
   never leaves the camera** (2026-08-31) — Photographing one disc costs
@@ -32,30 +32,14 @@
   ground-truth starter taken from the values a person typed into capture;
   R2 is now attached and a photo has made the full round trip, so all that
   is left is photographs being taken.
-- [~] **M2-FIRST-RUN Run the matcher over all 446 and clear the queue
-  once** — The operation, not the code — deployed and run as of
-  2026-08-31, every row carrying a match_run and 287 sitting in
-  needs-review, so what remains is a person clearing the queue by
-  keyboard, plus applying migration 004 to a production still reporting
-  schema 3.
+- [ ] **M2-FIRST-RUN Run the matcher over all 446 and clear the queue
+  once** — The operation, not the code — deploy, let the cron matcher work
+  through all 446 rows, then clear the review queue by keyboard.
 - [~] **M2-DISCOGS-PACING Tune Discogs pacing — 7 of 12 queries still
   fail in the Worker** (2026-08-30) — Spacing requests 2s apart made the
   deployed matcher work, but a majority of queries still fail, costing
   recall; the gap is now tunable without a deploy and every run records
   its failures, so the remaining work is measuring rather than building.
-- [ ] **DATASET-VIEWER A third screen that lists the whole collection,
-  with photographs and provenance** (2026-08-31) — 465 catalogued items
-  cannot be seen anywhere in the app — capture only writes and the review
-  queue shows one match at a time — so this is the browse screen: a
-  filterable list, an item detail with its photographs, and every field
-  labelled with where the value came from and whether a person has
-  confirmed it.
-- [ ] **DATASET-EDIT Correct a reading and confirm it, from the browse
-  screen** [security] (2026-08-31) — The editable half of browse — fix
-  what was misread, fill the label captured on 0% of the backlog, promote
-  a photo reading, confirm a value already right; every edit lands as a
-  confirmed `shelf` value behind a shared passphrase, and because it
-  writes to `capture` it amends a hard rule in the same commit.
 
 ### Next milestone
 
@@ -76,11 +60,6 @@
   launch and checked against the six people who capture, which gates the
   app crudely and stamps every row afterwards without a field in the
   capture flow.
-- [ ] **OPEN-V1-AUTH Does v1 get sign-in, now that the token is behind a
-  public endpoint?** [sign-off] (2026-08-31) — The brief defers auth but
-  commits to revisiting it before M2 puts the Discogs token behind a
-  public endpoint — which has now happened, so the revisit is due on the
-  brief's own terms.
 - [ ] **CAPTURE-BULK-REMNANT bulkFields and BULK_CARRIED have no caller
   — decide whether they stay** (2026-08-31) — CAPTURE-ONE-SCREEN removed
   the crate button and saveBulk with it but left bulkFields and

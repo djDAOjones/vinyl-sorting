@@ -5,16 +5,16 @@ summary: capturedBy lost its box when the More block was parked, so a phone that
 status: open
 date: 2026-08-31
 milestone: icebox
-order: 3
+order: 4
 ---
 # A name typed once at the start
 
 `capturedBy` has no box on the capture screen. CAPTURE-ONE-SCREEN parked
 the block it lived in, and it was barely reachable before that: a
 disclosure to open, then a name to type, every time the phone changed
-hands. A device that has never had one typed into it now sends nothing
-at all — absent rather than guessed, which is right, but it means a
-capture says who read the label only by accident.
+hands. A device that has never had one sends nothing — absent rather
+than guessed, which is right, but it means a row says who read the label
+only by accident.
 
 The maintainer's design (2026-08-31) is a simple log in at the start:
 **type your name.** It does two jobs at once — a crude, rudimentary
@@ -42,14 +42,14 @@ refused — and that refusal is the gate.
 ## What it is not
 
 Six household first names are guessable, and the roster has to live
-somewhere the app can read. This is a speed bump and an honest label on
-a row, not access control, and the record says so here rather than
-letting a later reader assume otherwise.
+where the app can read it. This is a speed bump and an honest label on a
+row, not access control.
 
-Real access control is OPEN-USERS-ACCESS — no sign-in for v1 by
-maintainer decision (2026-08-30), reopening at M2 when the Discogs
-token sits behind a public endpoint. This item does not touch that
-decision, and shipping it must not be read as having answered it.
+Real access control is OPEN-V1-AUTH, raised in parallel on 2026-08-31
+now that the brief's revisit condition has been met. The two are halves
+of one word: this item answers **who is holding the phone**, that one
+answers **who may write at all**. Shipping this must not be read as
+having answered that.
 
 ## What it takes
 
