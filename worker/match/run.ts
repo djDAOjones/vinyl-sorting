@@ -48,8 +48,57 @@ const ENOUGH = 12;
  * Match one row. Pure of storage: it takes a client and returns what it
  * found, so it can be tested against a scripted Discogs.
  */
+/** A tracklist as Discogs returns it, flattened to what the schema keeps. */
+export interface TrackRow { position: string | null; title: string | null; durationS: number | null }
+
+/**
+ * Seconds from Discogs' "m:ss" (or "h:mm:ss"). Null rather than zero
+ * for anything unparseable: a duration of zero is a claim, and an
+ * absent one is the truth about a release that did not print it.
+ */
+export function parseDuration(raw: unknown): number | null {
+  const parts = String(raw ?? '').trim().split(':');
+  if (parts.length < 2 || parts.length > 3) return null;
+  const nums = parts.map((n) => Number(n));
+  if (nums.some((n) => !Number.isFinite(n) || n < 0)) return null;
+  const secs = nums.reduce((acc, n) => acc * 60 + n, 0);
+  return secs > 0 ? secs : null;
+}
+
+/**
+ * The tracklist for a chosen release.
+ *
+ * ONE request, and only for a release we are about to store. The
+ * maintainer's point (2026-08-31): a tracklist is what says which
+ * pressing a record actually is, and `release_track` has held zero rows
+ * since M1 because this call was never made. Against a ladder already
+ * spending 9-12 requests a row, one more for an accepted match is noise.
+ *
+ * A failure here is not a failed match. The verdict was reached on the
+ * search rungs and stands; the tracklist is enrichment, and returning
+ * an empty list loses nothing that was ever had.
+ */
+export async function fetchTracks(client: DiscogsClient, discogsId: number): Promise<TrackRow[]> {
+  if (client.budgetSpent?.()) return [];
+  try {
+    const rel = await client.getRelease(discogsId) as { tracklist?: unknown[] };
+    return (rel.tracklist ?? []).map((t) => {
+      const tr = t as Record<string, unknown>;
+      return {
+        position: (tr.position ?? null) as string | null,
+        title: (tr.title ?? null) as string | null,
+        durationS: parseDuration(tr.duration),
+      };
+    }).filter((t) => t.title);
+  } catch {
+    return [];
+  }
+}
+
 export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
-  outcome: MatchOutcome; gate: GateResult | null; queries: { type: string; params: Record<string, string> }[];
+  outcome: MatchOutcome; gate: GateResult | null;
+  queries: { type: string; params: Record<string, string> }[];
+  tracks: TrackRow[];
 }> {
   // The sanity check runs BEFORE any API call — a junk catalogue string
   // costs no rate limit and reaches the queue honestly labelled.
@@ -60,7 +109,7 @@ export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
         itemId: row.itemId, verdict: 'rejected', reason: sane.reason,
         chosenDiscogsId: null, queriesRun: 0, queryErrors: 0, candidates: 0,
       },
-      gate: null, queries: [],
+      gate: null, queries: [], tracks: [],
     };
   }
 
@@ -114,11 +163,17 @@ export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
           : `all ${queryErrors} of ${queriesRun} queries failed; last: ${lastError}`,
         chosenDiscogsId: null, queriesRun, queryErrors, candidates: 0,
       },
-      gate: null, queries,
+      gate: null, queries, tracks: [],
     };
   }
 
+  // Only for a release we are about to store — not per row, and never
+  // for a verdict that names none.
+  const chosenId = gate.verdict === 'verified' ? gate.chosen?.id ?? null : null;
+  const tracks = chosenId ? await fetchTracks(client, chosenId) : [];
+
   return {
+    tracks,
     outcome: {
       itemId: row.itemId,
       verdict: gate.verdict,
@@ -190,7 +245,7 @@ export async function persistRun(
 
   let releaseId: number | null = null;
   if (result.outcome.chosenDiscogsId !== null) {
-    const up = await upsertRelease(env, result.outcome.chosenDiscogsId, result.gate);
+    const up = await upsertRelease(env, result.outcome.chosenDiscogsId, result.gate, result.tracks);
     releaseId = up.id;
     written += up.written;
   }
@@ -242,7 +297,7 @@ export async function persistRun(
 }
 
 async function upsertRelease(
-  env: Env, discogsId: number, gate: GateResult | null,
+  env: Env, discogsId: number, gate: GateResult | null, tracks: TrackRow[] = [],
 ): Promise<{ id: number; written: number }> {
   const existing = await env.DB.prepare('SELECT id FROM release WHERE discogs_id = ?')
     .bind(discogsId).first<{ id: number }>();
@@ -266,7 +321,21 @@ async function upsertRelease(
   await env.DB.prepare(
     "INSERT INTO field_source (entity, entity_id, field, source, confidence) VALUES ('release', ?, 'discogs_id', 'discogs', ?)",
   ).bind(created.id, gate?.chosen?.score ?? null).run();
-  return { id: created.id, written: 2 };
+  let written = 2;
+
+  // The tracklist, if the release endpoint gave one. `completeness`
+  // stays at its 'unknown' default deliberately: whether a track is a
+  // whole work, a movement or an excerpt is M3's judgement from
+  // MusicBrainz, and guessing it here would put a fact in the column
+  // that decides which cluster a performance joins.
+  if (tracks.length) {
+    await env.DB.batch(tracks.map((t) => env.DB.prepare(
+      'INSERT INTO release_track (release_id, position, title, duration_s) VALUES (?, ?, ?, ?)',
+    ).bind(created.id, t.position, t.title, t.durationS)));
+    written += tracks.length;
+  }
+
+  return { id: created.id, written };
 }
 
 /** Rows awaiting a first match, oldest first. */

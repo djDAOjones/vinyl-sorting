@@ -13,7 +13,7 @@ import { compactCatno, normaliseCatno } from '../../worker/match/normalise.ts';
 import { checkCatno, checkRow } from '../../worker/match/sanity.ts';
 import { GATE, applyGate, scoreCandidate } from '../../worker/match/score.ts';
 import { buildQueries } from '../../worker/match/queries.ts';
-import { claimRow, matchRow, persistRun } from '../../worker/match/run.ts';
+import { claimRow, fetchTracks, matchRow, parseDuration, persistRun } from '../../worker/match/run.ts';
 import { makeEnv } from './helpers/bindings.mjs';
 
 // ── normalisation ─────────────────────────────────────────────────
@@ -190,6 +190,59 @@ test('a junk row costs no API call at all', async () => {
   assert.equal(outcome.verdict, 'rejected');
   assert.equal(outcome.queriesRun, 0);
   assert.equal(client.asked.length, 0, 'the sanity check runs before the network');
+});
+
+test('a duration is seconds, or absent — never a guessed zero', () => {
+  // An absent duration is the truth about a release that did not print
+  // one; zero would be a claim, and duration is a contrast signal M4
+  // reads.
+  assert.equal(parseDuration('3:45'), 225);
+  assert.equal(parseDuration('1:02:03'), 3723);
+  assert.equal(parseDuration(''), null);
+  assert.equal(parseDuration('0:00'), null, 'zero is not a duration');
+  assert.equal(parseDuration('about four minutes'), null);
+  assert.equal(parseDuration(undefined), null);
+});
+
+test('an accepted match stores its tracklist, and a failure costs only the tracklist', async () => {
+  // release_track held zero rows since M1 because getRelease was never
+  // called. A tracklist is what says which pressing a record is when a
+  // catalogue number is shared.
+  const env = makeEnv();
+  env.DB.raw.exec("INSERT INTO item (crate) VALUES ('B4')");
+  env.DB.raw.exec("INSERT INTO capture (item_id, catno_raw, label_raw, title_raw) "
+    + "VALUES (1, 'SXL 6113', 'Decca', 'Mahler Symphony No. 2')");
+
+  const client = {
+    search: async () => [{
+      id: 999, catno: 'SXL 6113', label: ['Decca'], title: 'Mahler — Symphony No. 2', year: 1966,
+    }],
+    getRelease: async () => ({
+      tracklist: [
+        { position: 'A1', title: 'Allegro maestoso', duration: '22:15' },
+        { position: 'B1', title: 'Andante moderato', duration: '' },
+        { position: '', title: '', duration: '1:00' },   // a heading, not a track
+      ],
+    }),
+  };
+  const row = { itemId: 1, catnoRaw: 'SXL 6113', labelRaw: 'Decca', titleRaw: 'Mahler Symphony No. 2' };
+  await persistRun(env, row, await matchRow(row, client), await claimRow(env, 1));
+
+  const tracks = env.DB.raw.prepare(
+    'SELECT position, title, duration_s, completeness FROM release_track ORDER BY id').all();
+  assert.equal(tracks.length, 2, 'a titleless row is a heading, not a track');
+  assert.equal(tracks[0].title, 'Allegro maestoso');
+  assert.equal(Number(tracks[0].duration_s), 1335);
+  assert.equal(tracks[1].duration_s, null, 'an unprinted duration stays absent');
+  assert.equal(tracks[0].completeness, 'unknown',
+    'whether a track is a whole work is M3 judgement, not a guess made here');
+});
+
+test('a tracklist that cannot be fetched does not fail the match', async () => {
+  // The verdict was reached on the search rungs and stands. Enrichment
+  // that fails loses nothing that was ever had.
+  const client = { search: async () => [], getRelease: async () => { throw new Error('HTTP 502'); } };
+  assert.deepEqual(await fetchTracks(client, 999), []);
 });
 
 test('a verified release is stored with what Discogs actually returned', async () => {

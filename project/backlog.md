@@ -37,6 +37,13 @@
   2026-08-31, every row carrying a match_run and 287 sitting in
   needs-review, so all that remains is a person clearing the queue by
   keyboard.
+- [ ] **TRACKLIST-CAPTURE Capture tracklists — from Discogs first, from
+  photographs only where that fails** (2026-08-31) — release_track has
+  held zero rows since M1 because the Worker's getRelease is never called,
+  so the tracklist Discogs already returns for every accepted match is
+  fetched, scored and discarded — and a tracklist is the field that says
+  what a pressing actually is when a catalogue number is shared, which is
+  exactly the tie the corroboration gate cannot currently break.
 - [~] **M2-DISCOGS-PACING Tune Discogs pacing — 7 of 12 queries still
   fail in the Worker** (2026-08-30) — Measured on 16 promoted photo
   readings — a richer reading costs 9.4-12 queries against capture-only's
