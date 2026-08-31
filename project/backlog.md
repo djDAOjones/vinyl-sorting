@@ -38,11 +38,12 @@
   what a pressing actually is when a catalogue number is shared, which is
   exactly the tie the corroboration gate cannot currently break.
 - [~] **M2-DISCOGS-PACING Tune Discogs pacing — 7 of 12 queries still
-  fail in the Worker** (2026-08-30) — Measured on 16 promoted photo
-  readings — a richer reading costs 9.4-12 queries against capture-only's
-  4.7, so 5 of 11 rows errored on Discogs throttling or Cloudflare's
-  per-invocation subrequest cap, and one item collected two runs because a
-  row outlasting the five-minute cron period is selected twice.
+  fail in the Worker** (2026-08-30) — A richer reading costs 9.4-12
+  queries against capture-only's 4.7, which broke the matcher three ways —
+  Discogs throttling, Cloudflare's per-invocation subrequest cap and a row
+  selected twice; all three are fixed and the interval now learns its own
+  level from the refusal rate rather than being tuned by hand, backing off
+  entirely when a tick reaches nothing.
 - [ ] **OPEN-RECATALOGUE Photograph the 446 imported rows rather than
   review them by keyboard?** [sign-off] (2026-08-31) — Every one of the
   293 items in the review queue is a legacy spreadsheet row and 267 of

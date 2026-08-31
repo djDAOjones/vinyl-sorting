@@ -15,7 +15,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  BUDGETS, MAX_MIN_INTERVAL_MS, RateLimiter, minIntervalKey,
+  BUDGETS, MAX_MIN_INTERVAL_MS, RateLimiter, autoIntervalKey, cooldownKey, minIntervalKey,
 } from '../../worker/rate-limit.ts';
 import {
   CRON_PERIOD_MS, QUERIES_PER_ROW, TICK_WORK_BUDGET_MS, batchSizeFor,
@@ -155,4 +155,78 @@ test('a run records how many of its queries failed, queryably', async () => {
       FROM match_run WHERE item_id = 1`).get();
   assert.equal(Number(row.ran), 12);
   assert.equal(Number(row.failed), 7);
+});
+
+// ── pacing itself ─────────────────────────────────────────────────
+
+test('the interval widens fast on refusals and narrows slowly when clean', async () => {
+  // The asymmetry is the point: being too quick costs a refused request
+  // and the whole subrequest budget; being too slow costs only time.
+  const kv = makeKv();
+  const limiter = new RateLimiter(kv, () => 1_000_000);
+  const floor = BUDGETS.discogs.minIntervalMs;
+
+  const widened = await limiter.adjustAutoInterval('discogs', 0.5);
+  assert.ok(widened > floor, 'refusals widen it');
+  const wider = await limiter.adjustAutoInterval('discogs', 1);
+  assert.ok(wider > widened, 'and keep widening');
+
+  // Clean ticks walk it back, but not in one step.
+  const back = await limiter.adjustAutoInterval('discogs', 0);
+  assert.ok(back < wider && back > floor, 'narrows, but not straight to the floor');
+
+  for (let i = 0; i < 40; i++) await limiter.adjustAutoInterval('discogs', 0);
+  assert.equal(await limiter.effectiveMinInterval('discogs'), floor,
+    'a long clean run reaches the shipped floor and stops there');
+});
+
+test('one unlucky query in a big tick holds the pace rather than hunting', async () => {
+  // The dead zone is narrow — 5%, not 30%. A wider one converged and
+  // then sat there paying refusals for ever: simulated against an
+  // upstream refusing under 5s, a 30% tolerance settled at 4.5s and
+  // held a 10% refusal rate indefinitely. A tolerance for refusals is
+  // a standing order for traffic that returns nothing.
+  const kv = makeKv();
+  const limiter = new RateLimiter(kv, () => 1_000_000);
+  await limiter.adjustAutoInterval('discogs', 0.5);
+  const held = await limiter.effectiveMinInterval('discogs');
+  await limiter.adjustAutoInterval('discogs', 0.02);   // one in fifty
+  assert.equal(await limiter.effectiveMinInterval('discogs'), held, 'no reaction to noise');
+
+  await limiter.adjustAutoInterval('discogs', 0.1);    // one in ten is not noise
+  assert.ok(await limiter.effectiveMinInterval('discogs') > held, 'but a real refusal rate widens');
+});
+
+test('a person may always slow the matcher, and never speed it', async () => {
+  // The manual key stays widen-only; the controller may move both ways.
+  // Taking the wider of the two keeps both properties at once.
+  const kv = makeKv();
+  const limiter = new RateLimiter(kv, () => 1_000_000);
+  const floor = BUDGETS.discogs.minIntervalMs;
+
+  await kv.put(minIntervalKey('discogs'), '9000', { expirationTtl: 60 });
+  await kv.put(autoIntervalKey('discogs'), String(floor), { expirationTtl: 60 });
+  assert.equal(await limiter.effectiveMinInterval('discogs'), 9000,
+    'the human override wins when it is wider');
+
+  await kv.put(minIntervalKey('discogs'), String(floor - 1000), { expirationTtl: 60 });
+  assert.equal(await limiter.effectiveMinInterval('discogs'), floor,
+    'and a value below the floor is refused, not honoured');
+});
+
+test('a tick that reached nothing stops asking for a while', async () => {
+  // Every further request is one that will also be refused: it spends
+  // the subrequest budget and the shared window and returns nothing.
+  let now = 1_000_000;
+  const kv = makeKv();
+  const limiter = new RateLimiter(kv, () => now);
+
+  assert.equal(await limiter.inCooldown('discogs'), false);
+  await limiter.startCooldown('discogs', 600_000);
+  assert.equal(await limiter.inCooldown('discogs'), true);
+
+  now += 599_000;
+  assert.equal(await limiter.inCooldown('discogs'), true, 'still sitting out');
+  now += 2_000;
+  assert.equal(await limiter.inCooldown('discogs'), false, 'and then tries again on its own');
 });

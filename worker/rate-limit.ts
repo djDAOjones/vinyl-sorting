@@ -79,6 +79,31 @@ const lastKey = (upstream: string) => `rl:${upstream}:last`;
 export const minIntervalKey = (upstream: string) => `rl:${upstream}:min-interval`;
 
 /**
+ * Where the matcher's own pacing lives, separate from the human one.
+ *
+ * The key above is a MANUAL override and is widen-only, because a typo
+ * that narrowed it would restore the burst Discogs already refused us
+ * for. This one is written by the controller in `index.ts` after each
+ * tick, and it may move in both directions — safely, because a machine
+ * does not typo and the value is clamped to [floor, MAX] on every read.
+ *
+ * The two are combined by taking the WIDER: a person can always slow
+ * the matcher down past whatever the controller has settled on, and can
+ * never speed it past the shipped floor.
+ */
+export const autoIntervalKey = (upstream: string) => `rl:${upstream}:auto-interval`;
+
+/**
+ * How long to stop asking after a tick that got nothing.
+ *
+ * When Discogs is refusing, every further request is a request that
+ * will also be refused: it spends the subrequest budget, spends the
+ * shared window, and returns nothing. Sitting out a few minutes is not
+ * a delay — it is the difference between traffic and useful traffic.
+ */
+export const cooldownKey = (upstream: string) => `rl:${upstream}:cooldown-until`;
+
+/**
  * Nothing may sit longer than this between requests; a fat-fingered
  * override should slow the matcher, never wedge it for an hour.
  *
@@ -125,14 +150,73 @@ export class RateLimiter {
    * of the default, because failing closed here costs only recall
    * whereas failing open costs the token.
    */
-  async effectiveMinInterval(upstream: keyof typeof BUDGETS): Promise<number> {
-    const floor = BUDGETS[upstream].minIntervalMs;
-    const raw = await this.#store.get(minIntervalKey(upstream));
+  /** A stored interval, clamped; the floor for anything unusable. */
+  async #storedInterval(key: string, floor: number): Promise<number> {
+    const raw = await this.#store.get(key);
     if (raw === null) return floor;
     const wanted = Number(raw);
     if (!Number.isFinite(wanted)) return floor;
     if (wanted < floor || wanted > MAX_MIN_INTERVAL_MS) return floor;
     return wanted;
+  }
+
+  /**
+   * The gap actually enforced: the wider of what a person asked for and
+   * what the controller has learned. Neither can go below the shipped
+   * floor, so the safety property holds however either is written.
+   */
+  async effectiveMinInterval(upstream: keyof typeof BUDGETS): Promise<number> {
+    const floor = BUDGETS[upstream].minIntervalMs;
+    const [manual, auto] = await Promise.all([
+      this.#storedInterval(minIntervalKey(upstream), floor),
+      this.#storedInterval(autoIntervalKey(upstream), floor),
+    ]);
+    return Math.max(manual, auto);
+  }
+
+  /**
+   * Move the learned interval after a tick.
+   *
+   * Widens fast and narrows slowly, which is the right asymmetry when
+   * being too quick costs a refused request and the whole subrequest
+   * budget, while being too slow costs only time.
+   *
+   * THE THRESHOLD IS LOW ON PURPOSE. A first version widened only past
+   * 30% refusals, and simulated against an upstream that refuses under
+   * 5s it settled at 4.5s and sat there paying 10% refusals for ever —
+   * converged, and permanently wasteful. A tolerance for refusals is a
+   * standing order for traffic that returns nothing. 5% is near enough
+   * to "any" to keep pushing back, while still ignoring one unlucky
+   * query in a large tick.
+   *
+   * It oscillates gently around the true limit rather than settling on
+   * it exactly, which is what any controller without a model of the
+   * upstream does. The asymmetry keeps the swing on the safe side.
+   */
+  async adjustAutoInterval(upstream: keyof typeof BUDGETS, errorRate: number): Promise<number> {
+    const floor = BUDGETS[upstream].minIntervalMs;
+    const current = await this.#storedInterval(autoIntervalKey(upstream), floor);
+    const next = errorRate > 0.05 ? Math.min(Math.round(current * 1.5), MAX_MIN_INTERVAL_MS)
+      : errorRate === 0 ? Math.max(Math.round(current * 0.9), floor)
+        : current;
+    // A year: the learned pace should survive a quiet night, and it is
+    // rewritten on every tick that has an opinion anyway.
+    if (next !== current) {
+      await this.#store.put(autoIntervalKey(upstream), String(next), { expirationTtl: 31_536_000 });
+    }
+    return next;
+  }
+
+  /** True while the matcher has agreed to stop asking. */
+  async inCooldown(upstream: keyof typeof BUDGETS): Promise<boolean> {
+    const until = Number((await this.#store.get(cooldownKey(upstream))) ?? 0);
+    return Number.isFinite(until) && until > this.#now();
+  }
+
+  /** Sit out, for a while proportional to how badly the tick went. */
+  async startCooldown(upstream: keyof typeof BUDGETS, ms: number): Promise<void> {
+    await this.#store.put(cooldownKey(upstream), String(this.#now() + ms),
+      { expirationTtl: Math.max(60, Math.ceil(ms / 1000) + 60) });
   }
 
   async take(upstream: keyof typeof BUDGETS): Promise<Decision> {

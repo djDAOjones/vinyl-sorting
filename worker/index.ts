@@ -515,10 +515,22 @@ export interface MatchBatchOptions {
   sleep?: (ms: number) => Promise<void>;
 }
 
+/**
+ * How long to stop asking after a tick that reached nothing.
+ *
+ * Two cron periods. Long enough that a spell of refusals is not met
+ * with more requests, short enough that a transient one costs ten
+ * minutes rather than an evening.
+ */
+export const COOLDOWN_MS = 2 * CRON_PERIOD_MS;
+
 export async function runMatchBatch(
   env: Env,
   opts: MatchBatchOptions = {},
-): Promise<{ processed: number; rowsWritten: number; stoppedShort: boolean }> {
+): Promise<{
+  processed: number; rowsWritten: number; stoppedShort: boolean;
+  cooledDown?: boolean; interval?: number; errorRate?: number;
+}> {
   const { batchSize, writeBudget = WRITE_BUDGET_PER_TICK, now, sleep } = opts;
   if (!env.DISCOGS_TOKEN) {
     console.warn('match: DISCOGS_TOKEN is not set; nothing to do');
@@ -530,6 +542,12 @@ export async function runMatchBatch(
   }, now);
   // Derived from the gap in force rather than fixed, so tuning the
   // pacing cannot silently change how long an invocation runs.
+  // Sitting out is the point: when Discogs is refusing, a further
+  // request is one that will also be refused. It spends the subrequest
+  // budget and the shared window and returns nothing.
+  if (await limiter.inCooldown('discogs')) {
+    return { processed: 0, rowsWritten: 0, stoppedShort: false, cooledDown: true };
+  }
   const rowsThisTick = batchSize ?? batchSizeFor(await limiter.effectiveMinInterval('discogs'));
   // fetchImpl left to the client's own default ON PURPOSE: naming
   // fetch here would put an outbound call in a second file and break
@@ -541,6 +559,8 @@ export async function runMatchBatch(
   let rowsWritten = 0;
   let processed = 0;
   let stoppedShort = false;
+  let queriesRun = 0;
+  let queryErrors = 0;
 
   for (const row of rows) {
     // Checked BEFORE the row, not after: a row costs at most ~10 writes
@@ -567,20 +587,50 @@ export async function runMatchBatch(
     const result = await matchRow(row, client);
     rowsWritten += await persistRun(env, row, result, runId);
     processed += 1;
+    queriesRun += result.outcome.queriesRun;
+    queryErrors += result.outcome.queryErrors;
   }
 
-  return { processed, rowsWritten, stoppedShort };
+  /**
+   * Learn the pace rather than being told it.
+   *
+   * The interval was a number a person put in KV and tuned by hand,
+   * three times in one day. The tick already knows how many of its
+   * queries were refused, which is the only input that tuning ever
+   * used — so it adjusts itself: wider fast when refused, narrower
+   * slowly when clean, and never below the shipped floor.
+   *
+   * A tick that ran queries and got nothing but errors stops asking
+   * for a while. That is the difference between traffic and useful
+   * traffic.
+   */
+  const errorRate = queriesRun ? queryErrors / queriesRun : 0;
+  let interval: number | undefined;
+  if (queriesRun) {
+    interval = await limiter.adjustAutoInterval('discogs', errorRate);
+    if (queryErrors === queriesRun) await limiter.startCooldown('discogs', COOLDOWN_MS);
+  }
+
+  return { processed, rowsWritten, stoppedShort, interval, errorRate };
 }
 
 export default {
   fetch: (req: Request, env: Env, ctx: ExecutionContext) => createApp().fetch(req, env, ctx),
   scheduled: async (_event: ScheduledController, env: Env, ctx: ExecutionContext) => {
-    ctx.waitUntil(runMatchBatch(env).then(({ processed, rowsWritten, stoppedShort }) => {
+    ctx.waitUntil(runMatchBatch(env).then(({
+      processed, rowsWritten, stoppedShort, cooledDown, interval, errorRate,
+    }) => {
+      if (cooledDown) {
+        console.log('match: in cooldown after a tick that reached nothing — not asking');
+        return;
+      }
       // Say when it stopped short. A tick that quietly did less than it
       // was asked to looks identical to a quiet night in the logs, and
       // the whole point of the budget is that someone notices.
       console.log(
         `match: processed ${processed} row(s), ${rowsWritten} row(s) written`
+        + (errorRate !== undefined ? `, ${(errorRate * 100).toFixed(0)}% queries refused` : '')
+        + (interval !== undefined ? `, pacing now ${interval}ms` : '')
         + (stoppedShort ? ` — STOPPED SHORT at the ${WRITE_BUDGET_PER_TICK}-write budget` : ''),
       );
     }));

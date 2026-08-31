@@ -1,7 +1,7 @@
 ---
 id: M2-DISCOGS-PACING
 name: Tune Discogs pacing — 7 of 12 queries still fail in the Worker
-summary: Measured on 16 promoted photo readings — a richer reading costs 9.4-12 queries against capture-only's 4.7, so 5 of 11 rows errored on Discogs throttling or Cloudflare's per-invocation subrequest cap, and one item collected two runs because a row outlasting the five-minute cron period is selected twice.
+summary: A richer reading costs 9.4-12 queries against capture-only's 4.7, which broke the matcher three ways — Discogs throttling, Cloudflare's per-invocation subrequest cap and a row selected twice; all three are fixed and the interval now learns its own level from the refusal rate rather than being tuned by hand, backing off entirely when a tick reaches nothing.
 status: in-progress
 milestone: current
 order: 6
@@ -15,68 +15,57 @@ Not finished: on its first real row, **7 of 12 queries still failed**
 while 5 succeeded. The row reached a correct verdict anyway, but every
 failed rung is lost recall — the best match may have been in one.
 
-**What was wrong** (maintainer's diagnosis, confirmed): the limiter
-had no minimum spacing, so a Worker spent its per-minute allowance as
-an instant burst. Discogs cares about burstiness; a laptop hid it
-because the round-trip paces the calls. Now 30/min AND ≥2s apart. The
-local runner managed 446 rows with zero failures at ~1.25s while the
-Worker still fails at 2s, so the shared egress IP does make Discogs
-stricter — not the whole story, and not fatal.
-
-## Done — 2026-08-30
-
-The widen-measure-repeat loop runs without a deploy. The gap is tunable
-from KV (`rl:discogs:min-interval`), **widen-only** — an override that
-could narrow it would let one typo restore the burst Discogs already
-refused us for. `batchSizeFor` derives rows-per-tick from the interval.
-Every run records its failures in `queries_json`; runs predating those
-fields count as **unrecorded**, never as zero.
+**What was wrong**: the limiter had no minimum spacing, so a Worker
+spent its per-minute allowance as an instant burst. Discogs cares about
+burstiness; a laptop hides it because the round-trip paces the calls.
+Now 30/min AND at least the learned gap apart. The local runner managed
+446 rows with zero failures at ~1.25s while the Worker still fails at
+2s — the shared egress IP does make Discogs stricter.
 
 ## Measured — 2026-08-31, on 16 promoted photo readings
 
-The measurement this asked for, taken on real rows. **A richer reading
-makes the pacing worse, and that is the finding.**
+**A richer reading makes the pacing worse, and that was the finding.**
+M2-FIRST-RUN measured 4.7 queries per row on capture-only data; a
+promoted vision reading supplies label, title and name as well, so the
+ladder walks **9.4 to 12**. Every extra signal that makes a match more
+likely also makes the row cost more to try. Of 11 rows attempted, 5
+errored.
 
-M2-FIRST-RUN measured **4.7 queries per row** on capture-only data,
-where a catalogue number was usually the only signal. A promoted vision
-reading supplies label, title and name as well, so the query ladder has
-far more permutations to walk: **9.4 to 12 queries per row**, roughly
-2.3x. Every extra signal that makes a match more likely also makes the
-row cost more to try.
+Three faults, only one of them Discogs:
 
-Of 11 rows attempted: 1 auto-accepted, 3 needs-review, **5 error**.
+- **Throttling**, arriving sooner because each row spends twice the
+  requests.
+- **Cloudflare's per-invocation subrequest cap** — not a Discogs limit
+  at all, and one that widening the interval cannot relieve. Twelve
+  queries at up to four attempts each reach it before Discogs refuses.
+- **A row selected twice.** Item 451 collected two runs minutes apart:
+  `pendingRows` excluded rows that already had one, but the run was
+  written after the search, so a row outlasting the cron period was
+  still in flight when the next tick chose it.
 
-Two distinct failures, from `queries_json`:
+## It paces itself now — 2026-08-31
 
-- **`throttled by Discogs after 4 attempts`.** The known fault, now
-  arriving sooner because each row spends twice the requests.
-- **`Too many subrequests by single Worker invocation`** — new, and not
-  a Discogs limit at all. Cloudflare caps subrequests per invocation
-  (50 on Free). Twelve queries with up to four retry attempts each can
-  reach that before Discogs ever refuses. Widening the interval does
-  not help this one; only fewer requests per invocation does.
+The three fixes above landed and the interval was tuned by hand three
+times in one day, which is the tell: the tick already knows how many of
+its queries were refused, and that was the only input the tuning ever
+used.
 
-**A third fault, separate from pacing but caused by it.** Item 451 has
-**two** `match_run` rows, 10:50:12 and 10:54:48 — the first died on the
-subrequest limit, the second was throttled. `pendingRows` excludes rows
-that already have a run, so two cron invocations overlapped: a row
-taking longer than the five-minute period is still in flight when the
-next tick selects it. Nothing in the schema forbids it —
-`match_run` has no unique constraint on `item_id`. Two runs mean two
-verdicts for one item and double the requests spent reaching them.
-
-## Still open
-
-Three things, and the order matters because the second and third are
-not fixed by the first:
-
-1. **Widen the interval** — the original plan, still worth doing.
-2. **Cap requests per invocation**, so the subrequest limit cannot be
-   reached: fewer rows per tick, or a shorter ladder when a row already
-   has several signals.
-3. **Stop overlapping invocations double-processing a row** — claim the
-   row before searching rather than after, so a run in flight excludes
-   it.
+- **The interval is learned, not set.** Widens 1.5x past a 5% refusal
+  rate, narrows 0.9x on a clean tick, never below the shipped floor.
+  Simulated against an upstream refusing under 5s it reaches 4.9s in
+  seven ticks and holds at a 2% refusal rate.
+- **The threshold is 5%, not 30%.** The first version tolerated 30% and
+  converged — to 4.5s and a permanent 10% refusal rate. Converged and
+  wasteful. A tolerance for refusals is a standing order for traffic
+  that returns nothing.
+- **A tick that got nothing stops asking** for two cron periods. When
+  Discogs is refusing, a further request is one that will also be
+  refused: it spends the subrequest budget, spends the shared window,
+  and returns nothing.
+- **The manual key stays widen-only** and the learned one may move both
+  ways; the wider of the two is enforced. So a person can always slow
+  the matcher and never speed it past the floor.
 
 **Done when** a freshly captured record matches with no failed queries,
-and no item ever carries two runs from one pass.
+and no item carries two runs from one pass. The pacing no longer needs
+a person, so what remains is watching whether it holds.
