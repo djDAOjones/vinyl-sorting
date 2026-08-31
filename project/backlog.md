@@ -8,7 +8,7 @@
 
 ### Current milestone
 
-<!-- Intent: M2, the photo path and the browse screen, side by side. M2 is deployed and every row now carries a match_run, so its remaining work is maintainer work — clearing 287 needs-review by keyboard, and applying migration 004 to a production still reporting schema 3. The photo path was promoted out of the icebox on 2026-08-30 because it is the buildable work, and because the brief's stated risk is building the app instead of cataloguing the records; DATASET-VIEWER and DATASET-EDIT joined it on 2026-08-31, because 465 catalogued rows can currently be neither seen nor corrected anywhere in the app. -->
+<!-- Intent: M2, the photo path and the browse screen, side by side. M2 is deployed and every row now carries a match_run, so its remaining work is maintainer work — clearing 287 needs-review by keyboard. Migration 004 reached production on 2026-08-31, so a photo reading can now be promoted there. The photo path was promoted out of the icebox on 2026-08-30 because it is the buildable work, and because the brief's stated risk is building the app instead of cataloguing the records; DATASET-VIEWER and DATASET-EDIT joined it on 2026-08-31, because 465 catalogued rows can currently be neither seen nor corrected anywhere in the app. -->
 
 - [ ] **CAPTURE-NEXT-DISC Queue from inside the viewfinder, so a crate
   never leaves the camera** (2026-08-31) — Photographing one disc costs
@@ -35,9 +35,8 @@
 - [~] **M2-FIRST-RUN Run the matcher over all 446 and clear the queue
   once** — The operation, not the code — deployed and run as of
   2026-08-31, every row carrying a match_run and 287 sitting in
-  needs-review, so what remains is a person clearing the queue by
-  keyboard, plus applying migration 004 to a production still reporting
-  schema 3.
+  needs-review, so all that remains is a person clearing the queue by
+  keyboard.
 - [~] **M2-DISCOGS-PACING Tune Discogs pacing — 7 of 12 queries still
   fail in the Worker** (2026-08-30) — Spacing requests 2s apart made the
   deployed matcher work, but a majority of queries still fail, costing

@@ -1,7 +1,7 @@
 ---
 id: M2-FIRST-RUN
 name: Run the matcher over all 446 and clear the queue once
-summary: The operation, not the code — deployed and run as of 2026-08-31, every row carrying a match_run and 287 sitting in needs-review, so what remains is a person clearing the queue by keyboard, plus applying migration 004 to a production still reporting schema 3.
+summary: The operation, not the code — deployed and run as of 2026-08-31, every row carrying a match_run and 287 sitting in needs-review, so all that remains is a person clearing the queue by keyboard.
 status: in-progress
 milestone: current
 order: 5
@@ -23,9 +23,11 @@ remaining job.
 The one error row was never successfully searched, and wants
 re-queueing rather than reading as a negative.
 
-Production reports `schemaVersion 3` while the repo is on 004, so the
-`vision` source PHOTO-PROMOTE added does not exist there yet and the
-photo path stays inert in production until 004 is applied.
+Migration 004 was applied to production on 2026-08-31, so the `vision`
+source PHOTO-PROMOTE writes now exists there: schema 4, with all 4,734
+provenance rows, 465 items and 98 photographs intact across the
+`field_source` rebuild and every decision view recreated. The gap this
+record noted is closed; what is left here is only the keyboard.
 
 Re-running is resumable by construction — `pendingRows` selects only
 items with no `match_run`, so a batch that dies costs one batch.
