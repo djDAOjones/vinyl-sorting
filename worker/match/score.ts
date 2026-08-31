@@ -47,6 +47,16 @@ export interface Scored {
   score: number;
   families: Family[];
   signals: Record<string, string>;
+  /**
+   * The candidate as Discogs returned it.
+   *
+   * Carried because the release row was being created from the id
+   * alone: title, label and catalogue number were scored and then
+   * thrown away, so every release the matcher made was blank and the
+   * review screen had nothing to show a person to check against. Two
+   * items were confirmed on 2026-08-31 against exactly that emptiness.
+   */
+  candidate: Candidate;
 }
 
 const year = (v: unknown): number | null => {
@@ -138,7 +148,7 @@ export function scoreCandidate(capture: Capture, candidate: Candidate): Scored {
     signals.formatKind = `not vinyl: ${formats.join(',')}`;
   }
 
-  return { id: candidate.id, score, families: [...families], signals };
+  return { id: candidate.id, score, families: [...families], signals, candidate };
 }
 
 export type Verdict = 'verified' | 'needs_review' | 'no_match';

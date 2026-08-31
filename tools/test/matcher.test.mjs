@@ -13,7 +13,8 @@ import { compactCatno, normaliseCatno } from '../../worker/match/normalise.ts';
 import { checkCatno, checkRow } from '../../worker/match/sanity.ts';
 import { GATE, applyGate, scoreCandidate } from '../../worker/match/score.ts';
 import { buildQueries } from '../../worker/match/queries.ts';
-import { matchRow } from '../../worker/match/run.ts';
+import { claimRow, matchRow, persistRun } from '../../worker/match/run.ts';
+import { makeEnv } from './helpers/bindings.mjs';
 
 // ── normalisation ─────────────────────────────────────────────────
 
@@ -189,6 +190,36 @@ test('a junk row costs no API call at all', async () => {
   assert.equal(outcome.verdict, 'rejected');
   assert.equal(outcome.queriesRun, 0);
   assert.equal(client.asked.length, 0, 'the sanity check runs before the network');
+});
+
+test('a verified release is stored with what Discogs actually returned', async () => {
+  // THE BUG: the release row was created from the discogs id alone, so
+  // every release the matcher made was blank — title, label and
+  // catalogue number were scored and then discarded. The review screen
+  // then asked a person to confirm a match against nothing, and on
+  // 2026-08-31 two items were confirmed against exactly that.
+  const env = makeEnv();
+  env.DB.raw.exec("INSERT INTO item (crate) VALUES ('B4')");
+  env.DB.raw.exec("INSERT INTO capture (item_id, catno_raw, label_raw, title_raw) "
+    + "VALUES (1, 'SXL 6113', 'Decca', 'Mahler Symphony No. 2')");
+
+  const client = {
+    search: async () => [{
+      id: 999, catno: 'SXL 6113', label: ['Decca'],
+      title: 'Mahler — Symphony No. 2', year: 1966,
+    }],
+    getRelease: async () => ({}),
+  };
+  const row = { itemId: 1, catnoRaw: 'SXL 6113', labelRaw: 'Decca', titleRaw: 'Mahler Symphony No. 2' };
+  const result = await matchRow(row, client);
+  await persistRun(env, row, result, await claimRow(env, 1));
+
+  const rel = env.DB.raw.prepare('SELECT * FROM release WHERE discogs_id = 999').get();
+  assert.ok(rel, 'the release exists');
+  assert.equal(rel.title, 'Mahler — Symphony No. 2', 'a person must have something to read');
+  assert.equal(rel.catno, 'SXL 6113');
+  assert.equal(rel.label, 'Decca', 'the array is flattened, not dropped');
+  assert.equal(Number(rel.year), 1966);
 });
 
 test('a corroborated row verifies and names the release', async () => {

@@ -248,8 +248,20 @@ async function upsertRelease(
     .bind(discogsId).first<{ id: number }>();
   if (existing) return { id: existing.id, written: 0 };
 
-  const created = await env.DB.prepare('INSERT INTO release (discogs_id) VALUES (?) RETURNING id')
-    .bind(discogsId).first<{ id: number }>();
+  // Stored, not discarded. A release row of nothing but an id gives the
+  // review screen nothing to display, so a person is asked to confirm a
+  // match against a blank — which is not a confirmation at all.
+  const c = gate?.chosen?.candidate;
+  const created = await env.DB.prepare(
+    `INSERT INTO release (discogs_id, title, label, catno, year)
+     VALUES (?, ?, ?, ?, ?) RETURNING id`,
+  ).bind(
+    discogsId,
+    c?.title ?? null,
+    Array.isArray(c?.label) ? c.label.join('; ') : c?.label ?? null,
+    c?.catno ?? null,
+    c?.year ? Number(String(c.year).slice(0, 4)) || null : null,
+  ).first<{ id: number }>();
   if (!created) throw new Error('release insert returned no id');
   await env.DB.prepare(
     "INSERT INTO field_source (entity, entity_id, field, source, confidence) VALUES ('release', ?, 'discogs_id', 'discogs', ?)",
