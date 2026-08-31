@@ -23,6 +23,7 @@
  *                               [--out data/photo-extract.json]
  *                               [--truth data/label-photos/ground-truth.csv]
  *                               [--model "the chat you used"]
+ *                               [--not-independent 448,449,450]
  */
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -32,7 +33,7 @@ import { parseChatReply } from './lib/photo-fields.mjs';
 const argv = process.argv.slice(2);
 const argOf = (n, d) => { const i = argv.indexOf(n); return i >= 0 && argv[i + 1] ? argv[i + 1] : d; };
 const flagged = new Set();
-for (const n of ['--ids', '--out', '--truth', '--model']) {
+for (const n of ['--ids', '--out', '--truth', '--model', '--not-independent']) {
   const i = argv.indexOf(n);
   if (i >= 0) { flagged.add(i); flagged.add(i + 1); }
 }
@@ -78,6 +79,24 @@ const expectedIds = [...new Set(
  * not an answer, and treating it as one would condemn every row before
  * anybody typed anything.
  */
+/**
+ * Rows the READER itself declared non-independent.
+ *
+ * Independence can be lost two ways and only one is mechanical. The
+ * answer may already have existed — that is checked below. Or the
+ * reader may have carried context about these records from before it
+ * read them, which nothing here can detect and only it can report.
+ *
+ * ChatGPT disclosed exactly that for pack-01 on 2026-08-31: "prior
+ * project memory exposed some earlier transcription details before I
+ * read READ-ALL.md". Taking that at face value costs five rows;
+ * ignoring it because the file-based check came back clean would let a
+ * known-contaminated batch count as evidence, which is the failure the
+ * whole guard exists to prevent. A reader honest enough to volunteer
+ * it should not be overruled by a test that cannot see what it saw.
+ */
+const declared = new Set(argOf('--not-independent', '').split(',').map((s) => s.trim()).filter(Boolean));
+
 const VALUE_COLUMNS = ['catno_raw', 'label_raw', 'name_raw', 'title_raw', 'year_raw', 'decoy_numbers'];
 const answered = new Set(
   (existsSync(truthPath) ? readCsv(readFileSync(truthPath, 'utf8')) : [])
@@ -109,6 +128,7 @@ for (const file of replies) {
     // scores this, the ground truth will exist for every row, and the
     // only moment this is knowable is now.
     result.truthPreexisting = answered.has(id);
+    if (declared.has(id)) result.declaredNotIndependent = true;
   }
   Object.assign(run.results, parsed.results);
   imported += got.length;
@@ -139,6 +159,14 @@ if (compromised.length) {
   console.log(`arrived: ${compromised.join(', ')}`);
   console.log('They are recorded, but the scorer will not count them as an');
   console.log('independent measurement — the reader could have read the answer.');
+}
+
+const told = Object.entries(run.results)
+  .filter(([, r]) => r.declaredNotIndependent).map(([id]) => id);
+if (told.length) {
+  console.log(`\n${told.length} row(s) the reader itself declared non-independent:`);
+  console.log(`  ${told.join(', ')}`);
+  console.log('Nothing here could have detected that. Held out on its word.');
 }
 
 if (problems.length) {

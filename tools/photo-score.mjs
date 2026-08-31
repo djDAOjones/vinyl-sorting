@@ -73,7 +73,7 @@ for (const [rowId, result] of Object.entries(run.results ?? {})) {
     turned: Object.values(result.fields?.rotate_cw ?? {})
       .filter((d) => Number(d) > 0).length,
   };
-  (result.truthPreexisting ? notIndependent : rows).push(row);
+  (result.truthPreexisting || result.declaredNotIndependent ? notIndependent : rows).push(row);
 }
 
 // Named rather than counted: a row typed but never read is a gap in the
@@ -138,9 +138,10 @@ if (notIndependent.length) {
   const bad = notIndependent.filter((r) => PHOTO_FIELDS.some(
     (f) => r.verdicts[f] === 'wrong' || r.verdicts[f] === 'invented') || r.trap);
   lines.push('## Held out — the answer existed before the reading', '',
-    'A reader with repository access could have opened `ground-truth.csv`,'
-      + ' so these rows cannot demonstrate anything and are excluded from the bar above.'
-      + ' Photograph, read, and only then type what the label says.', '',
+    'Either the answer existed before the reading did, or the reader'
+      + ' declared it carried prior context about these records. Both cost'
+      + ' independence, and only the first is detectable here — the second is'
+      + ' taken on the reader\'s word.', '',
     ...notIndependent.map((r) => `- \`${r.rowId}\``), '');
   if (bad.length) {
     lines.push('Worth looking at anyway — a wrong value is a wrong value:', '',

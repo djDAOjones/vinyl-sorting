@@ -32,6 +32,13 @@
   checks, and the scorer keeps refusals apart from wrong answers; twenty
   photographed labels are now the only thing left, because synthesising
   labels would score the model against its own output.
+- [ ] **CAPTURE-MERGED-ROWS Two discs photographed into one row — split
+  453 and 455** (2026-08-31) — Item 453 carries twelve photographs of at
+  least two different records — Ace of Clubs ACL 45 and Music for Pleasure
+  MFP 2024 — because nothing between shots said "this is a new disc", and
+  455 shows the same signature; the rows need splitting by a person who
+  can see which photograph belongs to which disc, and the reading that
+  found it should not be promoted until they are.
 - [~] **PHOTOS-TO-DESKTOP Pull captured photos and their row ids out for
   a chat pack** [detail](records/PHOTOS-TO-DESKTOP.md) (2026-08-30) —
   Built, gated and live — photos-pull reads (item_id, r2_key) pairs from
