@@ -18,17 +18,21 @@
  * on 0% of the backlog and caused the 9% match error rate M0 measured.
  */
 
-import { putEntry, allEntries } from './queue.ts';
+import { putEntry, allEntries, deleteEntry } from './queue.ts';
 import {
-  CAPTURED_KIND, PHOTO_LONG_EDGE, scaleTo, summarise, torchSupported,
-  videoConstraints, type QueuedCapture, type QueuedPhoto,
+  CAPTURED_KIND, PHOTO_LONG_EDGE, UNDO_MS, heldForUndo, scaleTo, summarise,
+  torchSupported, videoConstraints, type QueuedCapture, type QueuedPhoto,
 } from './queue-logic.ts';
 import { startSync, drain } from './sync.ts';
+import {
+  forgetCapturer, rememberCapturer, resolveCapturer, storedCapturer,
+} from './who.ts';
 
 const app = document.getElementById('app')!;
 
 /**
- * Sticky between discs. Only `who`, deliberately.
+ * Nothing is sticky between discs except the name of the person holding
+ * the phone, which is not a claim about any disc.
  *
  * Crate used to stick too, which was right while it was a required
  * field you could see. Now that the whole "More" block is parked, a
@@ -39,16 +43,12 @@ const app = document.getElementById('app')!;
  * filler, and this project's rule is the same either way: refuse rather
  * than guess.
  *
- * `who` survives that test where crate does not: it is a fact about the
- * person holding the phone, not about the disc, so carrying it is not a
- * claim about anything the record says. With its box parked there is
- * nowhere left to type it, so it is now read from storage alone — see
- * `readFields`, which must not let a missing box blank it.
+ * The capturer survives that test where crate does not: it is a fact
+ * about the person, not about the disc. It lives in `who.ts`, is typed
+ * once at the gate below, and is checked against the roster on every
+ * read — so a free-text value left by an older build cannot go on
+ * stamping rows.
  */
-const sticky = {
-  get who() { return localStorage.getItem('dg.who') ?? ''; },
-  set who(v: string) { localStorage.setItem('dg.who', v); },
-};
 
 /**
  * The photos taken for the disc in hand, in the order they were taken.
@@ -66,17 +66,82 @@ let startedAt = Date.now();
 const GRADES = ['', 'M', 'NM', 'VG+', 'VG', 'G', 'P'];
 const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 
-function render(): void {
+/**
+ * The first-run gate: type your name.
+ *
+ * One screen, once per device. It refuses a name that is not on the
+ * roster, and that refusal is the whole gate — see `who.ts` for what
+ * this is and, more importantly, what it is not.
+ *
+ * It does not gate the QUEUE. `startSync` runs whatever this screen is
+ * showing, so a phone that comes back from a loft with twenty captures
+ * on it uploads them while somebody works out how to spell Jojo. The
+ * offline guarantee is not the kind of promise that gets a caveat.
+ */
+function renderWhoGate(): void {
   app.innerHTML = `
     <div class="top">
       <h1>Vinyl sorter</h1>
       <div class="status" id="status">queue…</div>
     </div>
 
+    <fieldset>
+      <legend>Who is capturing?</legend>
+      <label><span>Your first name</span>
+        <input id="whoBox" autocomplete="off" autocapitalize="words" spellcheck="false"
+          enterkeyhint="go"></label>
+      <p class="note">It goes on every record you photograph. Typed once on this phone,
+        then never again — and until it is, this is also the only thing between the page
+        and whoever else finds the link.</p>
+    </fieldset>
+
+    <div id="flash"></div>
+
+    <div class="bar"><div class="inner">
+      <button class="primary" id="whoGo" type="button">Start</button>
+    </div></div>`;
+
+  const box = document.getElementById('whoBox') as HTMLInputElement;
+  const go = (): void => {
+    const named = resolveCapturer(box.value);
+    if (!named) {
+      // Refuse without listing the answers: printing the roster here
+      // would hand over the only thing this asks you to know.
+      flash('Not a name this app knows. Ask whoever set the phone up.', 'err');
+      box.select();
+      return;
+    }
+    rememberCapturer(named);
+    render();
+  };
+  document.getElementById('whoGo')!.addEventListener('click', go);
+  box.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+  box.focus();
+  void refreshStatus();
+}
+
+function render(): void {
+  // No name, no capture screen. The queue drains regardless — see
+  // `renderWhoGate`.
+  const capturer = storedCapturer();
+  if (!capturer) return renderWhoGate();
+
+  app.innerHTML = `
+    <div class="top">
+      <h1>Vinyl sorter</h1>
+      <button class="whoTag" id="whoTag" type="button">${capturer}</button>
+      <div class="status" id="status">queue…</div>
+    </div>
+
     <div class="cam" id="cam" hidden>
       <video id="video" playsinline muted autoplay></video>
+      <!-- Out of the bar and into the corner. The torch is set once on the
+           way into the loft; everything left in the bar is used per disc or
+           per photograph, and the column it vacated is the one Next disc
+           needed. -->
+      <button class="torch" id="torch" type="button" hidden aria-pressed="false">🔦</button>
       <div class="camBar">
-        <button class="torch" id="torch" type="button" hidden aria-pressed="false">🔦</button>
+        <button class="next" id="nextDisc" type="button" disabled>Next disc</button>
         <button class="shutter" id="shutter" type="button" aria-label="Take a photograph"></button>
         <button class="camOff" id="camOff" type="button">Done</button>
       </div>
@@ -152,16 +217,31 @@ function render(): void {
   // The box is inside the parked block on this build, so there may be
   // nothing to fill in. Blind `$('capturedBy').value =` threw here and
   // took the whole render with it.
-  const who = document.getElementById('capturedBy') as HTMLInputElement | null;
-  if (who) who.value = sticky.who;
+  const whoBox = document.getElementById('capturedBy') as HTMLInputElement | null;
+  if (whoBox) whoBox.value = capturer;
   // Clear anything a previous build remembered, so a placeholder typed
   // once cannot keep attaching itself to new captures.
   localStorage.removeItem('dg.crate');
+
+  // The phone gets handed over mid-crate, so the name has to be
+  // changeable — but never silently: captures already queued keep the
+  // name they were made under, which is the entire point of writing it
+  // down. The photographs in hand survive too; only typing is lost.
+  $('whoTag').addEventListener('click', () => {
+    if (!confirm(`Capturing as ${capturer}. Hand the phone to someone else?`
+      + '\nThe queue and the photographs in hand are kept; typing is cleared.')) return;
+    forgetCapturer();
+    render();
+  });
 
   const file = $<HTMLInputElement>('file');
   $('shot').addEventListener('click', () => { void startCamera(); });
   $('shutter').addEventListener('click', () => { void grabFrame(); });
   $('camOff').addEventListener('click', () => stopCamera());
+  // One tap files the disc in hand and leaves the viewfinder open, so a
+  // crate costs N shutter taps plus one instead of N plus three, and the
+  // camera never restarts between discs.
+  $('nextDisc').addEventListener('click', () => { void save('camera'); });
   file.addEventListener('change', () => {
     // `multiple` as well, so a phone that offers the camera roll can
     // hand over a run of shots in one go.
@@ -194,7 +274,7 @@ function render(): void {
   });
 
   renderPhotos();
-  $('save').addEventListener('click', () => { void save(); });
+  $('save').addEventListener('click', () => { void save('form'); });
   $('clear').addEventListener('click', () => {
     // Clear sits a thumb's width from "Queue it" and there is no undo
     // anywhere: a mis-tap threw away every photograph of the disc in
@@ -456,6 +536,18 @@ function renderPhotos(): void {
   const queueBtn = document.getElementById('save');
   if (queueBtn) queueBtn.textContent = n ? `Queue it · ${n} photo${n === 1 ? '' : 's'}` : 'Queue it';
 
+  // Next disc carries its count for the same reason, and is inert until
+  // there is one: inside the viewfinder the shutter is the ONLY way to
+  // put something in hand, so a tap with nothing behind it could not be
+  // anything but a mis-tap. This is also the last word on the button's
+  // enabled state — `save` disables it while a write is in flight and
+  // then calls back here rather than re-enabling it blindly.
+  const next = document.getElementById('nextDisc') as HTMLButtonElement | null;
+  if (next) {
+    next.textContent = n ? `Next disc · ${n}` : 'Next disc';
+    next.disabled = n === 0;
+  }
+
   strip.innerHTML = photos.map((p, i) =>
     `<figure class="thumb"><img src="${p.url}" alt="Photograph ${i + 1}">
       <figcaption>${i + 1}</figcaption>
@@ -471,10 +563,76 @@ function renderPhotos(): void {
   }
 }
 
-function flash(message: string, kind: 'ok' | 'err' = 'ok'): void {
+/**
+ * A toast over everything, including the fullscreen viewfinder.
+ *
+ * With an `undo` handler it carries a button and does NOT fade on its
+ * own timer: the offer has to outlive the window it belongs to, and a
+ * toast that clears itself two seconds into a five-second undo is worse
+ * than offering no undo at all. `closeUndo` takes it down instead.
+ */
+function flash(message: string, kind: 'ok' | 'err' = 'ok', undo?: () => void): void {
   const el = document.getElementById('flash')!;
-  el.innerHTML = `<p class="flash${kind === 'err' ? ' err' : ''}">${message}</p>`;
+  const button = undo ? '<button type="button" class="undo" id="undoBtn">Undo</button>' : '';
+  el.innerHTML = `<p class="flash${kind === 'err' ? ' err' : ''}">${message}${button}</p>`;
+  if (undo) {
+    document.getElementById('undoBtn')?.addEventListener('click', () => { void undo(); });
+    return;
+  }
   if (kind === 'ok') setTimeout(() => { el.innerHTML = ''; }, 2600);
+}
+
+/**
+ * The disc just filed, still recallable.
+ *
+ * Next disc is one tap that says "this is one record", and there is no
+ * un-queue afterwards — so a mis-tap between two photographs of the
+ * same disc would file half of it and turn the other half into a SECOND
+ * record. That is precisely the fault the crate mode was deleted for,
+ * arriving one tap at a time instead of one crate at a time.
+ *
+ * The window is bounded by `heldForUndo`, which delays the send and
+ * nothing else. The entry is on disk immediately, as it always was.
+ */
+let undoable: { clientId: string; shots: Shot[]; fields: Record<string, string> } | null = null;
+let undoTimer = 0;
+
+/** Stop offering Undo: the disc belongs to the queue now, so let it go. */
+function closeUndo(): void {
+  if (undoTimer) { clearTimeout(undoTimer); undoTimer = 0; }
+  const settled = undoable;
+  undoable = null;
+  if (!settled) return;
+  for (const s of settled.shots) URL.revokeObjectURL(s.url);
+  const el = document.getElementById('flash');
+  if (el?.querySelector('.undo')) el.innerHTML = '';
+  // The hold expired with it, so send now rather than waiting out the
+  // fifteen-second tick with a finished disc sitting in the queue.
+  void drain().then(refreshStatus);
+}
+
+/**
+ * Put the filed disc back in hand.
+ *
+ * Its photographs go in FRONT of anything shot since, so a tap that
+ * landed between two frames of one disc loses neither. Typed values are
+ * restored only into boxes that are still empty: undoing a mis-tap must
+ * never delete something typed in the seconds after it.
+ */
+async function undoQueued(): Promise<void> {
+  const back = undoable;
+  if (!back) return;
+  if (undoTimer) { clearTimeout(undoTimer); undoTimer = 0; }
+  undoable = null;
+  await deleteEntry(back.clientId);
+  photos = [...back.shots, ...photos];
+  for (const [id, value] of Object.entries(back.fields)) {
+    const el = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null;
+    if (el && !el.value) el.value = value;
+  }
+  renderPhotos();
+  flash('Put back — still the same disc.');
+  void refreshStatus();
 }
 
 function readFields(): Record<string, string> {
@@ -486,17 +644,17 @@ function readFields(): Record<string, string> {
     // list stays complete: un-parking a block needs no change here.
     out[id] = (document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null)?.value ?? '';
   }
-  // `capturedBy` has no box on this build. Fall back to what this device
-  // already remembers rather than sending a blank: a person typed that
-  // name here, and a field that is not on the page cannot un-type it.
-  if (!out.capturedBy) out.capturedBy = sticky.who;
+  // `capturedBy` has no box on this build, so it comes from the gate:
+  // a name a person typed on this phone and the roster accepted. A
+  // field that is not on the page cannot un-type it.
+  if (!out.capturedBy) out.capturedBy = storedCapturer() ?? '';
   return out;
 }
 
 /** True while a queue write is in flight. See `save`. */
 let saving = false;
 
-async function save(): Promise<void> {
+async function save(from: 'form' | 'camera' = 'form'): Promise<void> {
   const fields = readFields();
   if (!photos.length && !fields.catnoRaw?.trim()) {
     return flash('Photograph the label, or type a catalogue number.', 'err');
@@ -506,12 +664,19 @@ async function save(): Promise<void> {
   // tap would write a second disc with the same photographs.
   if (saving) return;
   saving = true;
-  const btn = document.getElementById('save') as HTMLButtonElement | null;
-  if (btn) btn.disabled = true;
+  const saveBtn = document.getElementById('save') as HTMLButtonElement | null;
+  const nextBtn = document.getElementById('nextDisc') as HTMLButtonElement | null;
+  if (saveBtn) saveBtn.disabled = true;
+  if (nextBtn) nextBtn.disabled = true;
+  // Whatever was filed before this one is settled now. One window at a
+  // time, so the Undo on screen always names the disc it would recall.
+  closeUndo();
 
   try {
     const clientId = uid();
-    const entry: QueuedCapture = {
+    // Held back from the drain for the undo window — a delayed SEND, not
+    // a delayed write. See `heldForUndo`.
+    const entry: QueuedCapture = heldForUndo({
       clientId,
       createdAt: Date.now(),
       msToCapture: Date.now() - startedAt,
@@ -528,23 +693,41 @@ async function save(): Promise<void> {
       state: 'pending',
       attempts: 0,
       nextAttemptAt: 0,
-    };
+    }, Date.now());
 
     // On disk before anything else. The UI never awaits the network:
     // this is the whole offline guarantee, and it is why a hard refresh
     // in a loft loses nothing.
     await putEntry(entry);
-    // Only when there is something to remember: with the box parked, an
-    // empty read must not wipe a name typed on an earlier build.
-    if (fields.capturedBy) sticky.who = fields.capturedBy;
+    // Only a roster name may be remembered. Un-parking the `capturedBy`
+    // box would otherwise let free text back into `dg.who`, which is
+    // exactly what the gate exists to keep out.
+    const typed = fields.capturedBy ? resolveCapturer(fields.capturedBy) : null;
+    if (typed) rememberCapturer(typed);
 
-    flash(`Queued — ${Math.round(entry.msToCapture / 1000)}s. Next disc.`);
+    // The previews are handed to Undo rather than revoked, and `photos`
+    // is emptied HERE so `resetForm` has nothing left to free — the
+    // images have to outlive the reset for the recall to have anything
+    // to put back.
+    const shots = photos;
+    photos = [];
+    undoable = { clientId, shots, fields };
+    undoTimer = setTimeout(closeUndo, UNDO_MS) as unknown as number;
+
+    flash(from === 'camera'
+      ? `Filed — ${shots.length} photo${shots.length === 1 ? '' : 's'}. Next disc.`
+      : `Queued — ${Math.round(entry.msToCapture / 1000)}s. Next disc.`, 'ok', undoQueued);
     resetForm();
     void refreshStatus();
-    void drain().then(refreshStatus);   // opportunistic, never awaited by the form
+    // No drain here any more: the entry is deliberately not due yet, so
+    // a pass now would skip it and the one `closeUndo` fires sends it.
   } finally {
     saving = false;
-    if (btn) btn.disabled = false;
+    if (saveBtn) saveBtn.disabled = false;
+    // `nextDisc` is enabled by the photograph count rather than by this,
+    // so let renderPhotos have the last word — including on the throw
+    // path, where the disc is still in hand.
+    renderPhotos();
   }
 }
 

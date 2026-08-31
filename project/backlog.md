@@ -10,20 +10,6 @@
 
 <!-- Intent: M2, the photo path and the browse screen, side by side. M2 is deployed and every row now carries a match_run, so its remaining work is maintainer work — clearing 287 needs-review by keyboard. Migration 004 reached production on 2026-08-31, so a photo reading can now be promoted there. The photo path was promoted out of the icebox on 2026-08-30 because it is the buildable work, and because the brief's stated risk is building the app instead of cataloguing the records; DATASET-VIEWER and DATASET-EDIT joined it on 2026-08-31, because 465 catalogued rows can currently be neither seen nor corrected anywhere in the app. -->
 
-- [ ] **CAPTURE-NEXT-DISC Queue from inside the viewfinder, so a crate
-  never leaves the camera** (2026-08-31) — Photographing one disc costs
-  three taps that are not the shutter and restarts the camera every time,
-  so a Next disc control goes in the camera bar — one tap files the disc,
-  zeroes the count and keeps the viewfinder open, while Done keeps its
-  current meaning because a Done that also queued would split one disc
-  into two on any mis-tap.
-- [ ] **CAPTURE-WHO A name typed once at the start — crude gate, and the
-  logger for who captured what** (2026-08-31) — capturedBy lost its box
-  when the More block was parked, so a phone that has never had a name
-  typed into it sends nothing; the fix is a name typed once at first
-  launch and checked against the six people who capture, which gates the
-  app crudely and stamps every row afterwards without a field in the
-  capture flow.
 - [~] **SPIKE-PHOTO-TO-FIELDS Can a label photograph populate the
   capture fields?** [spike] [blocked: twenty photographed labels with
   typed ground truth] (2026-08-30) — The round trip is built, tested and
@@ -57,19 +43,13 @@
   4.7, so 5 of 11 rows errored on Discogs throttling or Cloudflare's
   per-invocation subrequest cap, and one item collected two runs because a
   row outlasting the five-minute cron period is selected twice.
-- [ ] **DATASET-VIEWER A third screen that lists the whole collection,
-  with photographs and provenance** (2026-08-31) — 465 catalogued items
-  cannot be seen anywhere in the app — capture only writes and the review
-  queue shows one match at a time — so this is the browse screen: a
-  filterable list, an item detail with its photographs, and every field
-  labelled with where the value came from and whether a person has
-  confirmed it.
-- [ ] **DATASET-EDIT Correct a reading and confirm it, from the browse
-  screen** [security] (2026-08-31) — The editable half of browse — fix
-  what was misread, fill the label captured on 0% of the backlog, promote
-  a photo reading, confirm a value already right; every edit lands as a
-  confirmed `shelf` value behind a shared passphrase, and because it
-  writes to `capture` it amends a hard rule in the same commit.
+- [ ] **BROWSE-PHOTOS May a route serve a label photograph, now that
+  browse wants to show one?** [sign-off] (2026-08-31) — DATASET-VIEWER
+  asked for GET /api/photos/:key so the browse screen could render the
+  label photographs, and photos-pull.test.mjs asserts that no such route
+  exists because with no sign-in it puts the household's photographs
+  behind a URL — two live records disagree, so the screen ships listing
+  the keys and the question goes to the maintainer.
 
 ### Next milestone
 
@@ -83,12 +63,6 @@
   passage?** [sign-off] (2026-08-30) — Whether the app proposes the
   two-to-three-minute comparison passage from the track listing, or the
   listener always chooses it themselves.
-- [ ] **CAPTURE-BULK-REMNANT bulkFields and BULK_CARRIED have no caller
-  — decide whether they stay** (2026-08-31) — CAPTURE-ONE-SCREEN removed
-  the crate button and saveBulk with it but left bulkFields and
-  BULK_CARRIED exported and tested with nothing calling them, because
-  deleting them deletes tests and tidying up after a removal is not the
-  same decision as the removal.
 - [ ] **M3-WORKS-PERFORMANCES MusicBrainz works, performances and
   per-track completeness** — Resolve work and recording identity from
   MusicBrainz, resolve composers for the 131 Various/Unknown rows, and

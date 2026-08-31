@@ -11,6 +11,8 @@
  * basis to disagree with it, and disagreeing is the whole job.
  */
 
+import { rememberCapturer, resolveCapturer, storedCapturer } from './who.ts';
+
 const app = document.getElementById('review')!;
 const API = '/api';
 
@@ -29,10 +31,26 @@ let queue: QueueItem[] = [];
 let cursor = 0;
 let resolvedCount = 0;
 
+/**
+ * The same name capture uses, checked against the same roster.
+ *
+ * This screen used to take whatever was typed, which is how free text
+ * got into `dg.who` in the first place — a decision signed "jo " reads
+ * as a different person from one signed "Joe" for ever afterwards.
+ * CAPTURE-WHO put the roster behind it, and `storedCapturer` re-checks
+ * on every read, so an old free-text value asks once more rather than
+ * going on signing decisions.
+ */
 const who = {
-  get value() { return localStorage.getItem('dg.who') ?? ''; },
-  set value(v: string) { localStorage.setItem('dg.who', v); },
+  get value() { return storedCapturer() ?? ''; },
 };
+
+/**
+ * The other desk screen. `.html` rather than the extensionless path
+ * Cloudflare Pages also serves, because Vite's dev server does not: a
+ * link that only works in production is a link that gets found broken.
+ */
+const NAV = '<a class="nav" href="/browse.html">The collection →</a>';
 
 const esc = (s: unknown): string => String(s ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -58,7 +76,8 @@ function render(): void {
   app.innerHTML = `
     <div class="qhead">
       <h1>Review queue</h1>
-      <div class="progress"><b>${cursor + 1}</b> of ${queue.length} · ${resolvedCount} resolved · item ${item.item_id}</div>
+      <div class="progress"><b>${cursor + 1}</b> of ${queue.length} · ${resolvedCount} resolved ·
+        item ${item.item_id} · ${NAV}</div>
     </div>
 
     ${refusal ? `<p class="why-refused"><strong>Not auto-accepted:</strong> ${esc(refusal)}</p>` : ''}
@@ -130,24 +149,36 @@ function renderCandidate(c: Candidate, i: number): string {
 
 function renderWhoAmI(): void {
   // No sign-in, so there is no identity to read. A confirmation must
-  // still say who made it, so the reviewer names themselves once.
+  // still say who made it, so the reviewer names themselves once — and
+  // the roster refuses a name that is not one of ours, which is the
+  // same crude gate the capture screen puts on the phone.
   app.innerHTML = `
-    <div class="qhead"><h1>Review queue</h1></div>
+    <div class="qhead"><h1>Review queue</h1><div class="progress">${NAV}</div></div>
     <section class="capture">
       <h2>Who is reviewing?</h2>
-      <p class="note">A confirmation records who made it. There is no sign-in, so type a name once.</p>
+      <p class="note">A confirmation records who made it. There is no sign-in, so type
+        your first name once.</p>
       <label><span>Name</span><input id="who" autocomplete="off" autofocus></label>
+      <p class="why-refused" id="whoErr" hidden>Not a name this app knows.</p>
       <button class="primary" id="start" type="button">Start</button>
     </section>`;
   const input = document.getElementById('who') as HTMLInputElement;
-  const go = (): void => { if (input.value.trim()) { who.value = input.value.trim(); render(); } };
+  const err = document.getElementById('whoErr')!;
+  const go = (): void => {
+    const named = resolveCapturer(input.value);
+    // Refuse without listing the answers: printing the roster would
+    // hand over the only thing this asks the typist to know.
+    if (!named) { err.hidden = false; input.select(); return; }
+    rememberCapturer(named);
+    render();
+  };
   document.getElementById('start')!.addEventListener('click', go);
   input.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') go(); });
 }
 
 function renderDone(): void {
   app.innerHTML = `
-    <div class="qhead"><h1>Review queue</h1></div>
+    <div class="qhead"><h1>Review queue</h1><div class="progress">${NAV}</div></div>
     <div class="done">
       <strong>Queue clear</strong>
       ${resolvedCount} resolved this session. Re-verification is a normal operation —

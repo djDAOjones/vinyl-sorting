@@ -24,4 +24,11 @@ export interface Env {
   ASSETS?: Fetcher;
   /** Set with `wrangler secret put DISCOGS_TOKEN`. Unused until M2. */
   DISCOGS_TOKEN?: string;
+  /**
+   * The shared passphrase on the edit endpoints, set with
+   * `wrangler secret put EDIT_TOKEN` (DATASET-EDIT, maintainer sign-off
+   * 2026-08-31). Unset means editing is UNAVAILABLE, never open: an
+   * absent secret must not read as an unlocked door.
+   */
+  EDIT_TOKEN?: string;
 }

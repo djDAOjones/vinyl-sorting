@@ -14,6 +14,11 @@
  * Usage: node tools/dev-api.mjs [--port 8787] [--load]
  *   --load  check the M0 dataset still loads cleanly
  *   --demo  seed a few review-queue items so the screen has work in it
+ *
+ * DG_EDIT_TOKEN=<anything> enables DATASET-EDIT's write routes locally.
+ * No default and no literal in this file: an unset secret means editing
+ * is unavailable, exactly as it does on the Worker, and "no secrets in
+ * the repo" does not get an exception for one that only looks harmless.
  */
 
 import { createServer } from 'node:http';
@@ -26,6 +31,8 @@ const argOf = (n, d) => { const i = args.indexOf(n); return i >= 0 && args[i + 1
 const port = Number(argOf('--port', '8787'));
 
 const env = makeEnv();
+if (process.env.DG_EDIT_TOKEN) env.EDIT_TOKEN = process.env.DG_EDIT_TOKEN;
+console.log(`dev-api: editing ${env.EDIT_TOKEN ? 'ENABLED (DG_EDIT_TOKEN is set)' : 'unavailable — set DG_EDIT_TOKEN to try it'}`);
 if (args.includes('--load')) {
   const { loadDataset } = await import('./load-dataset.mjs');
   const { stats } = loadDataset(':memory:');
@@ -50,6 +57,12 @@ if (args.includes('--demo')) {
       (1, 2, 2298871, 23, '{"families":["label"],"signals":{"label":"decca"}}'),
       (2, 1, 3310022, 88, '{"families":["identifier","title"],"signals":{"identifier":"exact catno CFP 40001","title":"3/4 title words"}}'),
       (2, 2, 3310099, 84, '{"families":["identifier","title"],"signals":{"identifier":"exact catno CFP 40001","title":"3/4 title words"}}');
+    -- A reading off a photograph, so browse has one to display and
+    -- DATASET-EDIT has one to promote. The vision source is unreachable
+    -- through v_confirmed_field by construction (migration 004).
+    INSERT INTO raw_value (item_id, field, value) VALUES (2, 'label_raw', 'Classics for Pleasure');
+    INSERT INTO field_source (entity, entity_id, field, source)
+      VALUES ('raw_value', 1, 'label_raw', 'vision');
   `);
   console.log('dev-api: seeded 3 review-queue items');
 }

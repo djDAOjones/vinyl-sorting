@@ -2,6 +2,294 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-31 — CAPTURE-BULK-REMNANT: they stay, and the file says so
+
+**Decision:** `bulkFields` and `BULK_CARRIED` stay in
+`src/queue-logic.ts` with their two tests. Both now carry a comment
+saying, in the first line, that nothing calls them and why — so the next
+reader does not spend five minutes working out whether something is
+broken. Deleting them remains the maintainer's to take.
+
+**Rationale:** The record offered two honest endings and one of them is
+not this session's to choose. Deleting the exports deletes their
+assertions in `queue-logic.test.mjs`, and "no weakening or deleting
+tests" is a stop-and-ask boundary in AGENTS.md — which an autonomous
+session may not cross on its own judgement, however safe the deletion
+looks. Nothing is left untested by removing a test with the code it
+covers, and that argument is exactly the kind a person should make
+rather than an agent.
+
+**So the other ending was taken, and it is a real one.** The cost of the
+remnant was never the bytes; it was the next reader finding tested,
+exported logic with no caller and having to reconstruct whether that was
+a bug. A comment that opens "NOTHING CALLS THESE TWO. Read this before
+you go looking." costs nothing and removes the whole cost.
+
+**What the comment says, so the decision is not lost with it.** The mode
+is retired on a reason that will not reverse — more than one photograph
+of a disc is always wanted, so one row per photograph manufactured three
+discs where one stood. The logic is not half-wired and not waiting on
+anything. And the test comment says the two bulk tests go WITH the
+exports and not before them, so a future tidy-up cannot delete the
+coverage and leave the code.
+
+Note for whoever takes it: `scaleTo`, in the same test section, is very
+much live — the downscale runs on every photograph — so the section
+header is misleading about its own contents. Only the two bulk tests
+cover retired code.
+
+**Verify:** npm run gate — comments only, 258 tests with the same 222
+passing.
+
+## 2026-08-31 — DATASET-EDIT: a person may correct their own reading
+
+**Decision:** Built as signed off. Two routes, `POST
+/api/items/:id/field` and `.../promote`, behind a shared `EDIT_TOKEN`
+header; four operations on the browse detail — correct a capture field,
+correct a physical item field, confirm a value unchanged, promote a
+photo reading. AGENTS.md and `001-init.sql` are reworded in the same
+commit: **machine writes over `capture` stay barred**, human correction
+is permitted.
+
+**The amendment is the load-bearing part, and it is narrow.** The bar
+exists so duplicate detection runs on what a person read rather than on
+what a bad match wrote — a bar on machine writes, which is what it
+always meant. Nothing in `match/` or `review.ts` may reach `edit.ts`,
+and `review.ts` still says `capture` is never touched. The accepted
+cost, taken with the sign-off: the previous reading is gone, surviving
+in `data/deep-groove-v1.csv` for the 446 imported rows and nowhere for
+app captures.
+
+**What a write actually lands.** The value, and a `field_source` row
+with source `shelf`, `confirmed_by` and `confirmed_at` set — upserted
+on `UNIQUE (entity, entity_id, field)`, in the shape `resolveRun`
+already uses, so confirming twice re-stamps rather than duplicating.
+`insertCapture` deliberately writes `shelf` UNCONFIRMED, because typing
+at a crate is not verifying a pressing; saying at a screen that a value
+is right is the different act `confirmed_by` was added for.
+
+**It makes nothing decision-eligible**, and a test asserts it.
+`v_decision_eligible_item` needs a confirmed `release_id` on the ITEM,
+which only the review queue writes — so `release_id` is the one field
+the panel shows and will not edit. Correcting capture text improves what
+the matcher searches with; it is not a verdict about a pressing.
+
+**Promotion writes a new row rather than laundering the old one.** The
+`raw_value` row keeps its `vision` provenance untouched, so what the
+model read stays on record and stays outside `v_confirmed_field`.
+Re-labelling the reading as confirmed would erase the difference between
+a machine's answer and a person's, which is the difference this project
+exists to keep.
+
+**Three things the build found.** An unset `EDIT_TOKEN` answers 503, not
+200: an absent secret must never read as an unlocked door. The guard is
+attached per route rather than as a mounted sub-app — a wildcard
+middleware answered before the 404 fallthrough, so every unnamed path
+started replying 401 and advertising that a passphrase exists. And a
+401 clears the stored passphrase instead of retrying with it, or a
+secret rotated on the Worker fails every edit for the rest of the
+session in the same silent way.
+
+**Field names come from allow-lists, never from the request** — they
+reach a column position in the SQL, where values are bound. `release_id`
+and `decision` are absent on purpose; a grade outside the Goldmine set
+is refused before the CHECK constraint sees it.
+
+**Verify:** typecheck clean; 258 tests, 222 pass, the same 10
+pre-existing environmental failures as the parent. Eleven new Worker
+tests, including the four the record named. Driven against the real
+Worker over node:sqlite: a locked screen refuses, a wrong passphrase is
+cleared with the reason, correcting a crate updates the row in the table
+above it, Escape puts a value back untouched, an emptied field is
+removed and provenance recorded, unchanged text is filed as a
+confirmation rather than a correction, and promoting a `vision` reading
+fills the label while leaving the reading unconfirmed.
+
+## 2026-08-31 — DATASET-VIEWER: a third screen, minus the photographs
+
+**Decision:** `/browse` ships — a filterable list of the whole
+collection, an item detail, the match history behind every row, and a
+provenance mark on every field. The photographs are LISTED, not shown.
+The route that would render them is split out as BROWSE-PHOTOS, flagged
+`sign-off`, because two live records disagree about whether it may
+exist and that is not this session's call.
+
+**Rationale:** 465 rows were in D1 and the only way to see one was
+`GET /api/items` in a browser tab. The larger cost was that nothing
+showed *why* a row looked the way it did — 287 sit in needs-review and
+nobody could see whether the capture text behind one was a clean reading
+or the label mashed into the catalogue number.
+
+**Provenance is the screen, not a column on it.** Every field carries
+its `field_source` in words — read at the shelf, from Discogs, read off
+a photograph (`vision`), legacy import, guess — and separately whether a
+person confirmed it. A field with NO provenance row says so out loud
+rather than rendering blank: "nothing recorded" and "read at the shelf"
+are exactly the two things a spreadsheet cannot tell apart. Unconfirmed
+values are shown, which the rule permits, and shown as unconfirmed.
+
+**The latent bug the record predicted was real.** `/api/items` LEFT
+JOINed `capture` unaggregated, so an item with two capture rows returned
+twice — a screen that miscounts its own collection. It now takes the
+newest capture explicitly rather than relying on one-per-item holding,
+with a test that inserts a second and asserts one row back.
+
+**Why the photographs are only listed.** Rendering one needs
+`GET /api/photos/:key`. `photos-pull.test.mjs` asserts no such route
+exists, in those words: "with no sign-in that is the household's
+photographs behind a URL". That test belongs to PHOTOS-TO-DESKTOP, and
+the pull tool exists *because* the Worker has a PUT and no GET. The
+route was built, tested and then withdrawn rather than shipped, because
+shipping it meant editing another record's security test — a
+stop-and-ask boundary twice over.
+
+The detail that settles it, written down where the decision gets taken:
+`/api/items/:id` is already open and already returns every `r2_key`, so
+a photo GET is not one unguessable URL per photograph but an enumerable
+archive. Any answer resting on key randomness has the surface wrong.
+
+What ships instead is what can be said honestly — how many photographs
+exist, when each was taken, and its key, which is what `photos-pull`
+fetches by. That the screen is worth having without the images is itself
+evidence for one of BROWSE-PHOTOS' options.
+
+**The screens link to each other**, `.html` and all, because Vite's dev
+server does not serve the extensionless path Pages also accepts. Capture
+is left out of the nav on purpose: every element between the shutter and
+Queue it is a reason to stop cataloguing.
+
+**Verify:** typecheck clean; 247 tests, 211 pass, the same 10
+pre-existing environmental failures as the parent commit. Four new
+Worker tests: one item per row with two captures, the list columns the
+filters need, the newest run winning the state column, and a detail
+payload carrying candidates, a decision and a `vision` reading that is
+still absent from `v_confirmed_field`. Driven at 1200x900 and 375x812
+against the real Worker over node:sqlite: filters by state, by
+photograph and by free text, the search box keeps focus while typing,
+the detail opens with provenance on every field, and the page no longer
+scrolls sideways on a phone — the table scrolls inside its own box.
+
+## 2026-08-31 — CAPTURE-WHO: a name typed once, checked against a roster
+
+**Decision:** A first-run screen asks for a first name and refuses one
+that is not on a six-name roster — Joe, Jen, Ro, Ivy, Jojo, Sue. The
+accepted name is stored canonically in `dg.who` and stamped on every
+capture made on that phone. The review queue's own "who is reviewing"
+screen now uses the same roster. `who.ts` holds all of it.
+
+**Rationale:** `capturedBy` lost its box when CAPTURE-ONE-SCREEN parked
+the More block, so a phone that had never had a name typed into it sent
+nothing — absent rather than guessed, which is right, but it left a row
+saying who read its label only by accident. The maintainer's design does
+two jobs with one screen: a crude password, and the logger.
+
+**Typed, not picked.** Six buttons print the six valid answers, so a
+picker cannot gate anything, and it costs a tap on every device for
+ever. Typing costs one screen, once, and asks you to know something not
+on the page. The refusal does not list the roster.
+
+**Spelling is the roster's problem, not the typist's.** `jojo`, `JOJO`,
+`JoJo` and `  jOJo  ` all land as `Jojo`, so the free-text spelling
+problem NAMES-CANONICAL exists to clean up on the composer side never
+reaches `captured_by` at all. Near misses are refused rather than
+guessed at: `Jon`, `Jenn` and `Joseph` are all no. A fuzzy match would
+put one person's name on another person's row — the same class of fault
+as an invented rating, and just as invisible a month later.
+
+**The stored value is re-checked on every read.** The review queue used
+to take whatever was typed, so `dg.who` may already hold free text on a
+real device; a value that is not on the roster is treated as no value
+and asked for once more. Verified: a stored `"jo "` puts the review
+screen back on its gate rather than signing decisions with it.
+
+**It does not gate the queue.** `startSync` runs whatever the screen
+shows, so a phone back from a loft with twenty captures uploads them
+while somebody works out how to spell Jojo — which is why the status
+line is on the gate. The offline guarantee does not get a caveat.
+
+**Say what it is not, again.** Six household first names are guessable
+and the roster ships in the bundle. This says who is holding the phone;
+it does not say who may write at all. OPEN-V1-AUTH answered that second
+question "no sign-in for v1" the same day, and shipping this neither
+re-opens nor answers it.
+
+**Hand-over is explicit and lossless where it matters.** The name shows
+in the header and tapping it confirms before clearing. Captures already
+queued keep the name they were made under — that is the point of writing
+it down — and the photographs in hand survive the switch; only typing in
+the boxes is cleared, which the confirmation says.
+
+**Verify:** typecheck clean; 243 tests, 207 pass, the same 10
+pre-existing environmental failures as the parent commit. Four new tests
+cover the resolver. Driven at 375x812: `Joseph` refused with nothing
+stored and no roster on screen, `  jOJo  ` accepted and stored as
+`Jojo`, the capture screen fits without scrolling, a queued row carries
+`capturedBy: "Jojo"` with no box on the page, a cancelled hand-over
+changes nothing, a confirmed one returns to the gate with the queue
+still draining behind it, and `sue` then arrives at a capture screen
+still holding the two photographs and showing "Queue it · 2 photos".
+
+## 2026-08-31 — CAPTURE-NEXT-DISC: the crate never leaves the camera
+
+**Decision:** A third control, **Next disc · N**, goes in the camera
+bar. One tap files the disc in hand, zeroes the count and leaves the
+viewfinder open. Done keeps its meaning exactly — leave the camera for
+the form, photographs intact. The torch moves out of the bar to the
+top-left corner of the viewfinder to make room.
+
+**Rationale:** Photographing one disc cost N shutter taps plus three
+that were not — Photograph, Done, Queue it — and restarted the camera,
+black frame and fresh `getUserMedia`, every disc. It is now N + 1, and
+after the first the camera never closes. Typing moved behind Done, which
+makes typing the exception rather than the default: what photo-first has
+meant all along.
+
+**Done still does not queue.** Done is what you press to check a frame,
+to type a catalogue number, because somebody spoke to you. A premature
+one would file a disc with two of its four photographs and turn the
+other two into a SECOND disc — the fault CAPTURE-ONE-SCREEN deleted the
+crate mode for, arriving one tap at a time.
+
+**The undo is the drain's own backoff field, not new machinery.** A
+filed entry is written to IndexedDB immediately, as always, but with
+`nextAttemptAt` five seconds out. `selectDrainable` already refuses an
+entry whose attempt time has not arrived, so the hold cannot leak and
+nothing new had to learn about undo. The offline guarantee is untouched:
+the WRITE never waits, only the send. A tab closed inside the window
+leaves an ordinary pending entry that goes out on the next tick.
+
+Undo puts the disc's photographs back in FRONT of anything shot since,
+so a tap between two frames of one disc loses neither, and it restores
+typed values only into boxes still empty — it must never delete
+something typed in the seconds after the mis-tap. It covers Queue it
+too: one code path rather than two, and the double-tap fault the last
+pass found lives on both.
+
+**Geometry, measured rather than asserted.** Next disc sits bottom-LEFT,
+Done bottom-right. A phone is held in one hand and shot with that thumb,
+so the near corner is reached without thinking and the far one needs a
+stretch: Done costs a tap when mis-hit, Next disc files a disc, so Next
+disc is the one put out of reach — 44 px clear of the shutter at 375 px
+wide. In landscape the bar runs down the right edge, where end-aligning
+put Next disc 8 px from the shutter; centred in its row it is 49 px away
+and Done is left where it was.
+
+**Costs, stated.** A viewfinder open across a crate costs battery and
+keeps the camera indicator lit; Done is still there for a pause. Every
+capture's first send is five seconds later than it was.
+
+**Verify:** typecheck clean; 239 tests, 203 pass. The 10 failures are
+pre-existing and environmental — `matcher.test.mjs` and
+`photo-extract.test.mjs` read `Pre August 2026/`, gitignored and so
+absent from any worktree; the identical 10 fail on this commit's parent.
+Driven at 375x812, 667x375 and 375x667 against a canvas-backed fake
+camera with `/api` failing the way a loft fails: one tap files the disc
+and the viewfinder stays open, the count zeroes, the entry lands with a
+5,003 ms hold, Undo deletes it and returns three photographs and the
+typed label, the toast passes taps to the shutter while its own button
+takes them, the offer goes when the window closes, and Done still
+reaches the form with the photographs intact.
+
 ## 2026-08-31 — CAPTURE-ONE-SCREEN: one disc, one screen
 
 **Decision:** "Photograph a whole crate" is removed. Condition grading

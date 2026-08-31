@@ -9,8 +9,12 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
-    // Two screens: capture at /, the review queue at /review.html.
-    rollupOptions: { input: { capture: 'index.html', review: 'review.html' } },
+    // Three screens: capture at /, the review queue at /review.html and
+    // the collection at /browse.html. Cloudflare Pages drops the .html,
+    // so those are /review and /browse in production.
+    rollupOptions: {
+      input: { capture: 'index.html', review: 'review.html', browse: 'browse.html' },
+    },
   },
   server: {
     port: 5173,
