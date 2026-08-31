@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import type { MiddlewareHandler } from 'hono';
+import type { Context, MiddlewareHandler } from 'hono';
 import type { Env } from './env.ts';
 import { insertCapture, parseCapture } from './capture.ts';
 import { DiscogsClient, SUBREQUEST_BUDGET } from './discogs.ts';
@@ -100,8 +100,26 @@ export function createApp() {
    * any string a capture chose — and a key that reaches R2 unchecked is
    * a path the caller controls.
    */
+  /**
+   * The named caller, from a header OR a cookie.
+   *
+   * BOTH, because the two callers cannot use the same one. `fetch` sets
+   * a header and cannot set a cookie for an image it does not make;
+   * `<img src>` sends cookies and can set no headers at all. Gating on
+   * the header alone made every photograph on both screens a broken
+   * image while curl passed — the request a browser actually makes for
+   * an `<img>` was never the request being tested.
+   */
+  const namedCaller = (c: Context<{ Bindings: Env }>): boolean => {
+    if (resolveCapturer(c.req.header('x-capturer') ?? '')) return true;
+    const raw = /(?:^|;\s*)dg_who=([^;]*)/.exec(c.req.header('cookie') ?? '')?.[1] ?? '';
+    let decoded = raw;
+    try { decoded = decodeURIComponent(raw); } catch { /* a malformed cookie is not a name */ }
+    return Boolean(resolveCapturer(decoded));
+  };
+
   const capturerGuard: MiddlewareHandler<{ Bindings: Env }> = async (c, next) => {
-    if (!resolveCapturer(c.req.header('x-capturer') ?? '')) {
+    if (!namedCaller(c)) {
       return c.json({ error: 'name yourself first — this is the household app' }, 401);
     }
     await next();
@@ -164,7 +182,7 @@ export function createApp() {
 
   app.get('/api/items/:id{[0-9]+}', async (c) => {
     const id = Number(c.req.param('id'));
-    const named = Boolean(resolveCapturer(c.req.header('x-capturer') ?? ''));
+    const named = namedCaller(c);
     const item = await c.env.DB.prepare('SELECT * FROM item WHERE id = ?').bind(id).first();
     if (!item) return c.json({ error: 'not found' }, 404);
 
@@ -290,7 +308,7 @@ export function createApp() {
    */
   app.get('/api/review-queue', async (c) => {
     const limit = Math.min(Number(c.req.query('limit') ?? 50) || 50, 200);
-    const named = Boolean(resolveCapturer(c.req.header('x-capturer') ?? ''));
+    const named = namedCaller(c);
     // Skipped items leave the default queue but are re-queueable:
     // re-verification is a normal operation, not a migration.
     const includeSkipped = c.req.query('include') === 'skipped';

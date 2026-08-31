@@ -50,6 +50,25 @@ export function resolveCapturer(typed: string): Capturer | null {
 const KEY = 'dg.who';
 
 /**
+ * The same name, as a cookie, because `<img>` cannot send a header.
+ *
+ * THE BUG THIS EXISTS FOR: BROWSE-PHOTOS gated the photo route on an
+ * `x-capturer` header, which every `fetch` can set and no `<img src>`
+ * can. Browse and review both render photographs as `<img>`, so every
+ * one of them went out unauthenticated and came back 401 — broken
+ * images on both screens, while curl with a header passed happily. The
+ * test that mattered was a page load, and it was not run.
+ *
+ * A cookie rides on an image request automatically, and on lazy-loaded
+ * and cached ones too. That it is a cookie changes nothing about what
+ * this is worth: the roster ships in the client bundle, so this is the
+ * same speed bump it always was, now applied where images actually
+ * live. `SameSite=Strict` because no other site has business asking.
+ */
+const COOKIE = 'dg_who';
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+
+/**
  * The capturer this device remembers, re-checked against the roster on
  * every read.
  *
@@ -72,9 +91,24 @@ export function storedCapturer(): Capturer | null {
 
 export function rememberCapturer(name: Capturer): void {
   try { localStorage.setItem(KEY, name); } catch { /* asked again next launch */ }
+  try {
+    document.cookie = `${COOKIE}=${encodeURIComponent(name)}; path=/; `
+      + `max-age=${COOKIE_MAX_AGE}; SameSite=Strict`;
+  } catch { /* images will 401 and show as broken, which is visible */ }
 }
 
 /** Hand the phone over. The queue is not touched — see the callers. */
 export function forgetCapturer(): void {
   try { localStorage.removeItem(KEY); } catch { /* nothing to forget, then */ }
+  try { document.cookie = `${COOKIE}=; path=/; max-age=0; SameSite=Strict`; } catch { /* gone anyway */ }
+}
+
+/**
+ * Put the cookie back for a device that named itself before cookies
+ * were used. Otherwise every photograph stays broken until the person
+ * signs out and in again for reasons they cannot see.
+ */
+export function ensureCapturerCookie(): void {
+  const who = storedCapturer();
+  if (who && !document.cookie.includes(`${COOKIE}=`)) rememberCapturer(who);
 }

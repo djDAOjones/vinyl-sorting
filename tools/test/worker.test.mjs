@@ -273,6 +273,19 @@ test('BROWSE-PHOTOS: a photograph and its key need a name, and R2 never sees an 
   assert.equal((await app.request('/api/photos/labels/c1-1.jpg', { headers: { 'x-capturer': 'Mallory' } }, env)).status,
     401, 'and a name that is not on the roster is not a name');
 
+  // THE REQUEST A BROWSER ACTUALLY MAKES. `<img src>` sends cookies and
+  // cannot send headers, so gating on the header alone made every
+  // photograph a broken image while curl with a header passed. Both
+  // callers must work: fetch sets the header, an image sends the cookie.
+  const byCookie = await app.request('/api/photos/labels/c1-1.jpg',
+    { headers: { cookie: 'other=1; dg_who=Joe; more=2' } }, env);
+  assert.equal(byCookie.status, 200, 'an <img> carries a cookie, never a header');
+  assert.equal(await byCookie.text(), 'jpeg-bytes');
+
+  assert.equal((await app.request('/api/photos/labels/c1-1.jpg',
+    { headers: { cookie: 'dg_who=Mallory' } }, env)).status, 401,
+  'a cookie naming nobody on the roster is not a name');
+
   const ok = await app.request('/api/photos/labels/c1-1.jpg', named, env);
   assert.equal(ok.status, 200);
   assert.match(ok.headers.get('content-type'), /image\/jpeg/);

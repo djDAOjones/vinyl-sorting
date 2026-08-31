@@ -11,7 +11,7 @@
  * basis to disagree with it, and disagreeing is the whole job.
  */
 
-import { rememberCapturer, resolveCapturer, storedCapturer } from './who.ts';
+import { ensureCapturerCookie, rememberCapturer, resolveCapturer, storedCapturer } from './who.ts';
 
 const app = document.getElementById('review')!;
 const API = '/api';
@@ -289,4 +289,5 @@ addEventListener('keydown', (e) => {
   if (key === 'm') { e.preventDefault(); (document.getElementById('manual') as HTMLInputElement | null)?.focus(); }
 });
 
+ensureCapturerCookie();
 void load();

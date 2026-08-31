@@ -31,7 +31,7 @@
  * `photos-pull` needs to fetch them to a desk.
  */
 
-import { storedCapturer } from './who.ts';
+import { ensureCapturerCookie, storedCapturer } from './who.ts';
 
 /**
  * The header the photo route and the item detail both want.
@@ -595,6 +595,10 @@ function runHtml(run: Run): string {
 }
 
 app.innerHTML = '<p class="empty-note">Loading the collection…</p>';
+// A device that named itself before photographs needed a cookie has one
+// in localStorage and none in document.cookie; without this its images
+// stay broken for reasons it cannot see.
+ensureCapturerCookie();
 load().catch((err: unknown) => {
   app.innerHTML = `<p class="why-refused">Could not load the collection: ${
     esc(err instanceof Error ? err.message : String(err))}</p>`;
