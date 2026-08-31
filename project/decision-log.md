@@ -2,6 +2,66 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-08-31 — CAPTURE-WHO: a name typed once, checked against a roster
+
+**Decision:** A first-run screen asks for a first name and refuses one
+that is not on a six-name roster — Joe, Jen, Ro, Ivy, Jojo, Sue. The
+accepted name is stored canonically in `dg.who` and stamped on every
+capture made on that phone. The review queue's own "who is reviewing"
+screen now uses the same roster. `who.ts` holds all of it.
+
+**Rationale:** `capturedBy` lost its box when CAPTURE-ONE-SCREEN parked
+the More block, so a phone that had never had a name typed into it sent
+nothing — absent rather than guessed, which is right, but it left a row
+saying who read its label only by accident. The maintainer's design does
+two jobs with one screen: a crude password, and the logger.
+
+**Typed, not picked.** Six buttons print the six valid answers, so a
+picker cannot gate anything, and it costs a tap on every device for
+ever. Typing costs one screen, once, and asks you to know something not
+on the page. The refusal does not list the roster.
+
+**Spelling is the roster's problem, not the typist's.** `jojo`, `JOJO`,
+`JoJo` and `  jOJo  ` all land as `Jojo`, so the free-text spelling
+problem NAMES-CANONICAL exists to clean up on the composer side never
+reaches `captured_by` at all. Near misses are refused rather than
+guessed at: `Jon`, `Jenn` and `Joseph` are all no. A fuzzy match would
+put one person's name on another person's row — the same class of fault
+as an invented rating, and just as invisible a month later.
+
+**The stored value is re-checked on every read.** The review queue used
+to take whatever was typed, so `dg.who` may already hold free text on a
+real device; a value that is not on the roster is treated as no value
+and asked for once more. Verified: a stored `"jo "` puts the review
+screen back on its gate rather than signing decisions with it.
+
+**It does not gate the queue.** `startSync` runs whatever the screen
+shows, so a phone back from a loft with twenty captures uploads them
+while somebody works out how to spell Jojo — which is why the status
+line is on the gate. The offline guarantee does not get a caveat.
+
+**Say what it is not, again.** Six household first names are guessable
+and the roster ships in the bundle. This says who is holding the phone;
+it does not say who may write at all. OPEN-V1-AUTH answered that second
+question "no sign-in for v1" the same day, and shipping this neither
+re-opens nor answers it.
+
+**Hand-over is explicit and lossless where it matters.** The name shows
+in the header and tapping it confirms before clearing. Captures already
+queued keep the name they were made under — that is the point of writing
+it down — and the photographs in hand survive the switch; only typing in
+the boxes is cleared, which the confirmation says.
+
+**Verify:** typecheck clean; 243 tests, 207 pass, the same 10
+pre-existing environmental failures as the parent commit. Four new tests
+cover the resolver. Driven at 375x812: `Joseph` refused with nothing
+stored and no roster on screen, `  jOJo  ` accepted and stored as
+`Jojo`, the capture screen fits without scrolling, a queued row carries
+`capturedBy: "Jojo"` with no box on the page, a cancelled hand-over
+changes nothing, a confirmed one returns to the gate with the queue
+still draining behind it, and `sue` then arrives at a capture screen
+still holding the two photographs and showing "Queue it · 2 photos".
+
 ## 2026-08-31 — CAPTURE-NEXT-DISC: the crate never leaves the camera
 
 **Decision:** A third control, **Next disc · N**, goes in the camera

@@ -10,13 +10,6 @@
 
 <!-- Intent: M2, the photo path and the browse screen, side by side. M2 is deployed and every row now carries a match_run, so its remaining work is maintainer work — clearing 287 needs-review by keyboard. Migration 004 reached production on 2026-08-31, so a photo reading can now be promoted there. The photo path was promoted out of the icebox on 2026-08-30 because it is the buildable work, and because the brief's stated risk is building the app instead of cataloguing the records; DATASET-VIEWER and DATASET-EDIT joined it on 2026-08-31, because 465 catalogued rows can currently be neither seen nor corrected anywhere in the app. -->
 
-- [ ] **CAPTURE-WHO A name typed once at the start — crude gate, and the
-  logger for who captured what** (2026-08-31) — capturedBy lost its box
-  when the More block was parked, so a phone that has never had a name
-  typed into it sends nothing; the fix is a name typed once at first
-  launch and checked against the six people who capture, which gates the
-  app crudely and stamps every row afterwards without a field in the
-  capture flow.
 - [~] **SPIKE-PHOTO-TO-FIELDS Can a label photograph populate the
   capture fields?** [spike] [blocked: twenty photographed labels with
   typed ground truth] (2026-08-30) — The round trip is built, tested and

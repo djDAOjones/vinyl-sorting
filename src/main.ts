@@ -24,11 +24,15 @@ import {
   torchSupported, videoConstraints, type QueuedCapture, type QueuedPhoto,
 } from './queue-logic.ts';
 import { startSync, drain } from './sync.ts';
+import {
+  forgetCapturer, rememberCapturer, resolveCapturer, storedCapturer,
+} from './who.ts';
 
 const app = document.getElementById('app')!;
 
 /**
- * Sticky between discs. Only `who`, deliberately.
+ * Nothing is sticky between discs except the name of the person holding
+ * the phone, which is not a claim about any disc.
  *
  * Crate used to stick too, which was right while it was a required
  * field you could see. Now that the whole "More" block is parked, a
@@ -39,16 +43,12 @@ const app = document.getElementById('app')!;
  * filler, and this project's rule is the same either way: refuse rather
  * than guess.
  *
- * `who` survives that test where crate does not: it is a fact about the
- * person holding the phone, not about the disc, so carrying it is not a
- * claim about anything the record says. With its box parked there is
- * nowhere left to type it, so it is now read from storage alone — see
- * `readFields`, which must not let a missing box blank it.
+ * The capturer survives that test where crate does not: it is a fact
+ * about the person, not about the disc. It lives in `who.ts`, is typed
+ * once at the gate below, and is checked against the roster on every
+ * read — so a free-text value left by an older build cannot go on
+ * stamping rows.
  */
-const sticky = {
-  get who() { return localStorage.getItem('dg.who') ?? ''; },
-  set who(v: string) { localStorage.setItem('dg.who', v); },
-};
 
 /**
  * The photos taken for the disc in hand, in the order they were taken.
@@ -66,10 +66,70 @@ let startedAt = Date.now();
 const GRADES = ['', 'M', 'NM', 'VG+', 'VG', 'G', 'P'];
 const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 
-function render(): void {
+/**
+ * The first-run gate: type your name.
+ *
+ * One screen, once per device. It refuses a name that is not on the
+ * roster, and that refusal is the whole gate — see `who.ts` for what
+ * this is and, more importantly, what it is not.
+ *
+ * It does not gate the QUEUE. `startSync` runs whatever this screen is
+ * showing, so a phone that comes back from a loft with twenty captures
+ * on it uploads them while somebody works out how to spell Jojo. The
+ * offline guarantee is not the kind of promise that gets a caveat.
+ */
+function renderWhoGate(): void {
   app.innerHTML = `
     <div class="top">
       <h1>Vinyl sorter</h1>
+      <div class="status" id="status">queue…</div>
+    </div>
+
+    <fieldset>
+      <legend>Who is capturing?</legend>
+      <label><span>Your first name</span>
+        <input id="whoBox" autocomplete="off" autocapitalize="words" spellcheck="false"
+          enterkeyhint="go"></label>
+      <p class="note">It goes on every record you photograph. Typed once on this phone,
+        then never again — and until it is, this is also the only thing between the page
+        and whoever else finds the link.</p>
+    </fieldset>
+
+    <div id="flash"></div>
+
+    <div class="bar"><div class="inner">
+      <button class="primary" id="whoGo" type="button">Start</button>
+    </div></div>`;
+
+  const box = document.getElementById('whoBox') as HTMLInputElement;
+  const go = (): void => {
+    const named = resolveCapturer(box.value);
+    if (!named) {
+      // Refuse without listing the answers: printing the roster here
+      // would hand over the only thing this asks you to know.
+      flash('Not a name this app knows. Ask whoever set the phone up.', 'err');
+      box.select();
+      return;
+    }
+    rememberCapturer(named);
+    render();
+  };
+  document.getElementById('whoGo')!.addEventListener('click', go);
+  box.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+  box.focus();
+  void refreshStatus();
+}
+
+function render(): void {
+  // No name, no capture screen. The queue drains regardless — see
+  // `renderWhoGate`.
+  const capturer = storedCapturer();
+  if (!capturer) return renderWhoGate();
+
+  app.innerHTML = `
+    <div class="top">
+      <h1>Vinyl sorter</h1>
+      <button class="whoTag" id="whoTag" type="button">${capturer}</button>
       <div class="status" id="status">queue…</div>
     </div>
 
@@ -157,11 +217,22 @@ function render(): void {
   // The box is inside the parked block on this build, so there may be
   // nothing to fill in. Blind `$('capturedBy').value =` threw here and
   // took the whole render with it.
-  const who = document.getElementById('capturedBy') as HTMLInputElement | null;
-  if (who) who.value = sticky.who;
+  const whoBox = document.getElementById('capturedBy') as HTMLInputElement | null;
+  if (whoBox) whoBox.value = capturer;
   // Clear anything a previous build remembered, so a placeholder typed
   // once cannot keep attaching itself to new captures.
   localStorage.removeItem('dg.crate');
+
+  // The phone gets handed over mid-crate, so the name has to be
+  // changeable — but never silently: captures already queued keep the
+  // name they were made under, which is the entire point of writing it
+  // down. The photographs in hand survive too; only typing is lost.
+  $('whoTag').addEventListener('click', () => {
+    if (!confirm(`Capturing as ${capturer}. Hand the phone to someone else?`
+      + '\nThe queue and the photographs in hand are kept; typing is cleared.')) return;
+    forgetCapturer();
+    render();
+  });
 
   const file = $<HTMLInputElement>('file');
   $('shot').addEventListener('click', () => { void startCamera(); });
@@ -573,10 +644,10 @@ function readFields(): Record<string, string> {
     // list stays complete: un-parking a block needs no change here.
     out[id] = (document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null)?.value ?? '';
   }
-  // `capturedBy` has no box on this build. Fall back to what this device
-  // already remembers rather than sending a blank: a person typed that
-  // name here, and a field that is not on the page cannot un-type it.
-  if (!out.capturedBy) out.capturedBy = sticky.who;
+  // `capturedBy` has no box on this build, so it comes from the gate:
+  // a name a person typed on this phone and the roster accepted. A
+  // field that is not on the page cannot un-type it.
+  if (!out.capturedBy) out.capturedBy = storedCapturer() ?? '';
   return out;
 }
 
@@ -628,9 +699,11 @@ async function save(from: 'form' | 'camera' = 'form'): Promise<void> {
     // this is the whole offline guarantee, and it is why a hard refresh
     // in a loft loses nothing.
     await putEntry(entry);
-    // Only when there is something to remember: with the box parked, an
-    // empty read must not wipe a name typed on an earlier build.
-    if (fields.capturedBy) sticky.who = fields.capturedBy;
+    // Only a roster name may be remembered. Un-parking the `capturedBy`
+    // box would otherwise let free text back into `dg.who`, which is
+    // exactly what the gate exists to keep out.
+    const typed = fields.capturedBy ? resolveCapturer(fields.capturedBy) : null;
+    if (typed) rememberCapturer(typed);
 
     // The previews are handed to Undo rather than revoked, and `photos`
     // is emptied HERE so `resetForm` has nothing left to free — the
