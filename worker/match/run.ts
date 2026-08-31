@@ -275,7 +275,27 @@ export async function persistRun(
   if (top5.length) {
     await env.DB.batch(top5.map((c, i) => env.DB.prepare(
       'INSERT INTO match_candidate (match_run_id, rank, discogs_id, score, signals_json) VALUES (?, ?, ?, ?, ?)',
-    ).bind(runId, i + 1, c.id, c.score, JSON.stringify({ families: c.families, signals: c.signals }))));
+    ).bind(runId, i + 1, c.id, c.score, JSON.stringify({
+      families: c.families,
+      signals: c.signals,
+      // WHAT THE RELEASE IS, not just how well it scored. The review
+      // screen showed "Discogs release 1451234" and a number, so
+      // deciding whether a candidate was the record in your hand meant
+      // opening Discogs for every one of them — across a queue of 293.
+      // Discogs returned this on the search rung that found the
+      // candidate; it was scored and discarded.
+      // Optional throughout: a score can be built without the candidate
+      // it came from, and a candidate need not carry every field. The
+      // screen falls back to the bare id, which is what it always
+      // showed.
+      release: {
+        title: c.candidate?.title ?? null,
+        label: Array.isArray(c.candidate?.label) ? c.candidate.label.join('; ') : c.candidate?.label ?? null,
+        catno: c.candidate?.catno ?? null,
+        year: c.candidate?.year ?? null,
+        format: Array.isArray(c.candidate?.format) ? c.candidate.format.join(', ') : c.candidate?.format ?? null,
+      },
+    }))));
     written += top5.length;
   }
 

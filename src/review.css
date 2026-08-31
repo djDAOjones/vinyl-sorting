@@ -61,6 +61,9 @@ main#review { max-width: 62rem; padding-bottom: 5rem; }
 .cand .key { font: 700 1rem var(--mono); color: var(--accent-ink); background: var(--accent);
   border-radius: 6px; text-align: center; padding: .15rem 0; }
 .cand .title { color: var(--ink); font-size: .95rem; }
+/* Catalogue number, label, year — the line that says whether this is
+   the record in your hand, without opening Discogs. */
+.cand .rel { display: block; margin-top: .15rem; font: .78rem var(--mono); color: var(--muted); }
 .cand .why { margin-top: .3rem; display: flex; flex-wrap: wrap; gap: .3rem; }
 .fam { font: 600 .68rem var(--mono); letter-spacing: .04em; text-transform: uppercase;
   background: var(--accent-soft, #16323b); color: var(--accent); border-radius: 4px; padding: .12rem .4rem; }

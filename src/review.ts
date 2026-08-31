@@ -169,9 +169,24 @@ function photosHtml(item: QueueItem): string {
     </a>`).join('')}</div>`;
 }
 
+interface CandRelease {
+  title?: string | null; label?: string | null; catno?: string | null;
+  year?: string | number | null; format?: string | null;
+}
+
 function renderCandidate(c: Candidate, i: number): string {
-  const { families = [], signals = {} } = parse<{ families?: string[]; signals?: Record<string, string> }>(
-    c.signals_json, {});
+  const { families = [], signals = {}, release } = parse<{
+    families?: string[]; signals?: Record<string, string>; release?: CandRelease;
+  }>(c.signals_json, {});
+
+  // What the release IS, when the match that found it recorded one.
+  // Older candidates predate this and fall back to the bare id, which
+  // is what every candidate used to show.
+  const named = [release?.catno, release?.label].filter(Boolean).join(' · ');
+  const heading = release?.title
+    ? esc(String(release.title))
+    : `Discogs release ${c.discogs_id}`;
+  const sub = [named, release?.year, release?.format].filter(Boolean).map(String).map(esc).join(' · ');
   // TWO CONTROLS, NOT ONE. Accepting a match and going to look at it
   // are different intentions, and the old row could only express the
   // first — so checking a candidate meant accepting it and then
@@ -187,7 +202,8 @@ function renderCandidate(c: Candidate, i: number): string {
               title="Accept this match (or press ${i + 1})">
         <span class="key">${i + 1}</span>
         <span>
-          <span class="title">Discogs release ${c.discogs_id}</span>
+          <span class="title">${heading}</span>
+          ${sub ? `<span class="rel">${sub}</span>` : ''}
           <span class="why">
             ${families.map((f) => `<span class="fam">${esc(f)}</span>`).join('')}
             ${Object.entries(signals).map(([k, v]) => `<span class="sig">${esc(k)}: ${esc(v)}</span>`).join(' ')}

@@ -192,6 +192,38 @@ test('a junk row costs no API call at all', async () => {
   assert.equal(client.asked.length, 0, 'the sanity check runs before the network');
 });
 
+test('a candidate records what the release is, not only how it scored', async () => {
+  // The review screen showed "Discogs release 1451234" and a number, so
+  // judging a candidate meant opening Discogs for every one of them,
+  // across a queue of 293. Discogs returned this on the rung that found
+  // the candidate; it was scored and thrown away.
+  const env = makeEnv();
+  env.DB.raw.exec("INSERT INTO item (crate) VALUES ('B4')");
+  env.DB.raw.exec("INSERT INTO capture (item_id, catno_raw) VALUES (1, 'SXL 6113')");
+
+  const client = {
+    search: async () => [{
+      id: 999, catno: 'SXL 6113', label: ['Decca', 'Decca'],
+      title: 'Mahler — Symphony No. 2', year: 1966, format: ['Vinyl', 'LP'],
+    }],
+    getRelease: async () => ({}),
+  };
+  const row = { itemId: 1, catnoRaw: 'SXL 6113' };
+  await persistRun(env, row, await matchRow(row, client), await claimRow(env, 1));
+
+  const stored = JSON.parse(
+    env.DB.raw.prepare('SELECT signals_json FROM match_candidate LIMIT 1').get().signals_json);
+  assert.equal(stored.release.title, 'Mahler — Symphony No. 2');
+  assert.equal(stored.release.catno, 'SXL 6113');
+  assert.equal(stored.release.label, 'Decca; Decca', 'arrays are flattened, not dropped');
+  assert.equal(stored.release.format, 'Vinyl, LP');
+  assert.equal(Number(stored.release.year), 1966);
+  // The families and signals the gate reasoned from are still there —
+  // this is added beside them, not instead of them.
+  assert.ok(Array.isArray(stored.families));
+  assert.ok(stored.signals);
+});
+
 test('a duration is seconds, or absent — never a guessed zero', () => {
   // An absent duration is the truth about a release that did not print
   // one; zero would be a claim, and duration is a contrast signal M4
