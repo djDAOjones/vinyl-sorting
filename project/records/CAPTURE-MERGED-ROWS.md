@@ -1,7 +1,7 @@
 ---
 id: CAPTURE-MERGED-ROWS
 name: Two discs photographed into one row — split 453 and 455
-summary: Item 453 carries twelve photographs of at least two different records — Ace of Clubs ACL 45 and Music for Pleasure MFP 2024 — because nothing between shots said "this is a new disc", and 455 shows the same signature; the rows need splitting by a person who can see which photograph belongs to which disc, and the reading that found it should not be promoted until they are.
+summary: Item 453 was twelve photographs of two records and was split at photograph 7 on maintainer instruction, giving a new item 466; 455 shows the same signature less certainly and still needs a person to look, and neither may be promoted until its reading describes one disc.
 status: open
 date: 2026-08-31
 milestone: current
@@ -12,11 +12,13 @@ order: 4
 The first full reading of all 18 photographed records found two rows
 carrying more than one catalogue number:
 
-- **453** — twelve photographs. `ACL 45; MFP 2024`, and two labels:
-  Ace of Clubs (Decca) and Music for Pleasure (EMI). `453-1.jpg` is the
-  MFP sleeve; `453-11.jpg` is a Tchaikovsky *Francesca da Rimini* under
-  Golschmann, which is the Ace of Clubs disc. The title field carries
-  the works of both.
+- **453 — SPLIT, 2026-08-31.** Twelve photographs, `ACL 45; MFP 2024`.
+  The maintainer put the boundary at photograph 7, and the photographs
+  agree: `453-6.jpg` is Ace of Clubs ballet notes (Fistoulari, Paris
+  Conservatoire), `453-7.jpg` is the Music for Pleasure sleeve front
+  (Tchaikovsky *Romeo & Juliet* / *Francesca da Rimini*, St. Louis
+  Symphony, Golschmann). Photographs 7–12 moved to **item 466**; both
+  rows were re-queued for matching.
 - **455** — eight photographs. `M-2314; AM 2314`, both Concert Hall.
   Less certain: a record often prints two numbers, so this may be one
   disc honestly reported. It needs a person to look.
@@ -45,16 +47,23 @@ through. This record is the repair; that one is the prevention.
 
 A person, because only someone who can see the photographs knows where
 one disc ends. Neither the row ids nor the timestamps carry it: all
-twelve arrived in one capture with one `clientId`.
+twelve arrived in one capture with one `clientId`. So
+`tools/split-item.mjs` takes the boundary as an argument and reads no
+photograph itself.
 
-Mechanically it is a new `item`, its `item_photo` rows repointed, and
-the reading re-run for both halves. `item_photo` has no ON DELETE
-restriction that blocks this, and no photograph need be re-taken.
+It deletes nothing: the new item is an INSERT, the photographs move by
+UPDATE, no R2 object is touched and nothing is re-photographed. The new
+row inherits only what is true of both discs — crate, position, who
+captured — because which disc a reading described is the open question.
+It refuses outright if a `match_run` on the row carries a candidate or
+a human decision, rather than stranding somebody's work against a row
+that no longer means what it did.
 
 **Do not promote 453 or 455** into `raw_value` until they are split.
 Promoting a two-disc reading gives the matcher a catalogue number from
 one disc and a title from another, which is a corroboration failure
 manufactured on purpose.
 
-**Done when** 453 and 455 each describe one disc, and both have been
-read again.
+**Done when** 455 describes one disc, and 453, 455 and 466 have all
+been read again — the readings on file describe a row that was two
+records.
