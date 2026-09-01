@@ -1,0 +1,67 @@
+```json
+[
+  {
+    "row_id": "487",
+    "catno_raw": "AM-2316",
+    "label_raw": "Concert Hall",
+    "name_raw": "Verdi; Chorus and Orchestra of the Vienna State Opera; Nello Santi, conductor",
+    "title_raw": "Famous Overtures and Choruses",
+    "year_raw": "1964",
+    "side": "2",
+    "other_numbers": ["M. 2316", "AM 2316", "33 -1/3 R.P.M."],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "488",
+    "catno_raw": "2578 008",
+    "label_raw": "Heliodor kinderland",
+    "name_raw": "Karl Heinrich Waggerl; Ulrike Loos; Gertrud Loos",
+    "title_raw": "3 Geschichten von und mit Karl Heinrich Waggerl - Kaiserbesuch, Begegnung, Veronika",
+    "year_raw": null,
+    "side": null,
+    "other_numbers": ["3", "Seite 1", "Seite 2", "1. Teil", "2. Teil"],
+    "unreadable": [],
+    "rotate_cw": { "488-3.jpg": 270, "488-4.jpg": 270 }
+  },
+  {
+    "row_id": "489",
+    "catno_raw": "CGLX 73717",
+    "label_raw": "Christophorus",
+    "name_raw": "Karl Heinrich Waggerl; Georg Philipp Telemann; Maria Muhlberger, Sopran; Hilde und Franz Tenta, Blockflote; Liselotte Brandle, Cembalo; Franz Tenta und Siegfried Somma, Gambe",
+    "title_raw": "Die Kunst des Mussiggangs",
+    "year_raw": null,
+    "side": "A",
+    "other_numbers": ["33-061 044", "30 cm", "33 UpM", "CLP 72101", "CLP 72110", "CGLP 75706", "SCGLP 75707", "25 cm"],
+    "unreadable": [],
+    "rotate_cw": { "489-1.jpg": 270 }
+  }
+]
+```
+
+
+Notes:
+
+487 — three forms of one number appear: "M. 2316" inside the Concert
+Hall wreath on the front, "AM 2316" stamped on the back beside a
+handwritten signature, and "AM-2316" on the disc label itself. Took the
+disc's form as the catalogue number and left the front-cover variant in
+other_numbers, since only the disc says which is in the sleeve.
+
+488 — sleeve only; no disc label among the six photographs. "2578 008"
+is bottom-right of the back sleeve, unlabelled but alone and in
+catalogue format. This is the same shape of call I refused on 485, and
+the difference is that 2578 008 encodes nothing but itself.
+
+489 — the back sleeve advertises four OTHER records with their own
+numbers (CLP 72101, CLP 72110, CGLP 75706, SCGLP 75707). They are in
+other_numbers, not near catno_raw. 33-061 044 is printed on the disc
+label opposite CGLX 73717 and is not presented as the catalogue number.
+
+Rotations on the sleeve shots (488-3, 488-4, 489-1) are lower
+confidence than the disc labels: I derived them from line order rather
+than glyph direction. The disc-label calls in reply-01 (486-4, 486-5 at
+180) are unambiguous.
+
+Packs completed: pack-01 (3 records: 484, 485, 486) and pack-02
+(3 records: 487, 488, 489). Six of six, no gaps.

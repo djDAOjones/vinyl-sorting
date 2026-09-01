@@ -1,0 +1,59 @@
+```json
+[
+  {
+    "row_id": "484",
+    "catno_raw": "GL25021",
+    "label_raw": "RCA Gold Seal",
+    "name_raw": "Howard Hanson; Charles Griffes; Charles Gerhardt; National Philharmonic Orchestra",
+    "title_raw": "Symphony no. 2 \"Romantic\"; The Pleasure Dome of Kubla Khan; The White Peacock",
+    "year_raw": null,
+    "side": null,
+    "other_numbers": ["TT", "no. 2", "Side 1", "Side 2", "1884"],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "485",
+    "catno_raw": null,
+    "label_raw": "Reader's Digest",
+    "name_raw": "Frank Chacksfield and his Orchestra; Ronnie Aldrich and his Orchestra; Werner Muller and his Orchestra; Stanley Black and his Orchestra; Camarata and The Kingsway Symphony Orchestra",
+    "title_raw": "Finale Spectacular",
+    "year_raw": null,
+    "side": null,
+    "other_numbers": ["8", "GSTP-8A/S8", "RECORD EIGHT", "SIDE 1", "SIDE 2"],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "486",
+    "catno_raw": "AN 133-4",
+    "label_raw": "His Master's Voice",
+    "name_raw": "Verdi; Elisabeth Schwarzkopf; Christa Ludwig; Nicolai Gedda; Nicolai Ghiaurov; Philharmonia Orchestra; Philharmonia Chorus; Carlo Maria Giulini",
+    "title_raw": "Requiem",
+    "year_raw": "1964",
+    "side": "1; 4",
+    "other_numbers": ["AN. 133", "AN. 134", "XAX.2621", "XAX.2624", "33 1/3", "1", "4"],
+    "unreadable": [],
+    "rotate_cw": { "486-4.jpg": 180, "486-5.jpg": 180 }
+  }
+]
+```
+
+
+Notes on the two judgement calls, so they are visible rather than buried:
+
+485 — the only alphanumeric on the sleeve is GSTP-8A/S8, bottom-left of
+the back, and it is NOT labelled as a catalogue number. It also visibly
+encodes a disc-and-side ("8A/S8") on a set whose front carries a bare
+"8" and whose back says RECORD EIGHT. Left unassigned rather than
+guessed.
+
+486 — the sleeve spine reads "MONO—AN 133-4"; the two disc labels read
+"AN. 133" (side 1) and "AN. 134" (side 4). Reported the set number as
+printed on the sleeve and put both disc numbers in other_numbers.
+XAX.2621 and XAX.2624 are stamped beside the spindle and are not
+presented as catalogue numbers.
+
+484 — sleeve only, no disc label among the six photographs. Nothing on
+it carries a year; 1884 appears in the liner prose about Hanson, not as
+a date for this pressing.

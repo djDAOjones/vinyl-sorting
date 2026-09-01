@@ -16,13 +16,14 @@
   correcting a reading and downloading an export both answer 503 until one
   command is run.
 - [~] **SPIKE-PHOTO-TO-FIELDS Can a label photograph populate the
-  capture fields?** [spike] [blocked: twenty photographed labels with
-  typed ground truth] (2026-08-30) — The round trip is built, tested and
-  in the gate — each pack is a directory a session reads in place with no
-  upload as well as a zip for browser chat, the reply imports under id
-  checks, and the scorer keeps refusals apart from wrong answers; twenty
-  photographed labels are now the only thing left, because synthesising
-  labels would score the model against its own output.
+  capture fields?** [spike] [blocked: ground truth typed to the scorer's
+  columns — `decoy_numbers` above all] (2026-08-30) — The round trip has
+  now run end to end — crate 3, six records read blind and scored — and it
+  fails, but on schema rather than on reading: ten of fourteen wrong
+  values are two documents answering different questions, and the decoy
+  check that the whole spike exists for never ran at all, because
+  `decoy_numbers` was not a column the typed sheet had. Photographs are no
+  longer the blocker; ground truth typed to the scorer's own columns is.
 - [~] **PHOTOS-TO-DESKTOP Pull captured photos and their row ids out for
   a chat pack** [detail](records/PHOTOS-TO-DESKTOP.md) (2026-08-30) —
   Built, gated and live — photos-pull reads (item_id, r2_key) pairs from
@@ -73,6 +74,29 @@
   than an API — and its biggest missing field is provenance, because a
   number off a disc label and one in sleeve small print arrive with
   identical standing.
+- [ ] **NAV-HOME Every screen needs a visible way back to the hub**
+  [detail](records/NAV-HOME.md) (2026-09-01) — The keyboard already goes
+  home — `g` then `h` — but a phone has no keyboard, and capture opens
+  full-screen into the camera by design, so on the device the app is
+  actually used on there is no way back to the menu except the browser's
+  own chrome, which a home-screen PWA does not show.
+- [ ] **RECORD-EDIT-PHOTOS Edit a record's photographs — delete, add,
+  and split by selection** [blocked: whether a photo-reading route can
+  exist without a sign-in] (2026-09-01) — Browse can already correct every
+  field, but its photographs are listed by key and never shown, because
+  serving one needs a Worker GET that a sign-in-free v1 deliberately does
+  not have; so deleting a bad shot, adding a missing disc label, or
+  splitting a record by picking which photos go where is desk work through
+  split-item.mjs, blind, and only reachable by whoever has the
+  credentials.
+- [ ] **PHOTO-CULL Cull photographs that carry no text no other shot
+  carries** [detail](records/PHOTO-CULL.md) (2026-09-01) — Crate 3 took 34
+  photographs of 6 records and roughly a fifth were re-shoots of the same
+  corner, which cost pack space and reading attention and bought nothing;
+  a proposed rule set keeps one whole-sleeve view for identification plus
+  every shot that is the sole source of some value, and proposes the rest
+  for deletion rather than deleting them, because a cull driven by an
+  extraction lets a bad reading destroy its own evidence.
 
 ### Icebox
 

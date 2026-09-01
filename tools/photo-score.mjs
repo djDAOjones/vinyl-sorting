@@ -43,11 +43,26 @@ for (const [path, what] of [[extractPath, 'an imported chat reply'], [truthPath,
 const run = JSON.parse(readFileSync(extractPath, 'utf8'));
 const truthRows = readCsv(readFileSync(truthPath, 'utf8'));
 
-/** Ground truth keyed by row id, with the decoys split out of one cell. */
-const truth = new Map(truthRows.map((r) => [r.row_id, {
-  ...r,
-  decoy_numbers: (r.decoy_numbers ?? '').split(';').map((s) => s.trim()).filter(Boolean),
-}]));
+/**
+ * Ground truth keyed by row id, with the decoys split out of one cell.
+ *
+ * A row present but entirely blank is NOT an answer, and is dropped
+ * here so that it reads as untyped everywhere below. `photos-pull`
+ * seeds a skeleton row per photographed record, and the README's rule
+ * is that an empty cell means the label does not carry that value — so
+ * without this a row nobody has typed yet scores as five wrong answers
+ * against a sheet that says nothing, and is then listed as "typed but
+ * never read back". Row 484 cost exactly that on 2026-09-01. This is
+ * the same test `photo-import` already applies when it decides whether
+ * an answer existed, and the two must agree.
+ */
+const ANSWER_COLUMNS = [...PHOTO_FIELDS, 'decoy_numbers'];
+const truth = new Map(truthRows
+  .filter((r) => ANSWER_COLUMNS.some((c) => (r[c] ?? '').trim() !== ''))
+  .map((r) => [r.row_id, {
+    ...r,
+    decoy_numbers: (r.decoy_numbers ?? '').split(';').map((s) => s.trim()).filter(Boolean),
+  }]));
 
 const rows = [];
 const untyped = [];

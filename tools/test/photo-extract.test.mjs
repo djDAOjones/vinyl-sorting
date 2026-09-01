@@ -182,6 +182,24 @@ test('a reply is read out of whatever prose and fences it arrives in', () => {
   assert.equal(bare.results.A.fields.catno_raw, 'X');
 });
 
+test('a reply that opens with its JSON and explains itself afterwards still reads', () => {
+  // The shape two real replies took on 2026-09-01. Extraction used to
+  // run only when the text did NOT start with `[`, so an array followed
+  // by notes went to JSON.parse whole and was rejected as malformed —
+  // a whole import lost to a reply that was never wrong.
+  const trailing = parseChatReply(
+    '[{"row_id":"A","catno_raw":"SXL 6529"}]\n\nNotes: 485 carries no catalogue number.',
+    ['A']);
+  assert.equal(trailing.results.A.fields.catno_raw, 'SXL 6529');
+
+  // A bracket inside a value must not end the array early, and prose
+  // containing one must not extend it.
+  const bracketed = parseChatReply(
+    '[{"row_id":"A","title_raw":"Serenade [Op. 31]"}]\nSee the sleeve [back] for more.',
+    ['A']);
+  assert.equal(bracketed.results.A.fields.title_raw, 'Serenade [Op. 31]');
+});
+
 test('a short reply names what never came back instead of shifting rows', () => {
   // THE failure mode of a hand-run round trip: twenty images up,
   // eighteen objects back. Without ids everything after the gap is
@@ -590,6 +608,50 @@ test('a reading taken after the answer was typed cannot earn a pass', () => {
   assert.match(report, /over 1 independently-read label photo/, 'A is not counted');
   assert.match(report, /Held out — the answer existed before the reading/);
   assert.match(report, /^- `A`$/m);
+});
+
+test('a blank skeleton row is a coverage gap, not five wrong answers', () => {
+  // `photos-pull` seeds one row per photographed record, and an empty
+  // cell means the label does not carry that value. So a row nobody has
+  // typed yet used to be scored as though the label said nothing at
+  // all — and a correct reading of it came back as five errors against
+  // a sheet with no content. Row 484 did exactly that on 2026-09-01.
+  const dir = scratch();
+  writeFileSync(join(dir, 'row-ids.csv'), 'row_id,original_file\nA,a.jpg\nB,b.jpg\n');
+  // The reading arrives first, against a sheet that is all skeleton —
+  // so both rows are stamped independent, as in the real flow.
+  writeFileSync(join(dir, 'truth.csv'),
+    'row_id,catno_raw,label_raw,name_raw,title_raw,year_raw,decoy_numbers\n'
+    + 'A,,,,,,\n'
+    + 'B,,,,,,\n');
+  writeFileSync(join(dir, 'reply.txt'), REPLY([
+    { row_id: 'A', catno_raw: 'SXL 6529', label_raw: 'Decca', name_raw: 'Britten',
+      title_raw: 'Serenade', year_raw: '1972' },
+    { row_id: 'B', catno_raw: 'ASD 2532', label_raw: 'HMV', name_raw: 'Elgar',
+      title_raw: 'Cello Concerto', year_raw: '1965' },
+  ]));
+  execFileSync(process.execPath, ['tools/photo-import.mjs', join(dir, 'reply.txt'),
+    '--ids', join(dir, 'row-ids.csv'), '--truth', join(dir, 'truth.csv'),
+    '--out', join(dir, 'extract.json')], { encoding: 'utf8' });
+
+  // Then A is typed and B is left alone.
+  writeFileSync(join(dir, 'truth.csv'),
+    'row_id,catno_raw,label_raw,name_raw,title_raw,year_raw,decoy_numbers\n'
+    + 'A,SXL 6529,Decca,Britten,Serenade,1972,ZAL-13045\n'
+    + 'B,,,,,,\n');
+
+  execFileSync(process.execPath, ['tools/photo-score.mjs',
+    '--extract', join(dir, 'extract.json'), '--truth', join(dir, 'truth.csv'),
+    '--out', join(dir, 'score.md')], { encoding: 'utf8' });
+  const report = readFileSync(join(dir, 'score.md'), 'utf8');
+
+  assert.match(report, /over 1 independently-read label photo/,
+    'B is untyped, so it is not scored');
+  assert.doesNotMatch(report, /^- `B`/m, 'B contributes no wrong values');
+  // And the other half of the same rule: a blank row must not be
+  // reported as an answer that is still waiting for its reading.
+  assert.doesNotMatch(report, /typed but never read back: .*\bB\b/,
+    'a blank row was never typed');
 });
 
 test('a run where every row was read after its answer scores nothing at all', () => {

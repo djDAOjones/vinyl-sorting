@@ -313,17 +313,47 @@ const blank = (v) => v === null || v === undefined || String(v).trim() === '';
  * not to, so this is forgiving about the packaging and unforgiving
  * about the contents.
  */
+/**
+ * The JSON array inside a reply, whatever prose surrounds it.
+ *
+ * Scans from the first `[` to the `]` that closes it, tracking string
+ * state so that a bracket inside a value cannot end the array early and
+ * a sentence written after it cannot extend it.
+ *
+ * This used to run only when the text did NOT begin with `[`, on the
+ * assumption that prose comes before the JSON. A reply that opens with
+ * its array and explains itself underneath — an ordinary shape for a
+ * chat answer, and the one two replies took on 2026-09-01 — was handed
+ * to `JSON.parse` whole and rejected as malformed, losing the import.
+ *
+ * @param {string} text
+ * @returns {string | null} the array source, or null if there is none
+ */
+function arrayIn(text) {
+  const start = text.indexOf('[');
+  if (start < 0) return null;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < text.length; i++) {
+    const c = text[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (c === '\\') escaped = true;
+      else if (c === '"') inString = false;
+      continue;
+    }
+    if (c === '"') inString = true;
+    else if (c === '[') depth++;
+    else if (c === ']' && --depth === 0) return text.slice(start, i + 1);
+  }
+  return null;
+}
+
 export function parseChatReply(text, expectedIds) {
   const fenced = /```(?:json)?\s*([\s\S]*?)```/i.exec(text ?? '');
-  let body = (fenced?.[1] ?? text ?? '').trim();
-  // Fall back to the outermost bracket pair when there is no fence and
-  // the model wrote a sentence before its JSON.
-  if (!body.startsWith('[')) {
-    const start = body.indexOf('[');
-    const end = body.lastIndexOf(']');
-    if (start < 0 || end <= start) throw new Error('no JSON array found in the reply');
-    body = body.slice(start, end + 1);
-  }
+  const body = arrayIn((fenced?.[1] ?? text ?? '').trim());
+  if (body === null) throw new Error('no JSON array found in the reply');
 
   let rows;
   try {
