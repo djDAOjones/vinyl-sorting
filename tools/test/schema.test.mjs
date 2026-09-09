@@ -9,7 +9,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { LISTS } from '../../src/lists.ts';
 import { loadDataset } from '../load-dataset.mjs';
 
 import { applySchema } from './helpers/bindings.mjs';
@@ -19,8 +20,8 @@ const count = (/** @type {any} */ db, /** @type {string} */ t) => Number(one(db,
 
 test('every migration applies clean, in order', () => {
   const db = fresh();
-  assert.equal(Number(one(db, 'SELECT MAX(version) v FROM schema_migration').v), 4);
-  assert.equal(Number(one(db, 'SELECT COUNT(*) n FROM schema_migration').n), 4);
+  assert.equal(Number(one(db, 'SELECT MAX(version) v FROM schema_migration').v), 5);
+  assert.equal(Number(one(db, 'SELECT COUNT(*) n FROM schema_migration').n), 5);
 });
 
 test('a photo reading is its own source, and still cannot reach a decision', () => {
@@ -298,4 +299,59 @@ test('seed SQL escapes quotes rather than breaking on them', async () => {
   target.exec(toSeedSql(db));
   assert.equal(one(target, 'SELECT title_raw FROM capture').title_raw,
     "Bach's Greatest Hits, Vol. 1 -- not a comment");
+});
+
+// ── FOUR-LISTS ────────────────────────────────────────────────────
+
+test('FOUR-LISTS: a disc is on one of four lists, or on none yet', () => {
+  const db = fresh();
+  db.exec("INSERT INTO item (crate) VALUES ('B4')");
+  assert.equal(one(db, 'SELECT list FROM item').list, null, 'unsorted until somebody says');
+  for (const l of LISTS) db.exec(`UPDATE item SET list = '${l}'`);
+  assert.throws(() => db.exec("UPDATE item SET list = 'jazz'"), /CHECK constraint failed/,
+    'a fifth list is not a list');
+  assert.throws(() => db.exec("UPDATE item SET list = 'Classical'"), /CHECK constraint failed/,
+    'one spelling, lower case');
+});
+
+test('FOUR-LISTS: the backfill files every existing disc as classical, and says where that came from', () => {
+  // The live database as it stood before 005: imported rows and app
+  // captures, none of them on any list. Apply 001-004, seed, then 005.
+  const db = new DatabaseSync(':memory:');
+  const files = readdirSync('schema').filter((n) => n.endsWith('.sql')).sort();
+  for (const f of files.filter((n) => !n.startsWith('005'))) db.exec(readFileSync(`schema/${f}`, 'utf8'));
+  db.exec("INSERT INTO item (import_ref) VALUES ('DG-0001'), ('capture:abc')");
+  db.exec(readFileSync('schema/005-lists.sql', 'utf8'));
+
+  assert.deepEqual(db.prepare('SELECT list FROM item ORDER BY id').all().map((r) => r.list),
+    ['classical', 'classical'], 'everything catalogued so far was classical');
+  // Spread into plain objects: node:sqlite rows have a null prototype,
+  // which strict deepEqual counts as a difference.
+  const prov = db.prepare(
+    "SELECT entity_id, source, confirmed_at FROM field_source WHERE field = 'list' ORDER BY entity_id")
+    .all().map((r) => ({ ...r }));
+  assert.deepEqual(prov, [{ entity_id: 1, source: 'legacy', confirmed_at: null }],
+    'the imported row says legacy; the app capture claims nothing, because nobody asserted it');
+
+  // A row that arrives afterwards is unsorted, not classical.
+  db.exec("INSERT INTO item (import_ref) VALUES ('capture:later')");
+  assert.equal(db.prepare('SELECT list FROM item WHERE id = 3').get().list, null);
+
+  // Re-running the backfill by hand is safe — the rebuild note in the migration.
+  assert.doesNotThrow(() => db.exec(
+    "INSERT OR IGNORE INTO field_source (entity, entity_id, field, source) "
+    + "SELECT 'item', id, 'list', 'legacy' FROM item WHERE import_ref LIKE 'DG-%'"));
+  assert.equal(count(db, "field_source WHERE field = 'list'"), 1);
+
+  // The decision views survived the ALTER, and see the column.
+  assert.doesNotThrow(() => db.prepare('SELECT list FROM v_decision_eligible_item').all());
+});
+
+test('FOUR-LISTS: the four words in the schema are the four the client and Worker share', () => {
+  // One list of names in src/lists.ts, one CHECK in the migration. A
+  // fifth word in either is a list the other half cannot see.
+  const sql = readFileSync('schema/005-lists.sql', 'utf8');
+  const inCheck = /CHECK \(list IN \(([^)]*)\)\)/.exec(sql)?.[1]
+    .split(',').map((s) => s.trim().replace(/'/g, ''));
+  assert.deepEqual(inCheck, [...LISTS]);
 });

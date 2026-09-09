@@ -43,7 +43,7 @@ if (args.includes('--demo')) {
   // signal family, one for a near-tie, one with nothing found.
   const db = env.DB.raw;
   db.exec(`
-    INSERT INTO item (crate, position) VALUES ('B4','12'),('B4','13'),('C1','4');
+    INSERT INTO item (crate, position, list) VALUES ('B4','12','classical'),('B4','13','classical'),('C1','4','dance');
     INSERT INTO capture (item_id, catno_raw, label_raw, title_raw, name_raw) VALUES
       (1, 'SXL 6113', 'Decca', 'Symphony No. 5', 'Solti'),
       (2, 'CFP 40001', NULL, 'Beethoven Symphony No. 4', 'Cluytens'),

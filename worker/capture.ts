@@ -1,4 +1,5 @@
 import type { Env } from './env.ts';
+import { isList, LISTS, type List } from '../src/lists.ts';
 
 /**
  * Writing a capture. `capture` holds what a HUMAN read off the disc and
@@ -32,6 +33,8 @@ export interface CaptureInput {
   sleeveGrade?: Grade;
   capturedBy?: string;
   notes?: string;
+  /** Which of the four lists the disc goes on. Absent lands it unsorted. */
+  list?: List;
   photos?: { kind: PhotoKind; r2Key: string }[];
 }
 
@@ -117,10 +120,20 @@ export function parseCapture(body: unknown): { ok: true; value: CaptureInput } |
     }
   }
 
+  // Which list the disc goes on (FOUR-LISTS). Optional at the door —
+  // a phone on the previous build sends none, and an offline queue must
+  // never acquire a way to fail — but never guessed: a value that does
+  // arrive has to be one of the four, and a capture with none lands
+  // unsorted rather than on a default nobody chose.
+  const list = trimmed(b.list);
+  if (list !== undefined && !isList(list)) {
+    return { ok: false, error: `list must be one of ${LISTS.join(', ')}` };
+  }
+
   return {
     ok: true,
     value: {
-      clientId, crate: crate || null, catnoRaw, photos,
+      clientId, crate: crate || null, catnoRaw, photos, list,
       position: trimmed(b.position),
       labelRaw: trimmed(b.labelRaw),
       nameRaw: trimmed(b.nameRaw),
@@ -150,11 +163,11 @@ export async function insertCapture(env: Env, input: CaptureInput): Promise<{ it
   if (existing) return { itemId: existing.id, created: false };
 
   const item = await env.DB.prepare(
-    `INSERT INTO item (crate, position, media_grade, sleeve_grade, captured_by, captured_at, notes, import_ref)
-     VALUES (?, ?, ?, ?, ?, datetime('now'), ?, ?) RETURNING id`,
+    `INSERT INTO item (crate, position, media_grade, sleeve_grade, captured_by, captured_at, notes, import_ref, list)
+     VALUES (?, ?, ?, ?, ?, datetime('now'), ?, ?, ?) RETURNING id`,
   ).bind(
     input.crate ?? null, input.position ?? null, input.mediaGrade ?? null, input.sleeveGrade ?? null,
-    input.capturedBy ?? null, input.notes ?? null, `capture:${input.clientId}`,
+    input.capturedBy ?? null, input.notes ?? null, `capture:${input.clientId}`, input.list ?? null,
   ).first<{ id: number }>();
   if (!item) throw new Error('item insert returned no id');
   const itemId = item.id;
@@ -177,7 +190,7 @@ export async function insertCapture(env: Env, input: CaptureInput): Promise<{ it
     if (input[key] !== undefined) sourced.push(['capture', capture.id, column]);
   }
   for (const [key, column] of [['crate', 'crate'], ['position', 'position'],
-    ['mediaGrade', 'media_grade'], ['sleeveGrade', 'sleeve_grade']] as [keyof CaptureInput, string][]) {
+    ['mediaGrade', 'media_grade'], ['sleeveGrade', 'sleeve_grade'], ['list', 'list']] as [keyof CaptureInput, string][]) {
     if (input[key] !== undefined) sourced.push(['item', itemId, column]);
   }
 

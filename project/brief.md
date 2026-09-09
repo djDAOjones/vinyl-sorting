@@ -78,8 +78,10 @@ static site cannot hold a secret. Live at
 
 ## Out of scope for v1
 
-- Non-classical crates — the schema must permit them, the interface
-  will not show them.
+- Non-classical crates beyond FILING them: since 2026-09-09 the
+  interface keeps four lists — classical, selling, dance, general —
+  and every screen can show one (FOUR-LISTS). Works, clusters and
+  coverage stay classical-first.
 - Selling, listing or pricing workflow beyond a static sell list with
   values attached.
 - Audio playback, ripping, or any handling of the music itself.

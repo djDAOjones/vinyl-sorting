@@ -67,6 +67,33 @@ columns — so a view can be bookmarked or sent. `?view=mop-up` lists the
 discs that were photographed, read, and still have no confirmed
 release, which is the crate to re-shoot.
 
+### Four lists
+
+The collection is kept in four lists — **Classical**, **Selling**,
+**Dance** and **General** — as one column on one table (`item.list`,
+migration 005), not four tables. A selector in the header of every
+screen, and on the hub with a count per list, says which list is in
+view; **All lists** shows everything. It is a device setting like the
+theme, so two people can walk two crates at once. Press `l` to reach it.
+
+Capture files every disc on the list in view. It asks once per device
+which list the crate is on; the choice stays in the header, one tap
+away, and never sits between the shutter and Queue it. The review queue
+and the collection screen show only the list in view, and the hub's
+counts follow it. A disc on the wrong list is moved from its detail on
+the collection screen, behind the passphrase, and the move is recorded
+as a confirmed `shelf` value with a name on it.
+
+A row with no list — a phone still on the previous build files one — is
+**unsorted**: shown as such, counted on the hub, and offered in the
+selector while any exist. The rows that existed before the column did
+were all classical and were filed that way by the migration; the
+imported ones carry `legacy` provenance for it.
+
+`/api/review-queue` and `/api/match-stats` take `?list=<name>` (or
+`unsorted`) and refuse any other value; `/api/lists` answers with the
+counts.
+
 ### Walking a crate
 
 One disc at a time, photographed as many times as it needs. The

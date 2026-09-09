@@ -1,7 +1,7 @@
 ---
 id: CATALOGUE-CONTROLS
 name: Sort, filter and choose columns on the collection screen
-summary: The interface half is done — every column sortable and choosable, five named views including the mop-up crate, and the whole view in the URL — so what remains is the two sorts that need data the database does not hold: value, which needs a price backfill, and genre, which needs a migration.
+summary: The interface half is done — every column sortable and choosable, five named views including the mop-up crate, and the whole view in the URL — and genre shipped as the four lists (FOUR-LISTS, 2026-09-09), so what remains is the one sort that needs data the database does not hold: value, which needs a price backfill.
 status: in-progress
 date: 2026-08-31
 milestone: next
@@ -36,11 +36,9 @@ carry it for free — the ~300 already matched need a backfill pass at
 the pacing M2-DISCOGS-PACING settled, and prices go stale, so
 `price_checked_at` has to be shown rather than hidden.
 
-**Genre** needs migration 005 and a Discogs field. Worth saying again
-that the honest use of it is not a genre column: classical is nearly
-the whole collection, so what earns its place is a **not-classical
-toggle**, which is what the brief means when it says the schema stays
-genre-neutral while the v1 interface does not show it.
+**Genre** shipped as FOUR-LISTS on 2026-09-09 — neither a genre column
+nor a not-classical toggle, but the four lists the collection is
+actually kept in (classical, selling, dance, general) on `item.list`,
+with a selector on every screen. Migration 005 was that one.
 
-**Done when** value sorts with unpriced last, and the interface can
-hide what is not classical.
+**Done when** value sorts with unpriced last.

@@ -33,8 +33,9 @@
 
 import { ensureCapturerCookie, storedCapturer } from './who.ts';
 import {
-  bootChrome, esc, headerHtml, parseJson as parse, toast,
+  bootChrome, esc, headerHtml, parseJson as parse, storedList, toast,
 } from './chrome.ts';
+import { choiceLabel, isList, LISTS, LIST_LABEL, type ListChoice } from './lists.ts';
 
 /**
  * The header the photo route and the item detail both want.
@@ -55,6 +56,7 @@ const API = '/api';
 
 interface Row {
   id: number;
+  list: string | null;
   crate: string | null; position: string | null;
   media_grade: string | null; sleeve_grade: string | null;
   decision: string; captured_by: string | null; captured_at: string | null;
@@ -221,6 +223,9 @@ const COLUMNS: Column[] = [
   { key: 'title_raw', label: 'title', get: (r) => r.title_raw },
   { key: 'year_raw', label: 'year', get: (r) => r.year_raw, mono: true },
   { key: 'crate', label: 'crate', get: (r) => [r.crate, r.position].filter(Boolean).join(' · ') },
+  // The list a disc is on (FOUR-LISTS). Unsorted is an empty cell, not
+  // a word: it is the absence of a filing rather than a fifth list.
+  { key: 'list', label: 'list', get: (r) => (isList(r.list) ? LIST_LABEL[r.list] : null) },
   { key: 'matrix_runout', label: 'matrix', get: (r) => r.matrix_runout, mono: true },
   { key: 'media_grade', label: 'media', get: (r) => r.media_grade },
   { key: 'sleeve_grade', label: 'sleeve', get: (r) => r.sleeve_grade },
@@ -269,7 +274,7 @@ const COLUMN = new Map(COLUMNS.map((c) => [c.key, c]));
 
 /** What the screen showed before it could be changed. */
 const DEFAULT_COLS = ['id', 'catno_raw', 'label_raw', 'name_raw', 'title_raw',
-  'crate', 'photo_count', 'match_state'];
+  'crate', 'list', 'photo_count', 'match_state'];
 
 /**
  * Named views, because two of these are questions somebody actually
@@ -387,9 +392,31 @@ function writeUrl(): void {
  * being true past the deferred 2,000–6,000 record batch, and
  * `/api/items` is already keyset-paged for that day.
  */
+/**
+ * Whether a row is on the list in view (FOUR-LISTS).
+ *
+ * The device's list is the outermost filter on this screen and is NOT
+ * part of the URL: a view sent to somebody shows their list, which is
+ * the point of the setting being per device. Everything else about
+ * the view still travels.
+ */
+const inScope = (r: Row, scope: ListChoice): boolean =>
+  (scope === '' ? true : scope === 'unsorted' ? r.list === null : r.list === scope);
+
+/** The header count: what is shown, out of what is on the list in view. */
+function tallyHtml(shown: number): string {
+  const scope = storedList();
+  const base = rows.filter((r) => inScope(r, scope));
+  return `<b>${shown}</b> of ${base.length} shown<br>`
+    + `${base.filter((r) => r.photo_count).length} photographed`
+    + (scope ? `<br>${esc(choiceLabel(scope))}` : '');
+}
+
 function visible(): Row[] {
   const needle = view.text.trim().toLowerCase();
+  const scope = storedList();
   const out = rows.filter((r) => {
+    if (!inScope(r, scope)) return false;
     if (view.state && stateOf(r) !== view.state) return false;
     if (view.photos === 'with' && !r.photo_count) return false;
     if (view.photos === 'without' && r.photo_count) return false;
@@ -452,13 +479,12 @@ const activePreset = (): string => PRESETS.find((p) => {
 function render(): void {
   writeUrl();
   const shown = visible();
-  const withPhotos = rows.filter((r) => r.photo_count).length;
+  const scope = storedList();
   const preset = activePreset();
 
   app.innerHTML = `
     ${headerHtml({ here: 'browse', title: 'The collection',
-    aside: `<div class="tally"><b>${shown.length}</b> of ${rows.length} shown<br>
-      ${withPhotos} photographed</div>` })}
+    aside: `<div class="tally">${tallyHtml(shown.length)}</div>` })}
 
     <div class="views">
       ${PRESETS.map((p) => `<button type="button" class="viewchip${p.key === preset ? ' on' : ''}"
@@ -474,7 +500,7 @@ function render(): void {
         <select id="fState">
           <option value="">any</option>
           ${STATES.map((st) => `<option value="${st}"${view.state === st ? ' selected' : ''}>${st}
-            (${rows.filter((r) => stateOf(r) === st).length})</option>`).join('')}
+            (${rows.filter((r) => inScope(r, scope) && stateOf(r) === st).length})</option>`).join('')}
         </select></label>
       <label class="field"><span>Photographs</span>
         <select id="fPhotos">
@@ -595,10 +621,7 @@ function repaintList(): void {
   const body = app.querySelector('tbody');
   if (body) body.innerHTML = shown.map(rowHtml).join('');
   const counts = app.querySelector('.tally');
-  if (counts) {
-    counts.innerHTML = `<b>${shown.length}</b> of ${rows.length} shown<br>`
-      + `${rows.filter((r) => r.photo_count).length} photographed`;
-  }
+  if (counts) counts.innerHTML = tallyHtml(shown.length);
   bindRows();
 }
 
@@ -709,9 +732,16 @@ function wireEditing(panel: HTMLElement, id: number): void {
 
       // In place, per the maintainer's decision: the value becomes a
       // box where it stands, Enter saves and Escape puts it back.
+      // A field with a closed set of answers edits through a select
+      // rather than a box: typing "Dance" into the list field is a
+      // spelling test the Worker would fail you on (FOUR-LISTS).
+      const options = btn.dataset.options?.split(',').filter(Boolean);
       const editor = document.createElement('form');
       editor.className = 'inline';
-      editor.innerHTML = `<input value="${esc(before)}" autocomplete="off" spellcheck="false">
+      editor.innerHTML = `${options
+        ? `<select>${['', ...options].map((o) => `<option value="${esc(o)}"${o === before ? ' selected' : ''}>${
+          o ? esc(isList(o) ? LIST_LABEL[o] : o) : '— none'}</option>`).join('')}</select>`
+        : `<input value="${esc(before)}" autocomplete="off" spellcheck="false">`}
         <button type="submit" class="tiny ok-save" title="Save">save</button>
         <button type="button" class="tiny cancel" title="Leave it alone">cancel</button>`;
       const kept = cell.innerHTML;
@@ -719,13 +749,15 @@ function wireEditing(panel: HTMLElement, id: number): void {
       // `appendChild`, not `append`: with @cloudflare/workers-types in
       // scope the bare `append` resolves to the Worker FormData one.
       cell.appendChild(editor);
-      const box = editor.querySelector('input')!;
+      // A cast, not the generic: see the note in chrome.ts on
+      // HTMLSelectElement and the merged Element type.
+      const box = editor.querySelector('input, select') as HTMLInputElement | HTMLSelectElement;
       box.focus();
-      box.select();
+      if (box instanceof HTMLInputElement) box.select();
 
       const restore = (): void => { cell.innerHTML = kept; wireEditing(panel, id); };
       editor.querySelector('button.cancel')?.addEventListener('click', restore);
-      box.addEventListener('keydown', (e) => { if (e.key === 'Escape') restore(); });
+      box.addEventListener('keydown', (e) => { if ((e as KeyboardEvent).key === 'Escape') restore(); });
       editor.addEventListener('submit', async (e) => {
         e.preventDefault();
         const name = who();
@@ -737,8 +769,10 @@ function wireEditing(panel: HTMLElement, id: number): void {
         const body: Record<string, unknown> = { entity, field, confirmedBy: name };
         if (value !== before.trim()) body.value = value === '' ? null : value;
         const ok = await write(`/items/${id}/field`, body);
-        if (ok) await afterWrite(value === before.trim() ? `${field} confirmed.` : `${field} corrected.`);
-        else restore();
+        if (!ok) { restore(); return; }
+        await afterWrite(value === before.trim() ? `${field} confirmed.`
+          : field === 'list' ? (isList(value) ? `Moved to ${LIST_LABEL[value]}.` : 'Taken off every list.')
+            : `${field} corrected.`);
       });
     });
   }
@@ -791,6 +825,23 @@ function detailHtml(d: Detail): string {
       mark(provOf(entity, entityId, field))}</dd>`;
   };
 
+  /**
+   * The list, with a select behind the pencil: moving a disc to
+   * another list is the one edit here with a closed set of answers
+   * (FOUR-LISTS). Unsorted is shown as what it is rather than as a
+   * dash, because it is a state somebody may need to go and fix.
+   */
+  const listLine = (): string => {
+    const raw = typeof item.list === 'string' ? item.list : '';
+    const shown = isList(raw) ? esc(LIST_LABEL[raw]) : '<span class="empty">unsorted</span>';
+    return `<dt>List</dt><dd data-field-cell="item.list">${shown}<span class="ftools">
+          <button type="button" class="tiny edit" data-entity="item" data-field="list"
+            data-value="${esc(raw)}" data-options="${LISTS.join(',')}" title="Move this disc to another list">✎</button>
+          <button type="button" class="tiny ok" data-entity="item" data-field="list"
+            title="Confirm this disc is on the right list">✓</button>
+        </span><br>${mark(provOf('item', Number(item.id), 'list'))}</dd>`;
+  };
+
   return `
     <div class="dhead">
       <h2>Item ${esc(item.id)}</h2>
@@ -826,6 +877,7 @@ function detailHtml(d: Detail): string {
 
         <h3>The physical record</h3>
         <dl class="facts">
+          ${listLine()}
           ${line('Crate', item.crate, 'item', Number(item.id), 'crate')}
           ${line('Position', item.position, 'item', Number(item.id), 'position')}
           ${line('Media', item.media_grade, 'item', Number(item.id), 'media_grade')}
@@ -923,3 +975,5 @@ load().catch((err: unknown) => {
   app.innerHTML = `<p class="note-bad">Could not load the collection: ${
     esc(err instanceof Error ? err.message : String(err))}</p>`;
 });
+// The selector in the header changed: same rows, different list.
+addEventListener('vs:list', () => { if (rows.length) render(); });

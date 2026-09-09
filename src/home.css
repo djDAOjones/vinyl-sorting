@@ -8,6 +8,7 @@
 
 .hero {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--s4);
   padding: var(--s5) 0 var(--s5);
@@ -121,4 +122,14 @@
   flex-wrap: wrap;
   gap: var(--s3);
   align-items: center;
+}
+
+/* The list selector, in the hero rather than in a header this page
+   does not have — "the main menu has a drop-down" (FOUR-LISTS). This
+   copy carries the count per list, which no other screen's does, and
+   every number on the page follows it. */
+.hero .listpick select { font-size: var(--t-sm); min-height: 2.25rem; }
+@media (max-width: 30rem) {
+  .hero .listpick { flex-basis: 100%; order: 9; }
+  .hero .listpick select { font-size: 1rem; min-height: var(--tap); }
 }

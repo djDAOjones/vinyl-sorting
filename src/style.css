@@ -389,3 +389,8 @@ body.shooting #flash { bottom: calc(7.2rem + env(safe-area-inset-bottom)); }
 }
 /* The photograph is tappable, and says so on a device with a pointer. */
 .thumb img { cursor: zoom-in; }
+
+/* The list gate (FOUR-LISTS): once per device, then whenever the
+   choice is not one of the four. Four big targets, because it is
+   answered with a thumb. */
+.listgate { display: grid; gap: var(--s2); margin: var(--s3) 0; }

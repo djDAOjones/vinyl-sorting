@@ -422,3 +422,39 @@ a.link { color: var(--accent); text-decoration: none; border-bottom: 1px solid t
 a.link:hover { border-bottom-color: var(--accent); }
 
 .hidden, [hidden] { display: none !important; }
+
+/* ── The list in view (FOUR-LISTS) ─────────────────────────────
+   One selector, the same on every screen, saying which of the four
+   lists is being looked at. A native select dressed as a chip: it
+   opens the platform's own picker, which is the one control a gloved
+   thumb in a loft can work. */
+.listpick { display: inline-flex; align-items: center; gap: var(--s2); margin: 0; flex: none; }
+.listpick .lp-label {
+  font: 600 var(--t-xs) var(--mono);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.listpick select {
+  width: auto;
+  min-height: 2rem;
+  padding: var(--s1) var(--s2);
+  font: 600 var(--t-xs) var(--mono);
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  background: var(--sunk);
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  cursor: pointer;
+}
+.listpick select:hover { border-color: var(--accent); }
+/* On a phone the header is already full — the way home, the title,
+   who is holding it and the queue — so the selector takes a line of
+   its own beneath them, on the right, where the eye goes for state.
+   16 px there, because iOS zooms the page on any control smaller and
+   never zooms back. */
+@media (max-width: 26rem) {
+  .appbar { flex-wrap: wrap; }
+  .listpick { order: 9; flex-basis: 100%; justify-content: flex-end; }
+  .listpick select { font-size: 1rem; min-height: var(--tap); }
+}

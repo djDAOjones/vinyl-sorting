@@ -176,3 +176,6 @@ dd:hover .ftools, dd:focus-within .ftools { opacity: 1; }
    for a sentence, so it is the type: a reading leans, a typed value
    stands upright. */
 table.rows td.reading { font-style: italic; color: var(--text-2); }
+
+/* A closed set of answers edits through a select (FOUR-LISTS). */
+.inline select { flex: 1 1 8rem; min-width: 0; width: auto; font-size: var(--t-base); padding: var(--s1); min-height: 2rem; }

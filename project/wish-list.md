@@ -6,7 +6,6 @@
 - The later batch — 2,000–6,000 more varied records. The schema is
   genre-neutral from day one so this stays possible; the v1 interface
   just never shows an empty classical field.
-- Non-classical crates in the interface. Schema permits them already.
 - A real selling workflow — listing, pricing, offers — beyond v1's
   static sell list with values attached.
 - Browse the deliberately-kept contrasting pairs as a labelled part of

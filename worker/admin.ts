@@ -153,7 +153,7 @@ const csvCell = (v: unknown): string =>
   `"${String(v ?? '').replace(/"/g, '""')}"`;
 
 export const CSV_COLUMNS = [
-  'id', 'crate', 'position', 'catno_raw', 'label_raw', 'name_raw', 'title_raw', 'year_raw',
+  'id', 'crate', 'position', 'list', 'catno_raw', 'label_raw', 'name_raw', 'title_raw', 'year_raw',
   'media_grade', 'sleeve_grade', 'decision', 'captured_by', 'captured_at', 'import_ref',
   'last_verified_at', 'discogs_id', 'release_title', 'release_label', 'release_year',
   'photo_count', 'match_state', 'release_confirmed',
@@ -173,7 +173,7 @@ export async function exportCsv(env: Env): Promise<string> {
   let after = 0;
   for (;;) {
     const { results } = await env.DB.prepare(
-      `SELECT i.id, i.crate, i.position, i.media_grade, i.sleeve_grade, i.decision,
+      `SELECT i.id, i.crate, i.position, i.list, i.media_grade, i.sleeve_grade, i.decision,
               i.captured_by, i.captured_at, i.import_ref, i.last_verified_at,
               c.catno_raw, c.label_raw, c.name_raw, c.title_raw, c.year_raw,
               r.discogs_id, r.title AS release_title, r.label AS release_label,

@@ -13,7 +13,8 @@
  * buttons is a hub that shows nothing offline.
  */
 
-import { bootChrome, esc, ROUTES, storedTheme, toast } from './chrome.ts';
+import { bootChrome, esc, listPickHtml, ROUTES, storedList, storedTheme, toast } from './chrome.ts';
+import type { ListChoice } from './lists.ts';
 import { ensureCapturerCookie, forgetCapturer, storedCapturer } from './who.ts';
 import { allEntries } from './queue.ts';
 import { summarise } from './queue-logic.ts';
@@ -30,9 +31,19 @@ interface Stats {
   itemsNeedingReview?: number;
 }
 
+/** How many discs are on each list, from `/api/lists` (FOUR-LISTS). */
+interface Lists { counts: Partial<Record<ListChoice, number>>; total: number }
+
 let stats: Stats | null = null;
-let items: number | null = null;
+let lists: Lists | null = null;
 let queued = 0;
+
+/** Records on the list in view — the count "The collection" carries. */
+const recordCount = (): number | null => {
+  if (!lists) return null;
+  const scope = storedList();
+  return scope === '' ? lists.total : (lists.counts[scope] ?? 0);
+};
 
 const ICONS = {
   add: `<svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -87,6 +98,7 @@ function render(): void {
         <p>Catalogue it, verify it, decide what stays.</p>
       </div>
       <div class="spacer" style="margin-left:auto"></div>
+      ${listPickHtml({ counts: lists ? { '': lists.total, ...lists.counts } : undefined })}
       ${who
     ? `<button type="button" class="btn btn-quiet" id="who" title="Hand the phone over">${esc(who)}</button>`
     : ''}
@@ -111,7 +123,7 @@ function render(): void {
         ${ICONS.browse}
         <span class="name">The collection</span>
         <span class="what">Every record, what is known about it, and where it came from.</span>
-        ${countLine(items, 'record')}
+        ${countLine(recordCount(), 'record')}
       </a>
 
       <a class="tile" href="${ROUTES.settings}">
@@ -127,6 +139,10 @@ function render(): void {
       ${stat(needsReview, 'to review', 'on')}
       ${stat(stats ? stats.decisionEligible : null, 'confirmed')}
       ${stat(stats ? stats.unmatched : null, 'never tried')}
+      ${/* Rows on no list at all — a phone on the previous build files
+           there. Shown only when there are some, and only across all
+           lists, since none of them is on the one in view. */
+  lists?.counts.unsorted && storedList() === '' ? stat(lists.counts.unsorted, 'unsorted', 'on') : ''}
     </div>
 
     <div class="homefoot">
@@ -159,12 +175,18 @@ const stat = (n: number | null, label: string, kind = ''): string => `
  */
 async function loadCounts(): Promise<void> {
   try {
-    const [s, h] = await Promise.all([
-      fetch(`${API}/match-stats`).then((r) => (r.ok ? r.json() as Promise<Stats> : null)),
-      fetch(`${API}/health`).then((r) => (r.ok ? r.json() as Promise<{ items: number }> : null)),
+    const scope = storedList();
+    const [s, l] = await Promise.all([
+      fetch(`${API}/match-stats${scope ? `?list=${encodeURIComponent(scope)}` : ''}`)
+        .then((r) => (r.ok ? r.json() as Promise<Stats> : null)),
+      fetch(`${API}/lists`).then((r) => (r.ok ? r.json() as Promise<Lists> : null)),
     ]);
+    // Dropped if the list changed while the fetch was out: a count for
+    // the classical list painted under a selector that now says dance
+    // is worse than a blank.
+    if (scope !== storedList()) return;
     if (s) stats = s;
-    if (h) items = h.items;
+    if (l) lists = l;
     render();
   } catch { /* the tiles work without them */ }
 }
@@ -183,3 +205,6 @@ bootChrome();
 render();
 void loadQueue();
 void loadCounts();
+// The selector changed: blank the numbers rather than show the old
+// list's under the new list's name, then fetch the right ones.
+addEventListener('vs:list', () => { stats = null; render(); void loadCounts(); });

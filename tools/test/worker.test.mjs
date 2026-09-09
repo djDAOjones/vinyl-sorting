@@ -695,3 +695,93 @@ test('the Worker serves without R2, and a photo upload stays retryable', async (
   }, env);
   assert.equal(cap.status, 201);
 });
+
+// ── FOUR-LISTS: one column, four values, every read scoped ────────
+
+test('FOUR-LISTS: a capture names its list, and the Worker keeps it with shelf provenance', async () => {
+  const env = makeEnv();
+  assert.equal((await post(env, { clientId: 'c1', catnoRaw: 'SXL 6113', list: 'dance' })).status, 201);
+  const { items } = await (await app.request('/api/items?limit=10', {}, env)).json();
+  assert.equal(items[0].list, 'dance');
+  const prov = env.DB.raw.prepare(
+    "SELECT source, confirmed_at FROM field_source WHERE entity = 'item' AND field = 'list'").get();
+  assert.deepEqual({ ...prov }, { source: 'shelf', confirmed_at: null }, 'chosen at the crate, not verified');
+});
+
+test('FOUR-LISTS: a capture with no list lands unsorted rather than on a default', async () => {
+  // A phone on the previous build sends none. Refusing it would give
+  // the offline queue a way to fail; defaulting would file a disc on a
+  // list nobody chose. Null is the true answer.
+  const env = makeEnv();
+  assert.equal((await post(env, { clientId: 'c1', catnoRaw: 'SXL 6113' })).status, 201);
+  const { items } = await (await app.request('/api/items?limit=10', {}, env)).json();
+  assert.equal(items[0].list, null);
+  assert.equal(env.DB.raw.prepare("SELECT COUNT(*) AS n FROM field_source WHERE field = 'list'").get().n, 0,
+    'and no provenance is invented for it');
+});
+
+test('FOUR-LISTS: a list that is not one of the four is refused at the door', async () => {
+  const env = makeEnv();
+  const res = await post(env, { clientId: 'c1', catnoRaw: 'SXL 6113', list: 'jazz' });
+  assert.equal(res.status, 400);
+  assert.match((await res.json()).error, /classical, selling, dance, general/);
+});
+
+test('FOUR-LISTS: the counts per list say how many are on none', async () => {
+  const env = makeEnv();
+  await post(env, { clientId: 'c1', catnoRaw: 'A', list: 'classical' });
+  await post(env, { clientId: 'c2', catnoRaw: 'B', list: 'classical' });
+  await post(env, { clientId: 'c3', catnoRaw: 'C', list: 'dance' });
+  await post(env, { clientId: 'c4', catnoRaw: 'D' });
+  const body = await (await app.request('/api/lists', {}, env)).json();
+  assert.deepEqual(body.counts, { classical: 2, selling: 0, dance: 1, general: 0, unsorted: 1 });
+  assert.equal(body.total, 4);
+});
+
+test('FOUR-LISTS: the review queue and the stats scope to one list, and refuse a fifth', async () => {
+  const env = makeEnv();
+  await post(env, { clientId: 'c1', catnoRaw: 'A', list: 'classical' });
+  await post(env, { clientId: 'c2', catnoRaw: 'B', list: 'dance' });
+  await post(env, { clientId: 'c3', catnoRaw: 'C' });
+  env.DB.raw.exec(`INSERT INTO match_run (item_id, state, queries_json) VALUES
+    (1, 'needs-review', '{}'), (2, 'needs-review', '{}'), (3, 'needs-review', '{}')`);
+
+  const all = await (await app.request('/api/review-queue', {}, env)).json();
+  assert.equal(all.queue.length, 3, 'unscoped is the whole queue');
+  const dance = await (await app.request('/api/review-queue?list=dance', {}, env)).json();
+  assert.deepEqual(dance.queue.map((q) => q.item_id), [2]);
+  assert.equal(dance.queue[0].list, 'dance', 'the card can say which list it is on');
+  const unsorted = await (await app.request('/api/review-queue?list=unsorted', {}, env)).json();
+  assert.deepEqual(unsorted.queue.map((q) => q.item_id), [3]);
+
+  const stats = await (await app.request('/api/match-stats?list=classical', {}, env)).json();
+  assert.equal(stats.itemsNeedingReview, 1);
+  assert.deepEqual(stats.byState, [{ state: 'needs-review', n: 1 }]);
+  assert.equal(stats.unmatched, 0);
+  const everything = await (await app.request('/api/match-stats', {}, env)).json();
+  assert.equal(everything.itemsNeedingReview, 3, 'and unscoped still counts everything');
+
+  // A misspelt list is refused rather than quietly widened to everything.
+  assert.equal((await app.request('/api/review-queue?list=jazz', {}, env)).status, 400);
+  assert.equal((await app.request('/api/match-stats?list=jazz', {}, env)).status, 400);
+});
+
+test('FOUR-LISTS: a disc can be moved between lists from the browse screen, and only to a real one', async () => {
+  const env = editEnv();
+  await post(env, { clientId: 'c1', catnoRaw: 'SXL 6113', list: 'classical' });
+
+  const moved = await edit(env, 1, { entity: 'item', field: 'list', value: 'selling', confirmedBy: 'Joe' });
+  assert.equal(moved.status, 200);
+  assert.equal(env.DB.raw.prepare('SELECT list FROM item WHERE id = 1').get().list, 'selling');
+  const prov = env.DB.raw.prepare(
+    "SELECT source, confirmed_by FROM field_source WHERE entity = 'item' AND field = 'list'").get();
+  assert.deepEqual({ ...prov }, { source: 'shelf', confirmed_by: 'Joe' }, 'a move is a confirmed shelf fact with a name on it');
+
+  const bad = await edit(env, 1, { entity: 'item', field: 'list', value: 'jazz', confirmedBy: 'Joe' });
+  assert.equal(bad.status, 400);
+  assert.equal(env.DB.raw.prepare('SELECT list FROM item WHERE id = 1').get().list, 'selling', 'and nothing moved');
+
+  const cleared = await edit(env, 1, { entity: 'item', field: 'list', value: null, confirmedBy: 'Joe' });
+  assert.equal(cleared.status, 200, 'taking a disc off every list is allowed — unsorted is a true state');
+  assert.equal(env.DB.raw.prepare('SELECT list FROM item WHERE id = 1').get().list, null);
+});

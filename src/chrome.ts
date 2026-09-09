@@ -8,6 +8,8 @@
  * exactly one screen.
  */
 
+import { choiceLabel, isList, isListChoice, LISTS, type ListChoice } from './lists.ts';
+
 /**
  * Where the screens are, named once.
  *
@@ -104,6 +106,87 @@ export function watchSystemTheme(): void {
   });
 }
 
+/* ── The list in view (FOUR-LISTS) ────────────────────────────────
+ *
+ * Four lists — classical, selling, dance, general — and one selector
+ * on every screen saying which of them is being looked at. It is a
+ * DEVICE setting, like the theme and the name: two people can walk two
+ * crates at once, and a phone in the dance crate must not change what
+ * the desk is reviewing. Stored beside the theme. '' means all of
+ * them; `unsorted` means the rows that are on none yet.
+ *
+ * Capture is the screen where it matters most — a crate filed on the
+ * wrong list is twenty rows to move by hand — so it is in the header
+ * there too, and `main.ts` refuses to file a disc while the choice is
+ * not one of the four.
+ */
+const LIST_KEY = 'vs.list';
+
+export const storedList = (): ListChoice => {
+  const v = read(LIST_KEY);
+  return isListChoice(v) ? v : '';
+};
+
+/**
+ * Change the list in view and tell the screen.
+ *
+ * An event rather than a callback, because the screens rebuild
+ * themselves from strings and the selector goes with them: whoever is
+ * listening on `window` survives the rebuild.
+ */
+export function setList(choice: ListChoice): void {
+  write(LIST_KEY, choice);
+  dispatchEvent(new CustomEvent('vs:list', { detail: choice }));
+}
+
+export interface ListPickOptions {
+  /** Only the four lists: capture cannot file a disc on "all". */
+  concrete?: boolean;
+  /** Per-choice counts, where the screen has them. */
+  counts?: Partial<Record<ListChoice, number>>;
+}
+
+/**
+ * The selector, as a string, for the same reason the header is one.
+ *
+ * A native <select>: it opens the platform's own picker, which is the
+ * one control a gloved thumb in a loft can work, and it is what "a
+ * drop-down" means to the person who asked for one.
+ *
+ * `unsorted` is offered only while it is true of something — a count
+ * of zero hides it, and a screen with no counts shows it, since it
+ * cannot know. It is never offered where a disc is being filed.
+ */
+export function listPickHtml(opts: ListPickOptions = {}): string {
+  const current = storedList();
+  const choices: ListChoice[] = opts.concrete ? [...LISTS] : ['', ...LISTS, 'unsorted'];
+  const shown = choices.filter((c) => c !== 'unsorted' || current === 'unsorted'
+    || opts.counts?.unsorted === undefined || opts.counts.unsorted > 0);
+  // A concrete picker with nothing chosen yet shows a blank line, so
+  // the first list is not silently selected by being first.
+  const blank = opts.concrete && !isList(current)
+    ? '<option value="" selected disabled>Choose a list…</option>' : '';
+  return `<label class="listpick"><span class="lp-label">List</span>
+    <select aria-label="Which list to look at">${blank}${shown.map((c) => {
+    const n = opts.counts?.[c];
+    const label = choiceLabel(c) + (n === undefined ? '' : ` · ${n.toLocaleString('en-GB')}`);
+    return `<option value="${c}"${c === current ? ' selected' : ''}>${esc(label)}</option>`;
+  }).join('')}</select></label>`;
+}
+
+/**
+ * One handler for every selector, bound once by delegation: the
+ * screens rebuild their headers from strings, so a listener on the
+ * element itself would be lost at the next render.
+ */
+function installListPick(): void {
+  document.addEventListener('change', (e) => {
+    const el = e.target;
+    if (!(el instanceof HTMLSelectElement) || !el.closest('.listpick')) return;
+    if (isListChoice(el.value)) setList(el.value);
+  });
+}
+
 /* ── The mark ─────────────────────────────────────────────────────
  * A record: one groove, one label, off-centre so it reads as a disc
  * rather than a target. Inline so it inherits `currentColor` and
@@ -121,6 +204,8 @@ export interface HeaderOptions {
   title: string;
   /** Right-hand side: counts, controls. Trusted HTML from the caller. */
   aside?: string;
+  /** The list selector (FOUR-LISTS): on by default; `false` hides it. */
+  list?: ListPickOptions | false;
 }
 
 /**
@@ -131,10 +216,12 @@ export function headerHtml(opts: HeaderOptions): string {
   const home = opts.here === 'home'
     ? `<span class="home">${MARK}<span>Vinyl sorter</span></span>`
     : `<a class="home" href="${ROUTES.home}" title="Home — press g then h">${MARK}<span>Home</span></a>`;
+  const pick = opts.list === false ? '' : listPickHtml(opts.list ?? {});
   return `<div class="appbar">
     ${home}
     <h1>${esc(opts.title)}</h1>
     <div class="spacer"></div>
+    ${pick}
     ${opts.aside ?? ''}
   </div>`;
 }
@@ -226,6 +313,16 @@ export function installKeys(screenKeys: KeyHelp[] = []): void {
       if (box) { e.preventDefault(); box.focus(); box.select(); }
       return;
     }
+    if (key === 'l') {
+      // The list selector, wherever the screen put it. Focusing is
+      // enough: the arrow keys and Space take it from there.
+      // A cast rather than the generic: with @cloudflare/workers-types
+      // in scope, HTMLRewriter's Element merges into the DOM one and
+      // HTMLSelectElement no longer satisfies it (its `remove` differs).
+      const pick = document.querySelector('.listpick select') as HTMLSelectElement | null;
+      if (pick) { e.preventDefault(); pick.focus(); }
+      return;
+    }
     if (key === 'escape') {
       const open = document.querySelector<HTMLDialogElement>('dialog[open]');
       if (open) { e.preventDefault(); open.close(); }
@@ -240,6 +337,7 @@ const GLOBAL_KEYS: KeyHelp[] = [
   { keys: 'g c', what: 'The collection' },
   { keys: 'g s', what: 'Settings' },
   { keys: '/', what: 'Jump to the search box' },
+  { keys: 'l', what: 'Change the list in view' },
   { keys: '?', what: 'This card' },
   { keys: 'Esc', what: 'Close what is open, or leave the field' },
 ];
@@ -285,4 +383,5 @@ export function bootChrome(screenKeys: KeyHelp[] = []): void {
   applyDensity();
   watchSystemTheme();
   installKeys(screenKeys);
+  installListPick();
 }

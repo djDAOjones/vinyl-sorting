@@ -11,6 +11,7 @@ import { parseResolve, resolveRun } from './review.ts';
 import { resolveCapturer } from '../src/who.ts';
 import { applyEdit, parseEdit, parsePromote, promoteReading, tokenMatches } from './edit.ts';
 import { exportCsv, exportJson, readSettings, writeSettings } from './admin.ts';
+import { isListChoice, LIST_ERROR, LISTS } from '../src/lists.ts';
 
 /**
  * Vinyl sorter Worker.
@@ -31,6 +32,27 @@ import { exportCsv, exportJson, readSettings, writeSettings } from './admin.ts';
 
 const MAX_PHOTO_BYTES = 12 * 1024 * 1024;
 const PHOTO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic']);
+
+/**
+ * The list a read is scoped to, from `?list=` (FOUR-LISTS).
+ *
+ * Absent means every list. `unsorted` means the rows that have none —
+ * a phone on the previous build files there, and the hub has to be
+ * able to count them. Anything else is REFUSED rather than read as
+ * "all": a misspelt list silently widening to the whole collection is
+ * the kind of quiet wrong answer this Worker exists not to give.
+ *
+ * `pred` is a complete predicate over the `item i` alias every reading
+ * query already has, so it drops into a WHERE or an AND unchanged.
+ */
+const listScope = (raw: string | undefined):
+{ ok: true; pred: string; args: string[] } | { ok: false } => {
+  const v = raw ?? '';
+  if (!isListChoice(v)) return { ok: false };
+  if (v === '') return { ok: true, pred: '1 = 1', args: [] };
+  if (v === 'unsorted') return { ok: true, pred: 'i.list IS NULL', args: [] };
+  return { ok: true, pred: 'i.list = ?', args: [v] };
+};
 
 export function createApp() {
   const app = new Hono<{ Bindings: Env }>();
@@ -158,7 +180,7 @@ export function createApp() {
     // holds today and nothing enforces it, so the newest is chosen
     // explicitly instead of relying on that.
     const { results } = await c.env.DB.prepare(
-      `SELECT i.id, i.crate, i.position, i.media_grade, i.sleeve_grade, i.decision,
+      `SELECT i.id, i.list, i.crate, i.position, i.media_grade, i.sleeve_grade, i.decision,
               i.captured_by, i.captured_at, i.import_ref, i.last_verified_at,
               c.catno_raw, c.label_raw, c.name_raw, c.title_raw, c.year_raw,
               r.discogs_id, r.label AS release_label, r.title AS release_title,
@@ -392,10 +414,14 @@ export function createApp() {
     // Skipped items leave the default queue but are re-queueable:
     // re-verification is a normal operation, not a migration.
     const includeSkipped = c.req.query('include') === 'skipped';
+    // One list at a time, when asked: the device walking the dance
+    // crate reviews the dance crate.
+    const scope = listScope(c.req.query('list'));
+    if (!scope.ok) return c.json({ error: LIST_ERROR }, 400);
     const { results } = await c.env.DB.prepare(
       `SELECT m.id AS run_id, m.item_id, m.state, m.ran_at, m.queries_json,
               c.catno_raw, c.label_raw, c.title_raw, c.name_raw,
-              i.crate, i.position, i.last_verified_at,
+              i.crate, i.position, i.last_verified_at, i.list,
               ${named
     // The photographs of the record being judged. A match cannot be
     // checked against a disc you cannot see — which is what the
@@ -419,9 +445,10 @@ export function createApp() {
           -- exists.
           AND m.id = (SELECT MAX(m2.id) FROM match_run m2 WHERE m2.item_id = i.id)
           AND (d.id IS NULL OR (? = 1 AND d.choice = 'skip'))
+          AND ${scope.pred}
         ORDER BY m.item_id
         LIMIT ?`,
-    ).bind(includeSkipped ? 1 : 0, limit).all();
+    ).bind(includeSkipped ? 1 : 0, ...scope.args, limit).all();
 
     // D1 allows at most 100 bound parameters per query, so the id list
     // is chunked rather than the page size being capped. Local SQLite
@@ -465,17 +492,49 @@ export function createApp() {
     return c.json(result);
   });
 
+  /**
+   * How many discs are on each list, for the selector to say so
+   * (FOUR-LISTS).
+   *
+   * `unsorted` is counted rather than hidden: a phone on the previous
+   * build files its captures with no list, and a count on the hub is
+   * what says whether anything is slipping through. It is zero today
+   * and should stay zero; the number exists so that the day it is not,
+   * somebody notices.
+   */
+  app.get('/api/lists', async (c) => {
+    const { results } = await c.env.DB.prepare(
+      'SELECT list, COUNT(*) AS n FROM item GROUP BY list').all();
+    const counts: Record<string, number> = Object.fromEntries([...LISTS, 'unsorted'].map((l) => [l, 0]));
+    let total = 0;
+    for (const r of results as { list: string | null; n: number }[]) {
+      counts[r.list ?? 'unsorted'] = r.n;
+      total += r.n;
+    }
+    return c.json({ lists: LISTS, counts, total });
+  });
+
   /** Match statistics, so a run can be judged without reading rows. */
   app.get('/api/match-stats', async (c) => {
+    // Every number below is scoped the same way, through `item i`, so
+    // the hub's figures agree with each other whichever list it is
+    // showing. `byState` joins the run to its item for that reason
+    // alone; unscoped, the join changes nothing.
+    const scope = listScope(c.req.query('list'));
+    if (!scope.ok) return c.json({ error: LIST_ERROR }, 400);
     const { results } = await c.env.DB.prepare(
-      'SELECT state, COUNT(*) AS n FROM match_run GROUP BY state').all();
+      `SELECT m.state, COUNT(*) AS n FROM match_run m JOIN item i ON i.id = m.item_id
+        WHERE ${scope.pred} GROUP BY m.state`).bind(...scope.args).all();
     const pending = await c.env.DB.prepare(
-      'SELECT COUNT(*) AS n FROM item i WHERE NOT EXISTS (SELECT 1 FROM match_run m WHERE m.item_id = i.id)',
-    ).first<{ n: number }>();
+      `SELECT COUNT(*) AS n FROM item i
+        WHERE NOT EXISTS (SELECT 1 FROM match_run m WHERE m.item_id = i.id) AND ${scope.pred}`,
+    ).bind(...scope.args).first<{ n: number }>();
     const reviewed = await c.env.DB.prepare(
-      'SELECT COUNT(*) AS n FROM review_decision').first<{ n: number }>();
+      `SELECT COUNT(*) AS n FROM review_decision d JOIN item i ON i.id = d.item_id WHERE ${scope.pred}`,
+    ).bind(...scope.args).first<{ n: number }>();
     const eligible = await c.env.DB.prepare(
-      'SELECT COUNT(*) AS n FROM v_decision_eligible_item').first<{ n: number }>();
+      `SELECT COUNT(*) AS n FROM v_decision_eligible_item e JOIN item i ON i.id = e.id WHERE ${scope.pred}`,
+    ).bind(...scope.args).first<{ n: number }>();
     // ITEMS waiting, not RUNS waiting, and the two stopped being the
     // same number when re-running became a normal operation. `byState`
     // is deliberately left as a histogram of runs — it is how a run is
@@ -488,8 +547,9 @@ export function createApp() {
           AND NOT EXISTS (SELECT 1 FROM review_decision d
                            WHERE d.match_run_id = (SELECT MAX(m2.id) FROM match_run m2
                                                     WHERE m2.item_id = i.id)
-                             AND d.choice <> 'skip')`,
-    ).first<{ n: number }>();
+                             AND d.choice <> 'skip')
+          AND ${scope.pred}`,
+    ).bind(...scope.args).first<{ n: number }>();
     return c.json({
       byState: results, unmatched: pending?.n ?? 0,
       reviewed: reviewed?.n ?? 0, decisionEligible: eligible?.n ?? 0,

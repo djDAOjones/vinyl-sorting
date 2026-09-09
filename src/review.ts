@@ -12,7 +12,8 @@
  */
 
 import { ensureCapturerCookie, rememberCapturer, resolveCapturer, storedCapturer } from './who.ts';
-import { bootChrome, esc, headerHtml, isTyping, parseJson as parse, toast } from './chrome.ts';
+import { bootChrome, esc, headerHtml, isTyping, parseJson as parse, storedList, toast } from './chrome.ts';
+import { choiceLabel, isList, LIST_LABEL } from './lists.ts';
 
 const app = document.getElementById('review')!;
 const API = '/api';
@@ -26,6 +27,7 @@ interface QueueItem {
   catno_raw: string | null; label_raw: string | null; title_raw: string | null; name_raw: string | null;
   crate: string | null; position: string | null; last_verified_at: string | null;
   photo_keys: string | null;
+  list: string | null;
   candidates: Candidate[];
 }
 
@@ -61,7 +63,12 @@ async function load(): Promise<void> {
   // against a disc you cannot see is what produced two confirmations
   // made blind on 2026-08-31.
   const who = storedCapturer();
-  const res = await fetch(`${API}/review-queue?limit=200`,
+  // Scoped to the list in view (FOUR-LISTS): the device walking the
+  // dance crate reviews the dance crate, and "all" is the whole queue.
+  const q = new URLSearchParams({ limit: '200' });
+  const scope = storedList();
+  if (scope) q.set('list', scope);
+  const res = await fetch(`${API}/review-queue?${q}`,
     who ? { headers: { 'x-capturer': who } } : {});
   queue = (await res.json() as { queue: QueueItem[] }).queue;
   cursor = 0;
@@ -91,6 +98,7 @@ function render(): void {
           ${field('Title', item.title_raw)}
           ${field('Name', item.name_raw)}
           ${field('Crate', [item.crate, item.position].filter(Boolean).join(' · '))}
+          ${field('List', isList(item.list) ? LIST_LABEL[item.list] : null)}
         </dl>
         ${photosHtml(item)}
       </section>
@@ -337,7 +345,7 @@ function renderDone(): void {
   app.innerHTML = `
     ${headerHtml({ here: 'review', title: 'Resolve entries' })}
     <div class="done">
-      <strong>Queue clear</strong>
+      <strong>Queue clear${storedList() ? ` — ${esc(choiceLabel(storedList()))}` : ''}</strong>
       ${resolvedCount} resolved this session. Re-verification is a normal operation —
       skipped items come back with <code>?include=skipped</code>.
     </div>`;
@@ -422,3 +430,5 @@ addEventListener('keydown', (e) => {
 ensureCapturerCookie();
 bootChrome(SCREEN_KEYS);
 void load();
+// A different list is a different queue.
+addEventListener('vs:list', () => { void load(); });

@@ -27,7 +27,8 @@ import { startSync, drain } from './sync.ts';
 import {
   forgetCapturer, rememberCapturer, resolveCapturer, storedCapturer,
 } from './who.ts';
-import { bootChrome, headerHtml } from './chrome.ts';
+import { bootChrome, headerHtml, setList, storedList } from './chrome.ts';
+import { isList, LISTS, LIST_LABEL, type List } from './lists.ts';
 import { guideHtml, markGuideSeen, needsGuide } from './guidance.ts';
 
 const app = document.getElementById('app')!;
@@ -82,7 +83,7 @@ const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice
  */
 function renderWhoGate(): void {
   app.innerHTML = `
-    ${headerHtml({ here: 'capture', title: 'Add vinyl',
+    ${headerHtml({ here: 'capture', title: 'Add vinyl', list: false,
     aside: '<div class="tally" id="status">queue…</div>' })}
 
     <fieldset>
@@ -120,14 +121,56 @@ function renderWhoGate(): void {
   void refreshStatus();
 }
 
+/**
+ * The second gate: which list is this crate on? (FOUR-LISTS)
+ *
+ * Once per device, like the name, and then changeable from the header
+ * — a crate is walked on one list, so the choice is made per crate
+ * rather than per disc, and nothing about it goes between the shutter
+ * and Queue it. Four buttons rather than the selector, because the
+ * first answer is given with a thumb in a loft and a native picker is
+ * two taps where a button is one.
+ *
+ * It is a fact about the crate, chosen deliberately and shown in the
+ * header of every screen — which is what separates it from the sticky
+ * crate field that was removed: that one filled itself in unseen.
+ */
+function renderListGate(): void {
+  app.innerHTML = `
+    ${headerHtml({ here: 'capture', title: 'Add vinyl', list: false,
+    aside: '<div class="tally" id="status">queue…</div>' })}
+
+    <fieldset>
+      <legend>Which list is this crate on?</legend>
+      <div class="listgate">
+        ${LISTS.map((l) => `<button type="button" class="btn btn-ghost btn-block" data-list="${l}">${
+    LIST_LABEL[l]}</button>`).join('')}
+      </div>
+      <p class="note">Every disc you file goes on this list until you change it, and it stays
+        in the header, one tap away. A disc filed on the wrong list can be moved from the
+        collection screen.</p>
+    </fieldset>
+
+    <div id="flash"></div>`;
+  for (const btn of app.querySelectorAll<HTMLButtonElement>('button[data-list]')) {
+    btn.addEventListener('click', () => {
+      setList(btn.dataset.list as List);
+      render();
+    });
+  }
+  void refreshStatus();
+}
+
 function render(): void {
   // No name, no capture screen. The queue drains regardless — see
   // `renderWhoGate`.
   const capturer = storedCapturer();
   if (!capturer) return renderWhoGate();
+  // No list, no capture screen either — see `renderListGate`.
+  if (!isList(storedList())) return renderListGate();
 
   app.innerHTML = `
-    ${headerHtml({ here: 'capture', title: 'Add vinyl',
+    ${headerHtml({ here: 'capture', title: 'Add vinyl', list: { concrete: true },
     aside: `<button class="whoTag" id="guideBtn" type="button"
         title="What to photograph, and in what order">?</button>
       <button class="whoTag" id="whoTag" type="button"
@@ -681,6 +724,11 @@ function readFields(): Record<string, string> {
   // a name a person typed on this phone and the roster accepted. A
   // field that is not on the page cannot un-type it.
   if (!out.capturedBy) out.capturedBy = storedCapturer() ?? '';
+  // The list is the device's current choice, never a box: it is set
+  // once per crate in the header, and a box between the shutter and
+  // Queue it is a reason to stop cataloguing (FOUR-LISTS).
+  const list = storedList();
+  out.list = isList(list) ? list : '';
   return out;
 }
 
@@ -691,6 +739,11 @@ async function save(from: 'form' | 'camera' = 'form'): Promise<void> {
   const fields = readFields();
   if (!photos.length && !fields.catnoRaw?.trim()) {
     return flash('Photograph the label, or type a catalogue number.', 'err');
+  }
+  // The gate makes this unreachable; it stays because a disc filed on
+  // no list is exactly the row the gate exists to prevent.
+  if (!isList(fields.list)) {
+    return flash('Choose which list this crate is on — it is in the header.', 'err');
   }
   // A double tap on a phone is one gesture, and each pass mints its own
   // clientId — so the Worker's idempotency cannot help, and the second

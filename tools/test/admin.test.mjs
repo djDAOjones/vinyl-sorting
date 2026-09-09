@@ -214,3 +214,14 @@ test('resolving the newest run clears the item from the queue', async () => {
   assert.deepEqual(queue, [],
     'the older unresolved run must NOT resurrect a disc a person has settled');
 });
+
+test('FOUR-LISTS: the CSV carries which list each disc is on', async () => {
+  const env = makeEnv();
+  env.DB.raw.exec("INSERT INTO item (crate, list) VALUES ('B4', 'dance'), ('B4', NULL)");
+  const csv = await exportCsv(env);
+  const [head, one, two] = csv.trim().split('\n');
+  const col = head.split(',').indexOf('list');
+  assert.ok(col > 0, 'the column is in the header');
+  assert.equal(one.split(',')[col], '"dance"');
+  assert.equal(two.split(',')[col], '""', 'unsorted is an empty cell, not a word');
+});

@@ -1,4 +1,5 @@
 import type { Env } from './env.ts';
+import { isList, LISTS } from '../src/lists.ts';
 
 /**
  * Correcting a reading, and confirming one.
@@ -40,7 +41,10 @@ export const CAPTURE_FIELDS = [
   'catno_raw', 'label_raw', 'name_raw', 'title_raw', 'year_raw', 'matrix_runout',
 ] as const;
 
-export const ITEM_FIELDS = ['crate', 'position', 'media_grade', 'sleeve_grade', 'notes'] as const;
+// `list` is here because moving a disc between the four lists is a
+// shelf fact a person asserts — it was on the wrong pile — and the
+// browse screen is where a wrong filing gets noticed (FOUR-LISTS).
+export const ITEM_FIELDS = ['crate', 'position', 'media_grade', 'sleeve_grade', 'notes', 'list'] as const;
 
 const GRADES = ['M', 'NM', 'VG+', 'VG', 'G', 'P'];
 
@@ -89,6 +93,11 @@ export function parseEdit(body: unknown): { ok: true; value: EditInput } | { ok:
     if ((field === 'media_grade' || field === 'sleeve_grade') && value !== null
       && !GRADES.includes(value)) {
       return { ok: false, error: `${field} must be a Goldmine grade: ${GRADES.join(', ')}` };
+    }
+    // Null is allowed: taking a disc off every list is a true state
+    // (unsorted), where a fifth list would be an invented one.
+    if (field === 'list' && value !== null && !isList(value)) {
+      return { ok: false, error: `list must be one of ${LISTS.join(', ')}` };
     }
   }
 

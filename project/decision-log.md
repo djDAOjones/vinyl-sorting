@@ -2,6 +2,60 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-09-09 — FOUR-LISTS: one column, four lists, and a selector on every screen
+
+**Decision:** the four lists the collection is kept in — classical,
+selling, dance, general — are one nullable column on `item`, not four
+tables, and one selector, the same on every screen, says which list is
+in view. It is a DEVICE setting like the theme, so two people can walk
+two crates at once and a phone in the dance crate cannot change what
+the desk is reviewing.
+
+**Null means unsorted, and there is no default.** A phone on the
+previous build sends no list, and refusing it would give the offline
+queue a way to fail; defaulting would file a disc on a list nobody
+chose — the sticky-crate fault again. So the schema tolerates an
+absent list, the hub counts the unsorted, and the selector offers them
+while any exist. The interface will not file a NEW disc without one:
+capture asks once per device which list the crate is on — four
+buttons, answered with a thumb — and the choice stays in the header
+rather than between the shutter and Queue it.
+
+**Every existing row is filed as classical by the migration.** All 446
+imported rows came off the two Classical sheets, and every app capture
+since was made for the classical project; the other lists had no way
+in. Imported rows carry `legacy` provenance for the value; app-captured
+rows carry none, because nobody asserted it, and browse says so.
+
+**`selling` is where a disc is filed, not what a session decided.**
+`item.decision` is M5's outcome; a record can sit on the classical list
+with a decision of sell until somebody moves it. Two columns, two
+facts, and nothing couples them yet.
+
+**Every read takes `?list=` and refuses a fifth word.** The review
+queue and the match stats scope through `item i`, so the hub's numbers
+agree with each other; a misspelt list is a 400 rather than silently
+everything. Moving a disc goes through the existing field edit, behind
+the passphrase, as a confirmed `shelf` value with a name on it — with
+a select rather than a box, since a closed set is not a spelling test.
+
+**The matcher is untouched.** A dance 12" carries `Vinyl` in its
+Discogs format, so the scorer already reads it as vinyl; nothing about
+matching depends on the list.
+
+**Built in a clean clone, not the OneDrive tree.** Sync was paused and
+cloud-only files timed out on read — the Worker's route table, the
+chrome, 815 files under node_modules — so the work was done in a clone
+of the pushed branch and pushed back. The eight photo-pack tests read a
+JPEG from the gitignored archive and fail wherever it is absent; with
+the archive linked in they pass.
+
+**Verify:** npm run gate, 298 passing, 12 new tests across schema,
+Worker and export. In the browser against the demo Worker: the hub's
+counts follow the selector; browse filters by list and moves a disc
+with the provenance shown; the review queue scopes and clears per
+list; capture gates on the first run and stamps the list.
+
 ## 2026-09-01 — MATCH-REVERIFY-SWEEP: order by the thing that moves
 
 **Decision:** when nothing is waiting to be matched for the first time,
