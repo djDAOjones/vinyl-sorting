@@ -13,8 +13,10 @@
  * buttons is a hub that shows nothing offline.
  */
 
-import { bootChrome, esc, listPickHtml, ROUTES, storedList, storedTheme, toast } from './chrome.ts';
-import type { ListChoice } from './lists.ts';
+import {
+  bootChrome, esc, listPickHtml, rememberLists, restoreListFocus, ROUTES, storedList, storedTheme, toast,
+} from './chrome.ts';
+import type { ListChoice, ListDef } from './lists.ts';
 import { ensureCapturerCookie, forgetCapturer, storedCapturer } from './who.ts';
 import { allEntries } from './queue.ts';
 import { summarise } from './queue-logic.ts';
@@ -32,7 +34,7 @@ interface Stats {
 }
 
 /** How many discs are on each list, from `/api/lists` (FOUR-LISTS). */
-interface Lists { counts: Partial<Record<ListChoice, number>>; total: number }
+interface Lists { lists: ListDef[]; counts: Partial<Record<ListChoice, number>>; total: number }
 
 let stats: Stats | null = null;
 let lists: Lists | null = null;
@@ -158,6 +160,7 @@ function render(): void {
     toast('Name cleared. The next screen will ask.');
     render();
   });
+  restoreListFocus();
 }
 
 const stat = (n: number | null, label: string, kind = ''): string => `
@@ -186,7 +189,7 @@ async function loadCounts(): Promise<void> {
     // is worse than a blank.
     if (scope !== storedList()) return;
     if (s) stats = s;
-    if (l) lists = l;
+    if (l) { lists = l; rememberLists(l.lists); }
     render();
   } catch { /* the tiles work without them */ }
 }

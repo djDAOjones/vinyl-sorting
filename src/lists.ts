@@ -1,48 +1,74 @@
 /**
- * The four lists (FOUR-LISTS).
+ * The lists (FOUR-LISTS, then NEILS-LIST).
  *
- * Shared by the client and the Worker on purpose, the way the roster
- * in `who.ts` is: one set of names, so the selector on the screen and
- * the check the Worker enforces cannot disagree about what a list is
- * called. `schema/005-lists.sql` carries the same four words in its
- * CHECK, and a test holds the two copies together.
+ * They started as four words in a CHECK constraint. The first request
+ * after that shipped was for a fifth — a tester's own list — and the
+ * archive's crate labels run to thirty, so a list is something this
+ * household names as it goes. Every new one being a migration is the
+ * wrong shape for that. Lists are DATA now: the `list` table is the
+ * authority, the Worker validates against it, and a new one is a row
+ * (`POST /api/lists`, behind the passphrase) rather than a release.
  *
- * They are LISTS, not genres. Three of them are genres of a sort and
- * the fourth — selling — is a pile, and the word that covers all four
- * is the one the maintainer used: "the classical, selling, dance and
- * general lists". A disc is on exactly one at a time, or on none yet.
+ * What stays in code is the SHAPE of a key, and the set migration 006
+ * seeds — which the client keeps as its offline fallback. A phone in a
+ * loft with no signal still has to file a disc on a list, so it uses
+ * the lists it last saw, and these until it has seen any.
  *
  * `selling` is where a disc is FILED, which is a different fact from
  * `item.decision` — what a listening session decided about it (M5).
- * A record can sit on the classical list with a decision of sell until
- * somebody physically moves it; the two columns say two things.
  */
-export const LISTS = ['classical', 'selling', 'dance', 'general'] as const;
+export interface ListDef { key: string; label: string }
 
-export type List = (typeof LISTS)[number];
+/** What migration 006 seeds, in order. A fallback on the client, never the authority. */
+export const BUILT_IN: readonly ListDef[] = [
+  { key: 'classical', label: 'Classical' },
+  { key: 'selling', label: 'Selling' },
+  { key: 'dance', label: 'Dance' },
+  { key: 'general', label: 'General' },
+  { key: 'neils', label: "Neil's" },
+];
 
-export const LIST_LABEL: Record<List, string> = {
-  classical: 'Classical',
-  selling: 'Selling',
-  dance: 'Dance',
-  general: 'General',
-};
-
-export const isList = (v: unknown): v is List =>
-  typeof v === 'string' && (LISTS as readonly string[]).includes(v);
+export const BUILT_IN_KEYS: readonly string[] = BUILT_IN.map((l) => l.key);
 
 /**
- * What a screen may be looking at: one list, the rows on none yet
- * (`unsorted`), or everything (`''`).
+ * What a screen may be looking at: a list's key, the rows on none yet
+ * (`unsorted`), or everything (`''`). The two words are reserved, so no
+ * list can take them as a key.
  */
-export type ListChoice = List | 'unsorted' | '';
+export type ListChoice = string;
+export const RESERVED = new Set(['', 'unsorted', 'all']);
 
-export const isListChoice = (v: unknown): v is ListChoice =>
-  v === '' || v === 'unsorted' || isList(v);
+/** A key: lower case, starts with a letter, at most 40 of [a-z0-9-], not a reserved word. */
+export const KEY_SHAPE = /^[a-z][a-z0-9-]{0,39}$/;
+export const isListKey = (v: unknown): v is string =>
+  typeof v === 'string' && KEY_SHAPE.test(v) && !RESERVED.has(v);
+
+/** A label is what a person calls the list: 1–40 characters, whitespace folded. */
+export const LABEL_MAX = 40;
+export function cleanLabel(v: unknown): string | null {
+  if (typeof v !== 'string') return null;
+  const t = v.trim().replace(/\s+/g, ' ');
+  return t.length >= 1 && t.length <= LABEL_MAX ? t : null;
+}
+
+/**
+ * The key a label gets: "Neil's" → `neils`, "Hard House (sell)" →
+ * `hard-house-sell`. Null when nothing usable survives — a label of
+ * punctuation, or a reserved word.
+ */
+export function slugOf(label: string): string | null {
+  const s = label.toLowerCase().normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')   // accents, once decomposed
+    .replace(/['\u2019]/g, '')          // an apostrophe joins: Neil's → neils
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').replace(/^[^a-z]+/, '')
+    .slice(0, 40).replace(/-+$/, '');
+  return isListKey(s) ? s : null;
+}
+
+/** The label for a key, given the lists in force; the key itself when unknown. */
+export const labelFor = (key: string, lists: readonly ListDef[]): string =>
+  lists.find((l) => l.key === key)?.label ?? key;
 
 /** The label for a choice, including the two that are not lists. */
-export const choiceLabel = (c: ListChoice): string =>
-  (c === '' ? 'All lists' : c === 'unsorted' ? 'Unsorted' : LIST_LABEL[c]);
-
-/** The refusal, worded once, for every route that takes `?list=`. */
-export const LIST_ERROR = `list must be one of ${LISTS.join(', ')}, or unsorted`;
+export const choiceLabelFor = (c: ListChoice, lists: readonly ListDef[]): string =>
+  (c === '' ? 'All lists' : c === 'unsorted' ? 'Unsorted' : labelFor(c, lists));

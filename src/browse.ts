@@ -33,9 +33,10 @@
 
 import { ensureCapturerCookie, storedCapturer } from './who.ts';
 import {
-  bootChrome, esc, headerHtml, parseJson as parse, storedList, toast,
+  bootChrome, choiceLabel, esc, headerHtml, isKnownList, knownLists, labelOf, parseJson as parse,
+  restoreListFocus, storedList, toast,
 } from './chrome.ts';
-import { choiceLabel, isList, LISTS, LIST_LABEL, type ListChoice } from './lists.ts';
+import type { ListChoice } from './lists.ts';
 
 /**
  * The header the photo route and the item detail both want.
@@ -225,7 +226,7 @@ const COLUMNS: Column[] = [
   { key: 'crate', label: 'crate', get: (r) => [r.crate, r.position].filter(Boolean).join(' · ') },
   // The list a disc is on (FOUR-LISTS). Unsorted is an empty cell, not
   // a word: it is the absence of a filing rather than a fifth list.
-  { key: 'list', label: 'list', get: (r) => (isList(r.list) ? LIST_LABEL[r.list] : null) },
+  { key: 'list', label: 'list', get: (r) => (isKnownList(r.list) ? labelOf(r.list) : r.list) },
   { key: 'matrix_runout', label: 'matrix', get: (r) => r.matrix_runout, mono: true },
   { key: 'media_grade', label: 'media', get: (r) => r.media_grade },
   { key: 'sleeve_grade', label: 'sleeve', get: (r) => r.sleeve_grade },
@@ -569,6 +570,7 @@ function render(): void {
 
   bindRows();
   if (openId !== null) void openDetail(openId);
+  restoreListFocus();
 }
 
 /** The column chooser. Order follows COLUMNS, not the order ticked. */
@@ -740,7 +742,7 @@ function wireEditing(panel: HTMLElement, id: number): void {
       editor.className = 'inline';
       editor.innerHTML = `${options
         ? `<select>${['', ...options].map((o) => `<option value="${esc(o)}"${o === before ? ' selected' : ''}>${
-          o ? esc(isList(o) ? LIST_LABEL[o] : o) : '— none'}</option>`).join('')}</select>`
+          o ? esc(labelOf(o)) : '— none'}</option>`).join('')}</select>`
         : `<input value="${esc(before)}" autocomplete="off" spellcheck="false">`}
         <button type="submit" class="tiny ok-save" title="Save">save</button>
         <button type="button" class="tiny cancel" title="Leave it alone">cancel</button>`;
@@ -771,7 +773,7 @@ function wireEditing(panel: HTMLElement, id: number): void {
         const ok = await write(`/items/${id}/field`, body);
         if (!ok) { restore(); return; }
         await afterWrite(value === before.trim() ? `${field} confirmed.`
-          : field === 'list' ? (isList(value) ? `Moved to ${LIST_LABEL[value]}.` : 'Taken off every list.')
+          : field === 'list' ? (value ? `Moved to ${labelOf(value)}.` : 'Taken off every list.')
             : `${field} corrected.`);
       });
     });
@@ -833,10 +835,10 @@ function detailHtml(d: Detail): string {
    */
   const listLine = (): string => {
     const raw = typeof item.list === 'string' ? item.list : '';
-    const shown = isList(raw) ? esc(LIST_LABEL[raw]) : '<span class="empty">unsorted</span>';
+    const shown = raw ? esc(labelOf(raw)) : '<span class="empty">unsorted</span>';
     return `<dt>List</dt><dd data-field-cell="item.list">${shown}<span class="ftools">
           <button type="button" class="tiny edit" data-entity="item" data-field="list"
-            data-value="${esc(raw)}" data-options="${LISTS.join(',')}" title="Move this disc to another list">✎</button>
+            data-value="${esc(raw)}" data-options="${esc(knownLists().map((l) => l.key).join(','))}" title="Move this disc to another list">✎</button>
           <button type="button" class="tiny ok" data-entity="item" data-field="list"
             title="Confirm this disc is on the right list">✓</button>
         </span><br>${mark(provOf('item', Number(item.id), 'list'))}</dd>`;

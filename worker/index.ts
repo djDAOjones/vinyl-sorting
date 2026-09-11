@@ -11,7 +11,7 @@ import { parseResolve, resolveRun } from './review.ts';
 import { resolveCapturer } from '../src/who.ts';
 import { applyEdit, parseEdit, parsePromote, promoteReading, tokenMatches } from './edit.ts';
 import { exportCsv, exportJson, readSettings, writeSettings } from './admin.ts';
-import { isListChoice, LIST_ERROR, LISTS } from '../src/lists.ts';
+import { addList, allLists, keysOf, listError, parseNewList } from './lists.ts';
 
 /**
  * Vinyl sorter Worker.
@@ -45,12 +45,12 @@ const PHOTO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/hei
  * `pred` is a complete predicate over the `item i` alias every reading
  * query already has, so it drops into a WHERE or an AND unchanged.
  */
-const listScope = (raw: string | undefined):
+const listScope = (raw: string | undefined, keys: readonly string[]):
 { ok: true; pred: string; args: string[] } | { ok: false } => {
   const v = raw ?? '';
-  if (!isListChoice(v)) return { ok: false };
   if (v === '') return { ok: true, pred: '1 = 1', args: [] };
   if (v === 'unsorted') return { ok: true, pred: 'i.list IS NULL', args: [] };
+  if (!keys.includes(v)) return { ok: false };
   return { ok: true, pred: 'i.list = ?', args: [v] };
 };
 
@@ -69,7 +69,7 @@ export function createApp() {
     let body: unknown;
     try { body = await c.req.json(); } catch { return c.json({ error: 'body must be JSON' }, 400); }
 
-    const parsed = parseCapture(body);
+    const parsed = parseCapture(body, keysOf(await allLists(c.env)));
     if (!parsed.ok) return c.json({ error: parsed.error }, 400);
 
     const { itemId, created } = await insertCapture(c.env, parsed.value);
@@ -104,10 +104,10 @@ export function createApp() {
    * BROWSE-PHOTOS, maintainer sign-off 2026-08-31: yes, serve them,
    * gated by the typed name.
    *
-   * SAY WHAT THIS GATE IS. The roster is six household first names and
+   * SAY WHAT THIS GATE IS. The roster is a handful of household first names and
    * it SHIPS IN THE CLIENT BUNDLE — `src/who.ts` says so itself, and
    * calls the name "a speed bump and an honest label on a row, not
-   * access control". Anyone who opens the JavaScript can read the six
+   * access control". Anyone who opens the JavaScript can read the
    * valid answers. So this stops a crawler and a stranger guessing a
    * URL; it does not stop anyone who looks. The maintainer took that
    * trade knowingly, having already settled OPEN-V1-AUTH as "no sign-in
@@ -329,7 +329,7 @@ export function createApp() {
   app.post('/api/items/:id{[0-9]+}/field', guard, async (c) => {
     let body: unknown;
     try { body = await c.req.json(); } catch { return c.json({ error: 'body must be JSON' }, 400); }
-    const parsed = parseEdit(body);
+    const parsed = parseEdit(body, keysOf(await allLists(c.env)));
     if (!parsed.ok) return c.json({ error: parsed.error }, 400);
 
     const result = await applyEdit(c.env, Number(c.req.param('id')), parsed.value);
@@ -416,8 +416,9 @@ export function createApp() {
     const includeSkipped = c.req.query('include') === 'skipped';
     // One list at a time, when asked: the device walking the dance
     // crate reviews the dance crate.
-    const scope = listScope(c.req.query('list'));
-    if (!scope.ok) return c.json({ error: LIST_ERROR }, 400);
+    const keys = keysOf(await allLists(c.env));
+    const scope = listScope(c.req.query('list'), keys);
+    if (!scope.ok) return c.json({ error: listError(keys) }, 400);
     const { results } = await c.env.DB.prepare(
       `SELECT m.id AS run_id, m.item_id, m.state, m.ran_at, m.queries_json,
               c.catno_raw, c.label_raw, c.title_raw, c.name_raw,
@@ -503,15 +504,32 @@ export function createApp() {
    * somebody notices.
    */
   app.get('/api/lists', async (c) => {
+    const lists = await allLists(c.env);
     const { results } = await c.env.DB.prepare(
       'SELECT list, COUNT(*) AS n FROM item GROUP BY list').all();
-    const counts: Record<string, number> = Object.fromEntries([...LISTS, 'unsorted'].map((l) => [l, 0]));
+    const counts: Record<string, number> = Object.fromEntries([...keysOf(lists), 'unsorted'].map((l) => [l, 0]));
     let total = 0;
     for (const r of results as { list: string | null; n: number }[]) {
       counts[r.list ?? 'unsorted'] = r.n;
       total += r.n;
     }
-    return c.json({ lists: LISTS, counts, total });
+    return c.json({ lists, counts, total });
+  });
+
+  /**
+   * A new list (NEILS-LIST). Behind the passphrase, because it changes
+   * what every device offers. The key is derived from the label on the
+   * Worker, and the name comes from the same header browse sends, so a
+   * list can say who made it.
+   */
+  app.post('/api/lists', guard, async (c) => {
+    let body: unknown;
+    try { body = await c.req.json(); } catch { return c.json({ error: 'body must be JSON' }, 400); }
+    const parsed = parseNewList(body);
+    if (!parsed.ok) return c.json({ error: parsed.error }, 400);
+    const made = await addList(c.env, parsed.value, resolveCapturer(c.req.header('x-capturer') ?? ''));
+    if (made === 'exists') return c.json({ error: `a list called ${parsed.value.label} already exists` }, 409);
+    return c.json({ list: made }, 201);
   });
 
   /** Match statistics, so a run can be judged without reading rows. */
@@ -520,8 +538,9 @@ export function createApp() {
     // the hub's figures agree with each other whichever list it is
     // showing. `byState` joins the run to its item for that reason
     // alone; unscoped, the join changes nothing.
-    const scope = listScope(c.req.query('list'));
-    if (!scope.ok) return c.json({ error: LIST_ERROR }, 400);
+    const keys = keysOf(await allLists(c.env));
+    const scope = listScope(c.req.query('list'), keys);
+    if (!scope.ok) return c.json({ error: listError(keys) }, 400);
     const { results } = await c.env.DB.prepare(
       `SELECT m.state, COUNT(*) AS n FROM match_run m JOIN item i ON i.id = m.item_id
         WHERE ${scope.pred} GROUP BY m.state`).bind(...scope.args).all();

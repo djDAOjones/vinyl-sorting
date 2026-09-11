@@ -446,6 +446,11 @@ a.link:hover { border-bottom-color: var(--accent); }
   border: 1px solid var(--line);
   border-radius: var(--r-full);
   cursor: pointer;
+  /* The only motion the selector has, and it is on the token: a
+     reduced-motion preference zeroes --dur and the border simply
+     changes. The picker itself is the platform's and animates however
+     the platform does. */
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 .listpick select:hover { border-color: var(--accent); }
 /* On a phone the header is already full — the way home, the title,

@@ -12,8 +12,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ROSTER, resolveCapturer } from '../../src/who.ts';
 
-test('the roster is the six people who capture, spelled once', () => {
-  assert.deepEqual([...ROSTER], ['Joe', 'Jen', 'Ro', 'Ivy', 'Jojo', 'Sue']);
+test('the roster is the people who capture, spelled once', () => {
+  // Six household names, and Neil, a tester (2026-09-11).
+  assert.deepEqual([...ROSTER], ['Joe', 'Jen', 'Ro', 'Ivy', 'Jojo', 'Sue', 'Neil']);
 });
 
 test('case and stray space are the typist’s problem, not the data’s', () => {

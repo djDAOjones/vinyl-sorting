@@ -11,10 +11,14 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { makeEnv, makeKv } from './helpers/bindings.mjs';
 import { createApp } from '../../worker/index.ts';
-import { parseCapture } from '../../worker/capture.ts';
+import { parseCapture as parseCaptureAgainst } from '../../worker/capture.ts';
+import { BUILT_IN_KEYS } from '../../src/lists.ts';
 import { BUDGETS, RateLimiter } from '../../worker/rate-limit.ts';
 
 const app = createApp();
+// The parser validates against the keys the route reads from the `list`
+// table; here the seeded set stands in for it.
+const parseCapture = (body) => parseCaptureAgainst(body, BUILT_IN_KEYS);
 const post = (env, body, path = '/api/captures') => app.request(path,
   { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }, env);
 
@@ -734,7 +738,8 @@ test('FOUR-LISTS: the counts per list say how many are on none', async () => {
   await post(env, { clientId: 'c3', catnoRaw: 'C', list: 'dance' });
   await post(env, { clientId: 'c4', catnoRaw: 'D' });
   const body = await (await app.request('/api/lists', {}, env)).json();
-  assert.deepEqual(body.counts, { classical: 2, selling: 0, dance: 1, general: 0, unsorted: 1 });
+  assert.deepEqual(body.counts, { classical: 2, selling: 0, dance: 1, general: 0, neils: 0, unsorted: 1 });
+  assert.deepEqual(body.lists.map((l) => l.key), [...BUILT_IN_KEYS], 'and the lists themselves, in order');
   assert.equal(body.total, 4);
 });
 
@@ -784,4 +789,41 @@ test('FOUR-LISTS: a disc can be moved between lists from the browse screen, and 
   const cleared = await edit(env, 1, { entity: 'item', field: 'list', value: null, confirmedBy: 'Joe' });
   assert.equal(cleared.status, 200, 'taking a disc off every list is allowed — unsorted is a true state');
   assert.equal(env.DB.raw.prepare('SELECT list FROM item WHERE id = 1').get().list, null);
+});
+
+// ── NEILS-LIST: a list is a row ───────────────────────────────────
+
+test('NEILS-LIST: a new list is a row behind the passphrase, and a capture may use it at once', async () => {
+  const env = editEnv();
+  const add = (body, token = SECRET) => app.request('/api/lists', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-capturer': 'Joe', ...(token ? { 'x-edit-token': token } : {}) },
+    body: JSON.stringify(body),
+  }, env);
+
+  assert.equal((await add({ label: 'Jazz' }, null)).status, 401, 'no passphrase, no list');
+
+  const made = await add({ label: '  Hard  House (sell) ' });
+  assert.equal(made.status, 201);
+  assert.deepEqual((await made.json()).list, { key: 'hard-house-sell', label: 'Hard House (sell)', position: 6 },
+    'the key is derived, the label is folded');
+  assert.equal(env.DB.raw.prepare("SELECT created_by FROM list WHERE key = 'hard-house-sell'").get().created_by, 'Joe');
+
+  assert.equal((await add({ label: "neil's" })).status, 409, 'the seeded list, spelled differently, is the same list');
+  assert.equal((await add({ label: 'Hard House (sell)' })).status, 409);
+  assert.equal((await add({ label: '!!!' })).status, 400, 'nothing usable for a key');
+  assert.equal((await add({ label: 'all' })).status, 400, 'a reserved word cannot be a list');
+  assert.equal((await add({ label: 'x'.repeat(41) })).status, 400);
+
+  // The route validates against the table, not a built-in set: the
+  // list that exists as of a second ago is accepted now.
+  assert.equal((await post(env, { clientId: 'c1', catnoRaw: 'A', list: 'hard-house-sell' })).status, 201);
+  assert.equal((await post(env, { clientId: 'c2', catnoRaw: 'B', list: 'jazz' })).status, 400, 'and one that does not exist is not');
+  const moved = await edit(env, 1, { entity: 'item', field: 'list', value: 'neils', confirmedBy: 'Joe' });
+  assert.equal(moved.status, 200, 'the seeded fifth list is real');
+
+  const body = await (await app.request('/api/lists', {}, env)).json();
+  assert.deepEqual(body.lists.map((l) => l.key), [...BUILT_IN_KEYS, 'hard-house-sell']);
+  assert.equal(body.counts.neils, 1);
+  assert.equal(body.counts['hard-house-sell'], 0);
 });

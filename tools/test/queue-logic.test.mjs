@@ -121,7 +121,10 @@ test('photos become the keys the Worker will store them under', () => {
 });
 
 test('the queued body is accepted by the Worker that will receive it', async () => {
-  const { parseCapture } = await import('../../worker/capture.ts');
+  const { parseCapture: parseCaptureAgainst } = await import('../../worker/capture.ts');
+  const { BUILT_IN_KEYS } = await import('../../src/lists.ts');
+  // The route validates against the `list` table; the seeded set stands in for it.
+  const parseCapture = (body) => parseCaptureAgainst(body, BUILT_IN_KEYS);
   // Photo-only: the photo-first case, typing nothing but the crate.
   const photoOnly = toRequestBody(entry({
     fields: { crate: 'B4' }, photos: [{ kind: 'label_a', key: 'x.jpg', blob: null }],

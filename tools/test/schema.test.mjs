@@ -10,7 +10,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { LISTS } from '../../src/lists.ts';
+import { BUILT_IN, BUILT_IN_KEYS } from '../../src/lists.ts';
 import { loadDataset } from '../load-dataset.mjs';
 
 import { applySchema } from './helpers/bindings.mjs';
@@ -20,8 +20,8 @@ const count = (/** @type {any} */ db, /** @type {string} */ t) => Number(one(db,
 
 test('every migration applies clean, in order', () => {
   const db = fresh();
-  assert.equal(Number(one(db, 'SELECT MAX(version) v FROM schema_migration').v), 5);
-  assert.equal(Number(one(db, 'SELECT COUNT(*) n FROM schema_migration').n), 5);
+  assert.equal(Number(one(db, 'SELECT MAX(version) v FROM schema_migration').v), 6);
+  assert.equal(Number(one(db, 'SELECT COUNT(*) n FROM schema_migration').n), 6);
 });
 
 test('a photo reading is its own source, and still cannot reach a decision', () => {
@@ -303,14 +303,16 @@ test('seed SQL escapes quotes rather than breaking on them', async () => {
 
 // ── FOUR-LISTS ────────────────────────────────────────────────────
 
-test('FOUR-LISTS: a disc is on one of four lists, or on none yet', () => {
+test('FOUR-LISTS: a disc is on one of the lists, or on none yet', () => {
   const db = fresh();
   db.exec("INSERT INTO item (crate) VALUES ('B4')");
   assert.equal(one(db, 'SELECT list FROM item').list, null, 'unsorted until somebody says');
-  for (const l of LISTS) db.exec(`UPDATE item SET list = '${l}'`);
-  assert.throws(() => db.exec("UPDATE item SET list = 'jazz'"), /CHECK constraint failed/,
-    'a fifth list is not a list');
-  assert.throws(() => db.exec("UPDATE item SET list = 'Classical'"), /CHECK constraint failed/,
+  for (const l of BUILT_IN_KEYS) db.exec(`UPDATE item SET list = '${l}'`);
+  // Since 006 the set is the `list` table rather than a CHECK, so an
+  // unknown list fails the foreign key rather than the constraint.
+  assert.throws(() => db.exec("UPDATE item SET list = 'jazz'"), /FOREIGN KEY constraint failed/,
+    'a list the table does not hold is not a list');
+  assert.throws(() => db.exec("UPDATE item SET list = 'Classical'"), /FOREIGN KEY constraint failed/,
     'one spelling, lower case');
 });
 
@@ -319,7 +321,7 @@ test('FOUR-LISTS: the backfill files every existing disc as classical, and says 
   // captures, none of them on any list. Apply 001-004, seed, then 005.
   const db = new DatabaseSync(':memory:');
   const files = readdirSync('schema').filter((n) => n.endsWith('.sql')).sort();
-  for (const f of files.filter((n) => !n.startsWith('005'))) db.exec(readFileSync(`schema/${f}`, 'utf8'));
+  for (const f of files.filter((n) => n < '005')) db.exec(readFileSync(`schema/${f}`, 'utf8'));
   db.exec("INSERT INTO item (import_ref) VALUES ('DG-0001'), ('capture:abc')");
   db.exec(readFileSync('schema/005-lists.sql', 'utf8'));
 
@@ -347,11 +349,61 @@ test('FOUR-LISTS: the backfill files every existing disc as classical, and says 
   assert.doesNotThrow(() => db.prepare('SELECT list FROM v_decision_eligible_item').all());
 });
 
-test('FOUR-LISTS: the four words in the schema are the four the client and Worker share', () => {
-  // One list of names in src/lists.ts, one CHECK in the migration. A
-  // fifth word in either is a list the other half cannot see.
-  const sql = readFileSync('schema/005-lists.sql', 'utf8');
-  const inCheck = /CHECK \(list IN \(([^)]*)\)\)/.exec(sql)?.[1]
-    .split(',').map((s) => s.trim().replace(/'/g, ''));
-  assert.deepEqual(inCheck, [...LISTS]);
+test('NEILS-LIST: the lists the migration seeds are the ones the client falls back to', () => {
+  // The client keeps BUILT_IN for a phone that has never been online;
+  // the table is the authority. The two must start equal or a phone's
+  // first capture could name a list the Worker has never heard of.
+  const db = fresh();
+  const seeded = db.prepare('SELECT key, label FROM list ORDER BY position').all().map((r) => ({ ...r }));
+  assert.deepEqual(seeded, [...BUILT_IN]);
+  assert.deepEqual(seeded.map((l) => l.label).slice(-1), ["Neil's"]);
+});
+
+test('NEILS-LIST: the column moves and every child of item survives it', () => {
+  // THE TEST THAT MATTERS. D1 keeps foreign keys on and a rename would
+  // rewrite every child to follow item_old, so a rebuild of item would
+  // cascade-delete the collection. 006 must therefore never drop or
+  // rename item; this seeds one of every child and counts them across.
+  const db = new DatabaseSync(':memory:');
+  const files = readdirSync('schema').filter((n) => n.endsWith('.sql')).sort();
+  for (const f of files.filter((n) => n < '006')) db.exec(readFileSync(`schema/${f}`, 'utf8'));
+  db.exec(`
+    INSERT INTO release (discogs_id) VALUES (12345);
+    INSERT INTO item (release_id, import_ref, list) VALUES (1, 'DG-0001', 'classical');
+    INSERT INTO capture (item_id, catno_raw) VALUES (1, 'SXL 6113');
+    INSERT INTO item_photo (item_id, kind, r2_key) VALUES (1, 'other', 'labels/x-1.jpg');
+    INSERT INTO raw_value (item_id, field, value) VALUES (1, 'label_raw', 'Decca');
+    INSERT INTO match_run (item_id, state) VALUES (1, 'needs-review');
+    INSERT INTO match_candidate (match_run_id, rank, discogs_id, score) VALUES (1, 1, 12345, 73);
+    INSERT INTO review_decision (match_run_id, item_id, choice, decided_by) VALUES (1, 1, 'skip', 'joe');
+    INSERT INTO field_source (entity, entity_id, field, source) VALUES ('item', 1, 'list', 'legacy');
+  `);
+  const tables = ['item', 'capture', 'item_photo', 'raw_value', 'match_run',
+    'match_candidate', 'review_decision', 'field_source'];
+  const before = Object.fromEntries(tables.map((t) => [t, count(db, t)]));
+
+  db.exec(readFileSync('schema/006-list-table.sql', 'utf8'));
+
+  const after = Object.fromEntries(tables.map((t) => [t, count(db, t)]));
+  assert.deepEqual(after, before, 'nothing cascaded');
+  assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), [], 'every child still points at its item');
+  assert.equal(one(db, 'SELECT list FROM item').list, 'classical', 'the value came across');
+  assert.equal(one(db, 'SELECT release_id FROM item').release_id, 1, 'and so did everything else');
+
+  const cols = db.prepare('PRAGMA table_info(item)').all().map((c) => c.name);
+  assert.ok(cols.includes('list') && !cols.includes('list_ref'), 'one list column, under its old name');
+  assert.ok(db.prepare('PRAGMA index_list(item)').all().some((i) => i.name === 'item_list'), 'still indexed');
+
+  // The CHECK is gone and the table is the authority.
+  db.exec("UPDATE item SET list = 'neils'");
+  assert.throws(() => db.exec("UPDATE item SET list = 'jazz'"), /FOREIGN KEY constraint failed/);
+  db.exec("INSERT INTO list (key, label, position) VALUES ('jazz', 'Jazz', 6)");
+  db.exec("UPDATE item SET list = 'jazz'");
+  // Removing a list unfiles its discs rather than refusing or deleting.
+  db.exec("DELETE FROM list WHERE key = 'jazz'");
+  assert.equal(one(db, 'SELECT list FROM item').list, null);
+  assert.equal(count(db, 'capture'), 1, 'and the disc is still here');
+
+  // The views were never touched and still see the column.
+  assert.doesNotThrow(() => db.prepare('SELECT list FROM v_decision_eligible_item').all());
 });

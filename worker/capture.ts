@@ -1,5 +1,4 @@
 import type { Env } from './env.ts';
-import { isList, LISTS, type List } from '../src/lists.ts';
 
 /**
  * Writing a capture. `capture` holds what a HUMAN read off the disc and
@@ -33,8 +32,8 @@ export interface CaptureInput {
   sleeveGrade?: Grade;
   capturedBy?: string;
   notes?: string;
-  /** Which of the four lists the disc goes on. Absent lands it unsorted. */
-  list?: List;
+  /** The key of the list the disc goes on. Absent lands it unsorted. */
+  list?: string;
   photos?: { kind: PhotoKind; r2Key: string }[];
 }
 
@@ -82,7 +81,15 @@ const trimmed = (v: unknown): string | undefined => {
  * nothing downstream can tell it from a real one. Same rule as
  * everywhere else here — refuse rather than guess.
  */
-export function parseCapture(body: unknown): { ok: true; value: CaptureInput } | { ok: false; error: string } {
+/**
+ * `lists` is the set of keys the `list` table holds right now, read by
+ * the route per request (NEILS-LIST). Required rather than defaulted,
+ * so a caller cannot quietly validate against a built-in set the
+ * table has since outgrown.
+ */
+export function parseCapture(
+  body: unknown, lists: readonly string[],
+): { ok: true; value: CaptureInput } | { ok: false; error: string } {
   if (typeof body !== 'object' || body === null) return { ok: false, error: 'body must be an object' };
   const b = body as Record<string, unknown>;
 
@@ -123,11 +130,11 @@ export function parseCapture(body: unknown): { ok: true; value: CaptureInput } |
   // Which list the disc goes on (FOUR-LISTS). Optional at the door —
   // a phone on the previous build sends none, and an offline queue must
   // never acquire a way to fail — but never guessed: a value that does
-  // arrive has to be one of the four, and a capture with none lands
-  // unsorted rather than on a default nobody chose.
+  // arrive has to be a list the table knows, and a capture with none
+  // lands unsorted rather than on a default nobody chose.
   const list = trimmed(b.list);
-  if (list !== undefined && !isList(list)) {
-    return { ok: false, error: `list must be one of ${LISTS.join(', ')}` };
+  if (list !== undefined && !lists.includes(list)) {
+    return { ok: false, error: `list must be one of ${lists.join(', ')}` };
   }
 
   return {

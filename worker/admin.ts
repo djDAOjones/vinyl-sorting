@@ -106,7 +106,7 @@ export async function writeSettings(env: Env, patch: unknown): Promise<Collectio
  * a dump nobody can safely load.
  */
 export const EXPORT_TABLES = [
-  'schema_migration', 'item', 'capture', 'item_photo', 'raw_value',
+  'schema_migration', 'list', 'item', 'capture', 'item_photo', 'raw_value',
   'release', 'release_track', 'match_run', 'match_candidate',
   'review_decision', 'field_source',
 ] as const;

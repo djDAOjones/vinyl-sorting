@@ -67,14 +67,23 @@ columns — so a view can be bookmarked or sent. `?view=mop-up` lists the
 discs that were photographed, read, and still have no confirmed
 release, which is the crate to re-shoot.
 
-### Four lists
+### Lists
 
-The collection is kept in four lists — **Classical**, **Selling**,
-**Dance** and **General** — as one column on one table (`item.list`,
-migration 005), not four tables. A selector in the header of every
-screen, and on the hub with a count per list, says which list is in
-view; **All lists** shows everything. It is a device setting like the
-theme, so two people can walk two crates at once. Press `l` to reach it.
+The collection is kept in lists — **Classical**, **Selling**, **Dance**,
+**General**, and any the household adds; **Neil's** is the tester's — as
+one column on one table (`item.list`), not a table per list. Since
+migration 006 the lists are data: a `list` table is the authority, the
+Worker validates every capture, edit and `?list=` against it, and a new
+list is a row, added from the settings screen behind the passphrase and
+offered on every screen the moment it exists. Each device keeps the set
+it last saw, and the built-in five until it has seen any, so a phone
+with no signal can still file a disc.
+
+A selector in the header of every screen, and on the hub with a count
+per list, says which list is in view; **All lists** shows everything. It
+is a device setting like the theme, so two people can walk two crates at
+once. Press `l` to reach it, and the keyboard keeps its place on it when
+a screen repaints.
 
 Capture files every disc on the list in view. It asks once per device
 which list the crate is on; the choice stays in the header, one tap
@@ -90,9 +99,18 @@ selector while any exist. The rows that existed before the column did
 were all classical and were filed that way by the migration; the
 imported ones carry `legacy` provenance for it.
 
-`/api/review-queue` and `/api/match-stats` take `?list=<name>` (or
+`/api/review-queue` and `/api/match-stats` take `?list=<key>` (or
 `unsorted`) and refuse any other value; `/api/lists` answers with the
-counts.
+lists and the counts, and `POST /api/lists` adds one behind the
+passphrase. A list's key is derived from its label — `Neil's` is
+`neils` — and never typed.
+
+**Never rebuild the `item` table on D1.** Every child references it
+with `ON DELETE CASCADE`, D1 keeps foreign keys enforced and will not
+let a migration turn them off, and a rename rewrites the children to
+follow the renamed table — so the usual rename-copy-drop rebuild ends
+by cascading through every photograph and match run. Migration 006
+moves a column instead; its comment says how.
 
 ### Walking a crate
 

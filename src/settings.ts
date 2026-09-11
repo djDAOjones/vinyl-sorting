@@ -24,9 +24,10 @@
  */
 
 import {
-  bootChrome, esc, headerHtml, openKeyCard, ROUTES,
+  bootChrome, esc, headerHtml, openKeyCard, rememberLists, ROUTES,
   setDensity, setTheme, storedDensity, storedTheme, toast, type Theme,
 } from './chrome.ts';
+import type { ListDef } from './lists.ts';
 import { forgetCapturer, rememberCapturer, resolveCapturer, storedCapturer } from './who.ts';
 
 const API = '/api';
@@ -38,6 +39,10 @@ interface Collection {
 }
 
 let collection: Collection | null = null;
+
+/** The lists in force and how many discs each holds (NEILS-LIST). */
+interface Lists { lists: ListDef[]; counts: Record<string, number>; total: number }
+let lists: Lists | null = null;
 
 /**
  * The shared passphrase, held beside `dg.who` on this device — the SAME
@@ -151,6 +156,19 @@ function render(): void {
     </section>
 
     <section class="card">
+      <h2 class="subhead">Lists</h2>
+      <p class="note">What the collection is kept in. Every screen's selector offers these, and a
+        new one is offered everywhere the moment it exists. Adding one needs the shared
+        passphrase; there is no renaming or removing yet.</p>
+      ${listsHtml()}
+      <form id="addList" class="controls">
+        <label class="field grow"><span>New list</span>
+          <input id="newList" maxlength="40" autocomplete="off" placeholder="Jazz"></label>
+        <button type="submit" class="btn btn-ghost">Add</button>
+      </form>
+    </section>
+
+    <section class="card">
       <h2 class="subhead">A copy of everything</h2>
       <p class="note">Read-only, so it cannot break anything. The JSON is the structured
         dump that could be restored; the CSV is one row per record, for a spreadsheet.</p>
@@ -224,6 +242,57 @@ function render(): void {
   for (const btn of app.querySelectorAll<HTMLButtonElement>('button[data-export]')) {
     btn.addEventListener('click', () => { void download(btn.dataset.export === 'csv' ? 'csv' : 'json'); });
   }
+  document.getElementById('addList')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const box = document.getElementById('newList') as HTMLInputElement | null;
+    if (box?.value.trim()) void addList(box.value.trim());
+  });
+}
+
+/** The lists, each with what it holds; unsorted last, only while any exist. */
+function listsHtml(): string {
+  const ls = lists;
+  if (!ls) return '<p class="note">Could not reach the server; the lists live with the collection.</p>';
+  const row = (label: string, n: number): string =>
+    `<dt>${esc(label)}</dt><dd class="mono">${n.toLocaleString('en-GB')} ${n === 1 ? 'record' : 'records'}</dd>`;
+  return `<dl class="facts">${ls.lists.map((l) => row(l.label, ls.counts[l.key] ?? 0)).join('')}${
+    ls.counts.unsorted ? row('Unsorted', ls.counts.unsorted) : ''}</dl>`;
+}
+
+/**
+ * Add a list. The Worker derives the key and refuses a duplicate; the
+ * screen refetches rather than trusting its own copy, and the device's
+ * cached set is updated so every screen offers the new list at once.
+ */
+async function addList(label: string): Promise<void> {
+  const token = askToken();
+  if (!token) { toast('That needs the shared passphrase.', 'err'); return; }
+  const who = storedCapturer();
+  const res = await fetch(`${API}/lists`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json', 'x-edit-token': token, ...(who ? { 'x-capturer': who } : {}),
+    },
+    body: JSON.stringify({ label }),
+  });
+  if (res.status === 401) { editToken.clear(); toast('That passphrase was refused.', 'err'); return; }
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({})) as { error?: string };
+    toast(detail.error ?? `Refused: HTTP ${res.status}`, 'err');
+    return;
+  }
+  await loadLists();
+  toast(`Added ${label}. Every screen offers it now.`);
+}
+
+async function loadLists(): Promise<void> {
+  try {
+    const res = await fetch(`${API}/lists`);
+    if (!res.ok) return;
+    lists = await res.json() as Lists;
+    rememberLists(lists.lists);
+    render();
+  } catch { /* the device settings work without a server */ }
 }
 
 /** Ask for the passphrase once, and keep it the way browse does. */
@@ -315,3 +384,4 @@ function askName(): void {
 bootChrome();
 render();
 void loadCollection();
+void loadLists();

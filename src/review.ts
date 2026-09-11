@@ -12,8 +12,10 @@
  */
 
 import { ensureCapturerCookie, rememberCapturer, resolveCapturer, storedCapturer } from './who.ts';
-import { bootChrome, esc, headerHtml, isTyping, parseJson as parse, storedList, toast } from './chrome.ts';
-import { choiceLabel, isList, LIST_LABEL } from './lists.ts';
+import {
+  bootChrome, choiceLabel, esc, headerHtml, isTyping, labelOf, parseJson as parse, restoreListFocus,
+  storedList, toast,
+} from './chrome.ts';
 
 const app = document.getElementById('review')!;
 const API = '/api';
@@ -98,7 +100,7 @@ function render(): void {
           ${field('Title', item.title_raw)}
           ${field('Name', item.name_raw)}
           ${field('Crate', [item.crate, item.position].filter(Boolean).join(' · '))}
-          ${field('List', isList(item.list) ? LIST_LABEL[item.list] : null)}
+          ${field('List', item.list ? labelOf(item.list) : null)}
         </dl>
         ${photosHtml(item)}
       </section>
@@ -139,6 +141,7 @@ function render(): void {
     if (e.key === 'Enter') void submitManual(manual.value);
     if (e.key === 'Escape') manual.blur();
   });
+  restoreListFocus();
 }
 
 const field = (label: string, value: string | null): string =>

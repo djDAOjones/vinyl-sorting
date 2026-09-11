@@ -7,11 +7,11 @@
  * made on that phone afterwards, and it is a crude gate, because typing
  * asks you to know an answer that is not printed on the screen.
  *
- * A picker was considered and rejected. Six buttons print the six valid
- * answers, so it cannot gate anything at all, and it costs a tap on
+ * A picker was considered and rejected. A row of buttons prints every
+ * valid answer, so it cannot gate anything at all, and it costs a tap on
  * every device for ever. Typing costs one screen, once.
  *
- * SAY WHAT THIS IS NOT. Six household first names are guessable and the
+ * SAY WHAT THIS IS NOT. A handful of household first names are guessable and the
  * roster ships in the bundle, so this is a speed bump and an honest
  * label on a row — not access control. Access control is the separate
  * question OPEN-V1-AUTH answered "no sign-in for v1", and shipping this
@@ -27,7 +27,11 @@
  * problem NAMES-CANONICAL exists to clean up on the composer side never
  * reaches this column at all.
  */
-export const ROSTER = ['Joe', 'Jen', 'Ro', 'Ivy', 'Jojo', 'Sue'] as const;
+// Neil is a tester rather than household (maintainer, 2026-09-11). The
+// roster is who may write, and a tester writes; his rows say his name
+// and his discs go on a list of his own, so nothing he tries lands in
+// the collection unmarked.
+export const ROSTER = ['Joe', 'Jen', 'Ro', 'Ivy', 'Jojo', 'Sue', 'Neil'] as const;
 
 export type Capturer = typeof ROSTER[number];
 

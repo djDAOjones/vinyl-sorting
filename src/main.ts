@@ -27,8 +27,9 @@ import { startSync, drain } from './sync.ts';
 import {
   forgetCapturer, rememberCapturer, resolveCapturer, storedCapturer,
 } from './who.ts';
-import { bootChrome, headerHtml, setList, storedList } from './chrome.ts';
-import { isList, LISTS, LIST_LABEL, type List } from './lists.ts';
+import {
+  bootChrome, esc, headerHtml, isKnownList, knownLists, listPickHtml, setList, storedList,
+} from './chrome.ts';
 import { guideHtml, markGuideSeen, needsGuide } from './guidance.ts';
 
 const app = document.getElementById('app')!;
@@ -143,8 +144,8 @@ function renderListGate(): void {
     <fieldset>
       <legend>Which list is this crate on?</legend>
       <div class="listgate">
-        ${LISTS.map((l) => `<button type="button" class="btn btn-ghost btn-block" data-list="${l}">${
-    LIST_LABEL[l]}</button>`).join('')}
+        ${knownLists().map((l) => `<button type="button" class="btn btn-ghost btn-block" data-list="${
+    esc(l.key)}">${esc(l.label)}</button>`).join('')}
       </div>
       <p class="note">Every disc you file goes on this list until you change it, and it stays
         in the header, one tap away. A disc filed on the wrong list can be moved from the
@@ -154,7 +155,7 @@ function renderListGate(): void {
     <div id="flash"></div>`;
   for (const btn of app.querySelectorAll<HTMLButtonElement>('button[data-list]')) {
     btn.addEventListener('click', () => {
-      setList(btn.dataset.list as List);
+      setList(btn.dataset.list ?? '');
       render();
     });
   }
@@ -167,7 +168,7 @@ function render(): void {
   const capturer = storedCapturer();
   if (!capturer) return renderWhoGate();
   // No list, no capture screen either — see `renderListGate`.
-  if (!isList(storedList())) return renderListGate();
+  if (!isKnownList(storedList())) return renderListGate();
 
   app.innerHTML = `
     ${headerHtml({ here: 'capture', title: 'Add vinyl', list: { concrete: true },
@@ -728,7 +729,7 @@ function readFields(): Record<string, string> {
   // once per crate in the header, and a box between the shutter and
   // Queue it is a reason to stop cataloguing (FOUR-LISTS).
   const list = storedList();
-  out.list = isList(list) ? list : '';
+  out.list = isKnownList(list) ? list : '';
   return out;
 }
 
@@ -742,7 +743,7 @@ async function save(from: 'form' | 'camera' = 'form'): Promise<void> {
   }
   // The gate makes this unreachable; it stays because a disc filed on
   // no list is exactly the row the gate exists to prevent.
-  if (!isList(fields.list)) {
+  if (!isKnownList(fields.list)) {
     return flash('Choose which list this crate is on — it is in the header.', 'err');
   }
   // A double tap on a phone is one gesture, and each pass mints its own
@@ -908,6 +909,14 @@ document.addEventListener('click', (e) => {
   if ((e.target as HTMLElement | null)?.id === 'guideBtn') openGuide();
 });
 if (storedCapturer() && needsGuide()) openGuide();
+
+// A list added elsewhere reaches this header without a repaint of the
+// screen: the selector alone is swapped, so photographs in hand and
+// anything typed are untouched.
+addEventListener('vs:list', () => {
+  const pick = document.querySelector('.listpick');
+  if (pick && isKnownList(storedList())) pick.outerHTML = listPickHtml({ concrete: true });
+});
 
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => { void navigator.serviceWorker.register('/sw.js'); });

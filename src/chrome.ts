@@ -8,7 +8,9 @@
  * exactly one screen.
  */
 
-import { choiceLabel, isList, isListChoice, LISTS, type ListChoice } from './lists.ts';
+import {
+  BUILT_IN, choiceLabelFor, isListKey, labelFor, type ListChoice, type ListDef,
+} from './lists.ts';
 
 /**
  * Where the screens are, named once.
@@ -106,21 +108,73 @@ export function watchSystemTheme(): void {
   });
 }
 
-/* ── The list in view (FOUR-LISTS) ────────────────────────────────
+/* ── The list in view (FOUR-LISTS, NEILS-LIST) ───────────────────
  *
- * Four lists — classical, selling, dance, general — and one selector
- * on every screen saying which of them is being looked at. It is a
- * DEVICE setting, like the theme and the name: two people can walk two
- * crates at once, and a phone in the dance crate must not change what
- * the desk is reviewing. Stored beside the theme. '' means all of
- * them; `unsorted` means the rows that are on none yet.
+ * Lists — classical, selling, dance, general, and whatever the
+ * household adds — and one selector on every screen saying which of
+ * them is being looked at. It is a DEVICE setting, like the theme and
+ * the name: two people can walk two crates at once, and a phone in the
+ * dance crate must not change what the desk is reviewing. Stored
+ * beside the theme. '' means all of them; `unsorted` means the rows
+ * that are on none yet.
+ *
+ * The lists themselves are data on the Worker (`/api/lists`). This
+ * device keeps the set it last saw, and the built-in set until it has
+ * seen any, because a phone in a loft with no signal still has to file
+ * a disc on a list.
  *
  * Capture is the screen where it matters most — a crate filed on the
  * wrong list is twenty rows to move by hand — so it is in the header
  * there too, and `main.ts` refuses to file a disc while the choice is
- * not one of the four.
+ * not a list.
  */
 const LIST_KEY = 'vs.list';
+const LISTS_KEY = 'vs.lists';
+
+const isDef = (v: unknown): v is ListDef => typeof v === 'object' && v !== null
+  && isListKey((v as ListDef).key) && typeof (v as ListDef).label === 'string';
+
+/** The lists this device knows: the set last fetched, else the built-in ones. */
+export function knownLists(): ListDef[] {
+  try {
+    const parsed: unknown = JSON.parse(read(LISTS_KEY) || 'null');
+    if (Array.isArray(parsed) && parsed.length && parsed.every(isDef)) return parsed;
+  } catch { /* the built-in set applies */ }
+  return [...BUILT_IN];
+}
+
+/** Keep a fetched set. True when it differs from what was known. */
+export function rememberLists(lists: ListDef[]): boolean {
+  const next = JSON.stringify(lists.map(({ key, label }) => ({ key, label })));
+  if (next === JSON.stringify(knownLists())) return false;
+  write(LISTS_KEY, next);
+  return true;
+}
+
+/**
+ * Ask the Worker for the lists in force, quietly.
+ *
+ * Every screen does this at boot. Failure is silent — offline is the
+ * normal case this app was built for — and a changed set is announced
+ * the same way a changed choice is, so a screen repaints its selector.
+ */
+export async function refreshLists(): Promise<void> {
+  try {
+    const res = await fetch('/api/lists');
+    if (!res.ok) return;
+    const body = await res.json() as { lists?: ListDef[] };
+    if (Array.isArray(body.lists) && rememberLists(body.lists)) {
+      dispatchEvent(new CustomEvent('vs:list', { detail: storedList() }));
+    }
+  } catch { /* offline, which is the normal case */ }
+}
+
+export const isKnownList = (v: unknown): v is string =>
+  typeof v === 'string' && knownLists().some((l) => l.key === v);
+export const isListChoice = (v: unknown): v is ListChoice =>
+  v === '' || v === 'unsorted' || isKnownList(v);
+export const labelOf = (key: string): string => labelFor(key, knownLists());
+export const choiceLabel = (c: ListChoice): string => choiceLabelFor(c, knownLists());
 
 export const storedList = (): ListChoice => {
   const v = read(LIST_KEY);
@@ -140,7 +194,7 @@ export function setList(choice: ListChoice): void {
 }
 
 export interface ListPickOptions {
-  /** Only the four lists: capture cannot file a disc on "all". */
+  /** Only real lists: capture cannot file a disc on "all". */
   concrete?: boolean;
   /** Per-choice counts, where the screen has them. */
   counts?: Partial<Record<ListChoice, number>>;
@@ -151,7 +205,10 @@ export interface ListPickOptions {
  *
  * A native <select>: it opens the platform's own picker, which is the
  * one control a gloved thumb in a loft can work, and it is what "a
- * drop-down" means to the person who asked for one.
+ * drop-down" means to the person who asked for one. It carries no
+ * motion of its own; the picker is the platform's, and the only thing
+ * that changes on hover is a border colour on the motion token, which
+ * reduced-motion sets to nothing.
  *
  * `unsorted` is offered only while it is true of something — a count
  * of zero hides it, and a screen with no counts shows it, since it
@@ -159,19 +216,48 @@ export interface ListPickOptions {
  */
 export function listPickHtml(opts: ListPickOptions = {}): string {
   const current = storedList();
-  const choices: ListChoice[] = opts.concrete ? [...LISTS] : ['', ...LISTS, 'unsorted'];
+  const keys = knownLists().map((l) => l.key);
+  const choices: ListChoice[] = opts.concrete ? keys : ['', ...keys, 'unsorted'];
   const shown = choices.filter((c) => c !== 'unsorted' || current === 'unsorted'
     || opts.counts?.unsorted === undefined || opts.counts.unsorted > 0);
   // A concrete picker with nothing chosen yet shows a blank line, so
   // the first list is not silently selected by being first.
-  const blank = opts.concrete && !isList(current)
+  const blank = opts.concrete && !isKnownList(current)
     ? '<option value="" selected disabled>Choose a list…</option>' : '';
   return `<label class="listpick"><span class="lp-label">List</span>
     <select aria-label="Which list to look at">${blank}${shown.map((c) => {
     const n = opts.counts?.[c];
     const label = choiceLabel(c) + (n === undefined ? '' : ` · ${n.toLocaleString('en-GB')}`);
-    return `<option value="${c}"${c === current ? ' selected' : ''}>${esc(label)}</option>`;
+    return `<option value="${esc(c)}"${c === current ? ' selected' : ''}>${esc(label)}</option>`;
   }).join('')}</select></label>`;
+}
+
+/**
+ * Keyboard focus across a repaint.
+ *
+ * THE FAULT THIS FIXES: the screens repaint themselves from strings
+ * when the choice changes, and the selector goes with them — so a
+ * keyboard user who arrowed to a new list landed on nothing, twice on
+ * the hub, which repaints again when the counts arrive. Losing the
+ * focus on every use is a failure of WCAG 2.4.3 in all but name. So
+ * the change handler remembers, for a few seconds, that the selector
+ * had the focus, and every repaint inside that window puts it back;
+ * each screen calls this at the end of its render. A window rather
+ * than a flag, so a repaint minutes later cannot steal the focus from
+ * whatever the person moved on to.
+ */
+let listFocusUntil = 0;
+
+export function restoreListFocus(): void {
+  if (Date.now() > listFocusUntil) return;
+  // A cast rather than the generic: with @cloudflare/workers-types in
+  // scope, HTMLRewriter's Element merges into the DOM one and
+  // HTMLSelectElement no longer satisfies it (its `remove` differs).
+  const pick = document.querySelector('.listpick select') as HTMLSelectElement | null;
+  // `unknown` for the same reason: the merged Element and the select
+  // are unrelated types to the checker, though one is the other at runtime.
+  const active: unknown = document.activeElement;
+  if (pick && active !== pick) pick.focus({ preventScroll: true });
 }
 
 /**
@@ -183,7 +269,11 @@ function installListPick(): void {
   document.addEventListener('change', (e) => {
     const el = e.target;
     if (!(el instanceof HTMLSelectElement) || !el.closest('.listpick')) return;
-    if (isListChoice(el.value)) setList(el.value);
+    if (!isListChoice(el.value)) return;
+    const active: unknown = document.activeElement;
+    listFocusUntil = active === el ? Date.now() + 4000 : 0;
+    setList(el.value);
+    restoreListFocus();
   });
 }
 
@@ -384,4 +474,5 @@ export function bootChrome(screenKeys: KeyHelp[] = []): void {
   watchSystemTheme();
   installKeys(screenKeys);
   installListPick();
+  void refreshLists();
 }

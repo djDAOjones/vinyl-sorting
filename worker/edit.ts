@@ -1,5 +1,4 @@
 import type { Env } from './env.ts';
-import { isList, LISTS } from '../src/lists.ts';
 
 /**
  * Correcting a reading, and confirming one.
@@ -61,7 +60,10 @@ export interface EditInput {
 const fieldsFor = (entity: EditEntity): readonly string[] => (
   entity === 'capture' ? CAPTURE_FIELDS : ITEM_FIELDS);
 
-export function parseEdit(body: unknown): { ok: true; value: EditInput } | { ok: false; error: string } {
+/** `lists`: the keys the `list` table holds now, read by the route (NEILS-LIST). */
+export function parseEdit(
+  body: unknown, lists: readonly string[],
+): { ok: true; value: EditInput } | { ok: false; error: string } {
   if (typeof body !== 'object' || body === null) return { ok: false, error: 'body must be an object' };
   const b = body as Record<string, unknown>;
 
@@ -95,9 +97,9 @@ export function parseEdit(body: unknown): { ok: true; value: EditInput } | { ok:
       return { ok: false, error: `${field} must be a Goldmine grade: ${GRADES.join(', ')}` };
     }
     // Null is allowed: taking a disc off every list is a true state
-    // (unsorted), where a fifth list would be an invented one.
-    if (field === 'list' && value !== null && !isList(value)) {
-      return { ok: false, error: `list must be one of ${LISTS.join(', ')}` };
+    // (unsorted), where a list the table does not know is an invented one.
+    if (field === 'list' && value !== null && !lists.includes(value)) {
+      return { ok: false, error: `list must be one of ${lists.join(', ')}` };
     }
   }
 

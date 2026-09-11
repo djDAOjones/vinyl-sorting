@@ -2,6 +2,55 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-09-11 — NEILS-LIST: lists become data, and item is never rebuilt on D1
+
+**Decision:** a tester's list — Neil's — is added, and with it the shape
+changes: lists are rows in a `list` table rather than words in a CHECK
+constraint. The Worker validates every capture, edit and `?list=`
+against the table; a new list is a row added from Settings behind the
+passphrase; every device keeps the set it last saw, and the built-in
+five until it has seen any, so a phone with no signal still files. Neil
+joins the roster as a tester, so his rows carry his name.
+
+**The migration moves the column, not the table, and that is the
+finding worth keeping.** SQLite cannot change a CHECK without
+rebuilding the table, and `item` is the table every child hangs off
+with ON DELETE CASCADE. D1 keeps foreign keys enforced, will not let a
+migration turn them off, and with them on `ALTER TABLE item RENAME`
+rewrites every child to follow the renamed table — `legacy_alter_table`
+does not change that — so the usual rename-copy-drop rebuild ends with
+`DROP TABLE item_old` cascading through every photograph and match run.
+Checked against the SQLite and D1 documentation. So 006 adds a column
+carrying a foreign key to `list`, copies the value across, drops the
+CHECKed column — a column constraint, which DROP COLUMN permits once
+its index is gone — and renames the new one into place. Nothing leaves
+`item`, nothing references a renamed table, nothing cascades. A test
+seeds one of every child and counts them across, and the same file was
+run on wrangler's local D1 — the production engine and authoriser —
+with the same result: every child kept, `foreign_key_check` empty.
+
+**Keys are derived, never typed.** "Neil's" is `neils`, "Hard House
+(sell)" is `hard-house-sell`; a label that leaves nothing usable, or a
+reserved word, is refused with the reason, and a label that folds to an
+existing key or matches an existing label case-insensitively is a 409,
+so "dance" cannot sit beside "Dance".
+
+**The selector's accessibility pass found one real fault.** The
+dropdown carries no motion of its own — the picker is the platform's —
+and its only hover change is a border colour, now on the motion token
+that reduced-motion sets to nothing. But every screen repaints itself
+from strings when the choice changes, and the selector went with it, so
+a keyboard user who arrowed to a new list landed on nothing, twice on
+the hub. The change handler now remembers for four seconds that the
+selector had focus, and each repaint in that window puts it back.
+Contrast (accent on the sunk surface, both themes) and target size (32
+px on a desk, 44 px on a phone) were checked and left alone.
+
+**Verify:** npm run gate, 300 passing; migration 006 rehearsed on
+wrangler's local D1 with every child surviving; in the browser: the
+selector offers Neil's, Settings adds a list and every screen offers it
+at once, capture's gate shows five, focus survives a repaint.
+
 ## 2026-09-09 — FOUR-LISTS: one column, four lists, and a selector on every screen
 
 **Decision:** the four lists the collection is kept in — classical,
