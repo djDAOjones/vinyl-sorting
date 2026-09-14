@@ -73,6 +73,34 @@ const ENOUGH = 12;
 export interface TrackRow { position: string | null; title: string | null; durationS: number | null }
 
 /**
+ * What the marketplace says a release is worth, as at a moment.
+ *
+ * `lowest` is the cheapest listing on Discogs in PRICE_CURRENCY, not a
+ * valuation and not what the disc would fetch — it is the number the
+ * collection screen shows as `~value`, and the `~` is doing real work.
+ * It is null where nothing is listed, which is a FACT and not a
+ * missing reading: `forSale: 0` beside it says the difference, and
+ * `price_checked_at` says when it was last true.
+ */
+export interface PriceRow { lowest: number | null; forSale: number | null }
+
+/**
+ * The price out of a release payload, or null if it carried none.
+ *
+ * Separate from the fetch so a cached payload can be read the same way
+ * — `tools/price-refresh.mjs` reads exactly these two keys off exactly
+ * this endpoint, and two readers of one response shape disagreeing is
+ * how a column ends up half in pounds.
+ */
+export function priceOf(rel: Record<string, unknown>): PriceRow | null {
+  const lowest = typeof rel.lowest_price === 'number' ? rel.lowest_price : null;
+  const forSale = typeof rel.num_for_sale === 'number' ? rel.num_for_sale : null;
+  // Neither key present means this payload says nothing about price —
+  // which must not be written as "nothing is for sale".
+  return lowest === null && forSale === null ? null : { lowest, forSale };
+}
+
+/**
  * Seconds from Discogs' "m:ss" (or "h:mm:ss"). Null rather than zero
  * for anything unparseable: a duration of zero is a claim, and an
  * absent one is the truth about a release that did not print it.
@@ -87,7 +115,7 @@ export function parseDuration(raw: unknown): number | null {
 }
 
 /**
- * The tracklist for a chosen release.
+ * The tracklist AND the price for a chosen release — one request.
  *
  * ONE request, and only for a release we are about to store. The
  * maintainer's point (2026-08-31): a tracklist is what says which
@@ -95,24 +123,37 @@ export function parseDuration(raw: unknown): number | null {
  * since M1 because this call was never made. Against a ladder already
  * spending 9-12 requests a row, one more for an accepted match is noise.
  *
+ * THE PRICE RIDES ALONG FOR NOTHING. `lowest_price` and `num_for_sale`
+ * are in the response this call already pays for, and `release.
+ * lowest_price` has been an empty column since M1 — so every new match
+ * carries a value from here on at no extra rate limit
+ * (CATALOGUE-CONTROLS). The ~300 rows matched BEFORE this landed are
+ * what `tools/price-refresh.mjs` is for.
+ *
  * A failure here is not a failed match. The verdict was reached on the
- * search rungs and stands; the tracklist is enrichment, and returning
- * an empty list loses nothing that was ever had.
+ * search rungs and stands; both of these are enrichment, and returning
+ * nothing loses nothing that was ever had.
  */
-export async function fetchTracks(client: DiscogsClient, discogsId: number): Promise<TrackRow[]> {
-  if (client.budgetSpent?.()) return [];
+export async function fetchReleaseFacts(
+  client: DiscogsClient, discogsId: number,
+): Promise<{ tracks: TrackRow[]; price: PriceRow | null }> {
+  if (client.budgetSpent?.()) return { tracks: [], price: null };
   try {
-    const rel = await client.getRelease(discogsId) as { tracklist?: unknown[] };
-    return (rel.tracklist ?? []).map((t) => {
-      const tr = t as Record<string, unknown>;
-      return {
-        position: (tr.position ?? null) as string | null,
-        title: (tr.title ?? null) as string | null,
-        durationS: parseDuration(tr.duration),
-      };
-    }).filter((t) => t.title);
+    const rel = await client.getRelease(discogsId) as Record<string, unknown>;
+    const tracklist = (rel.tracklist ?? []) as unknown[];
+    return {
+      tracks: tracklist.map((t) => {
+        const tr = t as Record<string, unknown>;
+        return {
+          position: (tr.position ?? null) as string | null,
+          title: (tr.title ?? null) as string | null,
+          durationS: parseDuration(tr.duration),
+        };
+      }).filter((t) => t.title),
+      price: priceOf(rel),
+    };
   } catch {
-    return [];
+    return { tracks: [], price: null };
   }
 }
 
@@ -120,6 +161,7 @@ export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
   outcome: MatchOutcome; gate: GateResult | null;
   queries: { type: string; params: Record<string, string> }[];
   tracks: TrackRow[];
+  price: PriceRow | null;
 }> {
   // The sanity check runs BEFORE any API call — a junk catalogue string
   // costs no rate limit and reaches the queue honestly labelled.
@@ -130,7 +172,7 @@ export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
         itemId: row.itemId, verdict: 'rejected', reason: sane.reason,
         chosenDiscogsId: null, queriesRun: 0, queryErrors: 0, candidates: 0,
       },
-      gate: null, queries: [], tracks: [],
+      gate: null, queries: [], tracks: [], price: null,
     };
   }
 
@@ -227,17 +269,20 @@ export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
           : `all ${queryErrors} of ${queriesRun} queries failed; last: ${lastError}`,
         chosenDiscogsId: null, queriesRun, queryErrors, candidates: 0,
       },
-      gate: null, queries: [...queries, ...fallback], tracks: [],
+      gate: null, queries: [...queries, ...fallback], tracks: [], price: null,
     };
   }
 
   // Only for a release we are about to store — not per row, and never
   // for a verdict that names none.
   const chosenId = gate.verdict === 'verified' ? gate.chosen?.id ?? null : null;
-  const tracks = chosenId ? await fetchTracks(client, chosenId) : [];
+  const { tracks, price } = chosenId
+    ? await fetchReleaseFacts(client, chosenId)
+    : { tracks: [], price: null };
 
   return {
     tracks,
+    price,
     outcome: {
       itemId: row.itemId,
       verdict: gate.verdict,
@@ -315,7 +360,9 @@ export async function persistRun(
 
   let releaseId: number | null = null;
   if (result.outcome.chosenDiscogsId !== null) {
-    const up = await upsertRelease(env, result.outcome.chosenDiscogsId, result.gate, result.tracks);
+    const up = await upsertRelease(
+      env, result.outcome.chosenDiscogsId, result.gate, result.tracks, result.price,
+    );
     releaseId = up.id;
     written += up.written;
   }
@@ -400,26 +447,57 @@ export async function persistRun(
   return written;
 }
 
+/**
+ * The marketplace price, stamped with WHEN it was true.
+ *
+ * `price_checked_at` is not decoration: the screen shows the figure as
+ * `~value` and shows the date beside it, because a lowest listing is a
+ * snapshot of a market and the maintainer has to be able to see that
+ * the snapshot is stale (CATALOGUE-CONTROLS). A price written without
+ * the stamp would be indistinguishable from a fresh one for ever.
+ *
+ * No `field_source` row. A price is not a sourced FIELD in the
+ * provenance sense — it is not a claim about what this pressing is,
+ * nothing may cluster or de-duplicate on it, and writing one would put
+ * a re-checkable number into the same table as a person's confirmation
+ * of an identity.
+ */
+async function writePrice(env: Env, releaseId: number, price: PriceRow): Promise<number> {
+  await env.DB.prepare(
+    `UPDATE release SET lowest_price = ?, num_for_sale = ?, price_checked_at = datetime('now')
+      WHERE id = ?`,
+  ).bind(price.lowest, price.forSale, releaseId).run();
+  return 1;
+}
+
 async function upsertRelease(
   env: Env, discogsId: number, gate: GateResult | null, tracks: TrackRow[] = [],
+  price: PriceRow | null = null,
 ): Promise<{ id: number; written: number }> {
   const existing = await env.DB.prepare('SELECT id FROM release WHERE discogs_id = ?')
     .bind(discogsId).first<{ id: number }>();
   if (existing) {
+    let priced = 0;
+    // THE PRICE IS OVERWRITTEN AND THE TRACKLIST IS NOT, which is the
+    // difference between a fact about a pressing and a fact about a
+    // marketplace on a Tuesday. A tracklist is settled once; a lowest
+    // listing that is six weeks old and never refreshed is worse than
+    // no figure at all, because it reads as current.
+    if (price) { priced = await writePrice(env, existing.id, price); }
     // A release seen before still gains a tracklist it does not have.
     // Returning here unconditionally meant the 267 seeded releases —
     // every record catalogued before the app existed — could never
     // acquire one, because they are precisely the releases already
     // present. Nothing is overwritten: tracks are added only when there
     // are none.
-    if (!tracks.length) return { id: existing.id, written: 0 };
+    if (!tracks.length) return { id: existing.id, written: priced };
     const has = await env.DB.prepare('SELECT COUNT(*) AS n FROM release_track WHERE release_id = ?')
       .bind(existing.id).first<{ n: number }>();
-    if (has?.n) return { id: existing.id, written: 0 };
+    if (has?.n) return { id: existing.id, written: priced };
     await env.DB.batch(tracks.map((t) => env.DB.prepare(
       'INSERT INTO release_track (release_id, position, title, duration_s) VALUES (?, ?, ?, ?)',
     ).bind(existing.id, t.position, t.title, t.durationS)));
-    return { id: existing.id, written: tracks.length };
+    return { id: existing.id, written: priced + tracks.length };
   }
 
   // Stored, not discarded. A release row of nothing but an id gives the
@@ -441,6 +519,8 @@ async function upsertRelease(
     "INSERT INTO field_source (entity, entity_id, field, source, confidence) VALUES ('release', ?, 'discogs_id', 'discogs', ?)",
   ).bind(created.id, gate?.chosen?.score ?? null).run();
   let written = 2;
+
+  if (price) { written += await writePrice(env, created.id, price); }
 
   // The tracklist, if the release endpoint gave one. `completeness`
   // stays at its 'unknown' default deliberately: whether a track is a

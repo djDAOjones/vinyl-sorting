@@ -247,6 +247,34 @@ test('DATASET-VIEWER: the list carries what the screen filters on', async () => 
   assert.equal(one.release_confirmed, 0, 'nothing is confirmed by capture alone');
 });
 
+test('CATALOGUE-CONTROLS: the list carries the price, the count and the date it was taken', async () => {
+  // The ~value column on the collection screen reads these three. A
+  // missing one does not break the screen — it shows an em-dash for
+  // ever, which looks exactly like a collection nobody has priced, and
+  // that is how `release.lowest_price` sat empty from M1 to
+  // 2026-09-14 without anybody noticing.
+  const env = makeEnv();
+  await post(env, { clientId: 'c1', catnoRaw: 'SXL 6113' });
+  await post(env, { clientId: 'c2', catnoRaw: 'CFP 40001' });
+  env.DB.raw.exec(`
+    INSERT INTO release (discogs_id, lowest_price, num_for_sale, price_checked_at)
+      VALUES (999, 8.75, 12, '2026-09-14 09:00:00');
+    INSERT INTO release (discogs_id, lowest_price, num_for_sale, price_checked_at)
+      VALUES (998, NULL, 0, '2026-09-14 09:00:00');
+    UPDATE item SET release_id = 1 WHERE id = 1;
+    UPDATE item SET release_id = 2 WHERE id = 2;`);
+
+  const { items } = await (await app.request('/api/items?limit=100', {}, env)).json();
+  const [one, two] = items;
+  assert.equal(one.lowest_price, 8.75);
+  assert.equal(one.num_for_sale, 12);
+  assert.equal(one.price_checked_at, '2026-09-14 09:00:00',
+    'a price with no date beside it cannot be shown as stale');
+  assert.equal(two.lowest_price, null);
+  assert.equal(two.num_for_sale, 0,
+    'checked and nothing listed is a fact, and the screen says `none` rather than a dash');
+});
+
 test('DATASET-VIEWER: the newest match run wins the list column', async () => {
   const env = makeEnv();
   await post(env, { clientId: 'c1', catnoRaw: 'SXL 6113' });

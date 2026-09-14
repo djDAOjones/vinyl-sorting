@@ -185,6 +185,14 @@ export function createApp() {
               c.catno_raw, c.label_raw, c.name_raw, c.title_raw, c.year_raw,
               r.discogs_id, r.label AS release_label, r.title AS release_title,
               c.matrix_runout, r.year AS release_year,
+              -- THE THREE TOGETHER OR NOT AT ALL. The lowest current
+              -- Discogs listing, how many are listed, and when that was
+              -- last true. Sending the figure without the date would
+              -- put a six-week-old price on screen looking current, and
+              -- sending it without num_for_sale cannot tell "cheapest
+              -- of forty" from "the only one in the world"
+              -- (CATALOGUE-CONTROLS).
+              r.lowest_price, r.num_for_sale, r.price_checked_at,
               (SELECT COUNT(*) FROM item_photo p WHERE p.item_id = i.id) AS photo_count,
               -- Whether a photograph has been READ, which is a
               -- different question from whether one was taken. The

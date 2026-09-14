@@ -294,7 +294,20 @@ table.rows thead th {
   padding: var(--s2) var(--s3);
   white-space: nowrap;
 }
-table.rows td { padding: var(--row-y) var(--s3); border-bottom: 1px solid var(--line); color: var(--text); }
+/* A CELL MAY NOT PUSH THE COLUMNS BEHIND IT OFF THE SCREEN.
+   `white-space: nowrap` with no cap meant one value set the column
+   width for all 519 rows: item 464 carries a 118-character artist
+   string, which made `name` 2948px, the table 5833px inside a 1248px
+   wrapper, and put ~value 4.4 screens to the right of the viewport in
+   a pane you could not tell was scrolled. The columns were all present
+   and correct in the DOM and the accessibility tree, which is why this
+   survived — it reads as fine everywhere except on screen.
+   Capped, the same six fit in 1246px. Truncation loses nothing: a row
+   opens on click and the detail panel shows every field in full. */
+table.rows td {
+  padding: var(--row-y) var(--s3); border-bottom: 1px solid var(--line); color: var(--text);
+  max-width: 20rem; overflow: hidden; text-overflow: ellipsis;
+}
 table.rows tbody tr:last-child td { border-bottom: 0; }
 table.rows td.num { font: 500 var(--t-sm) var(--mono); color: var(--text-2); text-align: right; }
 table.rows td.mono { font-family: var(--mono); }

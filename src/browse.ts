@@ -76,6 +76,9 @@ interface Row {
   release_year: number | null;
   match_state: string | null;
   release_confirmed: number;
+  lowest_price: number | null;
+  num_for_sale: number | null;
+  price_checked_at: string | null;
 }
 
 interface Provenance {
@@ -203,6 +206,135 @@ const stateOf = (r: Row): string => r.match_state ?? 'unmatched';
  * functions — which is what the old fixed `<th>` list plus a hand-
  * written `rowHtml` had become.
  */
+/** Present, where an empty string is as absent as a null. */
+const has = (v: unknown): boolean => v !== null && v !== undefined && v !== '';
+
+/**
+ * The price, in the ONE currency every stored figure is in.
+ *
+ * `release.lowest_price` is a bare REAL with no currency column beside
+ * it, and `PRICE_CURRENCY` in `worker/discogs.ts` is what every writer
+ * fetches in. If that constant ever changes, this must change with it
+ * and the stored figures must be re-fetched — a column holding two
+ * currencies is a column holding neither.
+ */
+const MONEY = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' });
+const DAY = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+/**
+ * A D1 `datetime('now')` string, which is UTC and space-separated.
+ *
+ * `new Date('2026-09-14 12:00:00')` is not a format the standard
+ * defines — Safari has historically returned an Invalid Date for it —
+ * so it is made explicit rather than left to the engine.
+ */
+function stamp(iso: string | null): Date | null {
+  if (!iso) return null;
+  const d = new Date(`${iso.replace(' ', 'T')}${/[Z+]/.test(iso) ? '' : 'Z'}`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+const daysSince = (iso: string | null): number | null => {
+  const d = stamp(iso);
+  return d ? (Date.now() - d.getTime()) / 86_400_000 : null;
+};
+
+/** How old a price may be before the screen says so out loud. */
+const PRICE_STALE_DAYS = 30;
+
+/**
+ * The `~value` cell.
+ *
+ * THREE STATES, NOT TWO, and conflating any of them is the whole
+ * reason this column stayed empty rather than being faked:
+ *
+ *   never checked      an em-dash. Nothing is claimed.
+ *   checked, none for   `none` — a FACT about the marketplace, and the
+ *     sale             opposite of a missing reading. Some of these are
+ *                      the rare ones.
+ *   checked, priced    `~£12.50`, tilde included: this is the cheapest
+ *                      listing somebody is ASKING, not a valuation and
+ *                      not what the disc would fetch.
+ *
+ * A figure over PRICE_STALE_DAYS old is dimmed and dated in place, so a
+ * stale market snapshot cannot read as today's (CATALOGUE-CONTROLS).
+ */
+function valueCell(r: Row): string {
+  const when = r.price_checked_at;
+  if (!has(r.lowest_price) && !when) return '<td class="empty">—</td>';
+  const at = stamp(when);
+  // A date that will not parse is still a date SOMETHING wrote. Saying
+  // "never checked" for it would turn a formatting fault into a false
+  // claim about the collection, so the raw value is shown instead.
+  const checked = at ? `checked ${DAY.format(at)}` : when ? `checked ${when}` : 'never checked';
+  if (!has(r.lowest_price)) {
+    return `<td class="num empty" title="nothing listed on Discogs — ${esc(checked)}">none</td>`;
+  }
+  const age = daysSince(when);
+  const stale = age !== null && age > PRICE_STALE_DAYS;
+  const listings = has(r.num_for_sale)
+    ? `lowest of ${r.num_for_sale} listing${r.num_for_sale === 1 ? '' : 's'} on Discogs`
+    : 'lowest listing on Discogs';
+  return `<td class="num money${stale ? ' stale' : ''}" title="${esc(listings)} — ${esc(checked)}"
+    >~${esc(MONEY.format(r.lowest_price as number))}${
+    stale && at ? `<span class="asat"> ${esc(DAY.format(at))}</span>` : ''}</td>`;
+}
+
+/**
+ * A capture column that falls back, in provenance order, to whatever
+ * the row actually knows: what a person typed, then what a machine read
+ * off a photograph, then what Discogs says.
+ *
+ * WHY IT HAS TO FALL BACK AT ALL. The mop-up rows were photographed and
+ * read but never typed at, and the 446 imported rows kept their label
+ * in `release.label` because M0's spreadsheet column came FROM Discogs
+ * — so `label` was filled on 61 of 500 rows and the column the
+ * maintainer asked for was 88% em-dashes. A collection screen that
+ * cannot name its own records is not answering the question.
+ *
+ * EACH TIER IS SHOWN AS WHAT IT IS. The provenance rule permits
+ * displaying a `guess`, a `legacy` or an unconfirmed `discogs` value
+ * anywhere, and requires it be displayed AS unconfirmed: both machine
+ * tiers lean, and the tooltip says which machine and that nobody has
+ * confirmed it. Only a value a PERSON stands behind stands upright.
+ *
+ * DISPLAY ONLY, and that is the boundary. `/api/items` still returns
+ * capture, reading and release in separate columns and nothing merges
+ * them there — duplicate detection runs on what a person read, and this
+ * function is not in that path. Nor does anything here reach a cluster,
+ * a coverage check or a sell list, which read the `v_*` views. The
+ * separate `read name` / `discogs label` columns stay choosable for
+ * anyone who wants the tiers side by side.
+ */
+interface Tier { get: (r: Row) => unknown; cls: string; why: string }
+
+const readThrough = (key: string, label: string, ...tiers: Tier[]): Column => {
+  const firstKnown = (r: Row): Tier | undefined => tiers.find((t) => has(t.get(r)));
+  return {
+    key,
+    label,
+    // Sorting and searching see whatever the cell SHOWS. A label you
+    // can read on screen and cannot find by typing it is the worse bug.
+    get: (r) => firstKnown(r)?.get(r),
+    html: (r) => {
+      const tier = firstKnown(r);
+      if (!tier) return '<td class="empty">—</td>';
+      return `<td class="${tier.cls}"${tier.why ? ` title="${esc(tier.why)}"` : ''}>${esc(tier.get(r))}</td>`;
+    },
+  };
+};
+
+/** What a person typed at the shelf, and stands behind. */
+const typed = (get: (r: Row) => unknown): Tier => ({ get, cls: '', why: '' });
+/** What a machine read off a photograph of the disc. */
+const read = (get: (r: Row) => unknown): Tier => ({
+  get, cls: 'reading', why: 'read off a photograph — not confirmed by a person',
+});
+/** What Discogs says about the matched release. */
+const sourced = (get: (r: Row) => unknown): Tier => ({
+  get, cls: 'sourced', why: 'from Discogs — not confirmed by a person',
+});
+
 interface Column {
   key: string;
   label: string;
@@ -219,9 +351,15 @@ interface Column {
 const COLUMNS: Column[] = [
   { key: 'id', label: 'id', get: (r) => r.id, num: true },
   { key: 'catno_raw', label: 'catalogue', get: (r) => r.catno_raw, mono: true },
-  { key: 'label_raw', label: 'label', get: (r) => r.label_raw },
-  { key: 'name_raw', label: 'name', get: (r) => r.name_raw },
-  { key: 'title_raw', label: 'title', get: (r) => r.title_raw },
+  // Label reaches Discogs; name and title do not. `release_title` is a
+  // combined "artist — title" string filled on 14 rows, so falling back
+  // to it would write an artist into the title column to gain almost
+  // nothing — and capture already answers name on 365 rows and title on
+  // 410 of 500.
+  readThrough('label_raw', 'label',
+    typed((r) => r.label_raw), read((r) => r.read_label), sourced((r) => r.release_label)),
+  readThrough('name_raw', 'name', typed((r) => r.name_raw), read((r) => r.read_name)),
+  readThrough('title_raw', 'title', typed((r) => r.title_raw), read((r) => r.read_title)),
   { key: 'year_raw', label: 'year', get: (r) => r.year_raw, mono: true },
   { key: 'crate', label: 'crate', get: (r) => [r.crate, r.position].filter(Boolean).join(' · ') },
   // The list a disc is on (FOUR-LISTS). Unsorted is an empty cell, not
@@ -260,6 +398,19 @@ const COLUMNS: Column[] = [
   { key: 'read_name', label: 'read name', get: (r) => r.read_name, reading: true },
   { key: 'read_title', label: 'read title', get: (r) => r.read_title, reading: true },
   { key: 'read_other', label: 'other numbers', get: (r) => r.read_other, mono: true, reading: true },
+  /**
+   * What the collection screen was asked for and could not answer.
+   *
+   * Sorted on `lowest_price` and NOT on the cell's text, so `none` and
+   * `—` both fall to the end in both directions — which is the rule
+   * every absent value on this screen already follows, and the one
+   * CATALOGUE-CONTROLS closes on.
+   */
+  { key: 'value', label: '~value', get: (r) => r.lowest_price, num: true, html: valueCell },
+  // The date on its own, for anyone who wants staleness as a column
+  // rather than as a tooltip — the same shape as `verified`.
+  { key: 'price_checked_at', label: 'priced', get: (r) => r.price_checked_at, mono: true },
+  { key: 'num_for_sale', label: 'for sale', get: (r) => r.num_for_sale, num: true },
   { key: 'release_title', label: 'discogs title', get: (r) => r.release_title },
   { key: 'release_label', label: 'discogs label', get: (r) => r.release_label },
   { key: 'release_year', label: 'released', get: (r) => r.release_year, num: true },
@@ -273,9 +424,18 @@ const COLUMNS: Column[] = [
 
 const COLUMN = new Map(COLUMNS.map((c) => [c.key, c]));
 
-/** What the screen showed before it could be changed. */
-const DEFAULT_COLS = ['id', 'catno_raw', 'label_raw', 'name_raw', 'title_raw',
-  'crate', 'list', 'photo_count', 'match_state'];
+/**
+ * The six columns the collection screen opens on — maintainer's call,
+ * 2026-09-14, in this order: id, name, title, label, ~value, match.
+ *
+ * The nine it replaces are not gone: catalogue, crate, list, photos and
+ * eighteen more are one tick away in the column chooser, and any set
+ * travels in the URL. What changed is what the screen answers WITHOUT
+ * being configured — what have I got, and what is it worth — rather
+ * than where each disc is filed, which the list selector in the header
+ * now answers by itself.
+ */
+const DEFAULT_COLS = ['id', 'name_raw', 'title_raw', 'label_raw', 'value', 'match_state'];
 
 /**
  * Named views, because two of these are questions somebody actually
@@ -442,8 +602,8 @@ function visible(): Row[] {
     // verified, and floating them to the top would bury whatever the
     // sort was actually asked for. The existing `verified` sort already
     // had to learn this.
-    const ax = x === null || x === undefined || x === '';
-    const bx = y === null || y === undefined || y === '';
+    const ax = !has(x);
+    const bx = !has(y);
     if (ax !== bx) return ax ? 1 : -1;
     if (ax && bx) return a.id - b.id;
     const cmp = col.num
@@ -633,7 +793,7 @@ function bindRows(): void {
   }
 }
 
-const cell = (v: unknown, c: Column): string => (v === null || v === undefined || v === ''
+const cell = (v: unknown, c: Column): string => (!has(v)
   ? '<td class="empty">—</td>'
   : `<td class="${c.num ? 'num' : ''}${c.mono ? ' mono' : ''}${c.reading ? ' reading' : ''}"${
     c.reading ? ' title="read off a photograph — not confirmed by a person"' : ''

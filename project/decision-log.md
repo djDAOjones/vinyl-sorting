@@ -2,6 +2,69 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-09-14 — CATALOGUE-CONTROLS: six columns by default, and ~value is one of them
+
+**Decision:** the collection screen opens on six columns in the
+maintainer's order — id, name, title, label, ~value, match — and
+`~value` is `release.lowest_price`, the cheapest listing on Discogs,
+filled for the first time since M1. Two writers, one currency: the
+matcher reads the price off the release call the tracklist already pays
+for, and `tools/price-refresh.mjs` backfills what was matched before
+that.
+
+**Rationale.** This was the last of the interface brief's asks needing
+data the database did not hold, and the column it needs had been empty
+since schema 001. `fetchReleaseFacts` replaces `fetchTracks`: the same
+one request, and the two price keys that were sitting beside the
+tracklist are no longer discarded. A new match therefore costs no extra
+rate limit.
+
+**One currency, named.** `lowest_price` is a bare REAL with no currency
+column beside it, and Discogs answers in whatever currency the token's
+account prefers unless asked. `PRICE_CURRENCY` is GBP, `curr_abbr` is
+always sent, and a column holding two currencies holds neither.
+
+**The price is overwritten and the tracklist is not.** A tracklist is a
+fact about a pressing, written once. A cheapest listing is a market on a
+Tuesday, and one never refreshed is worse than none because it reads as
+current. So `price_checked_at` is stamped on every write and SHOWN: a
+figure over 30 days old dims and carries its date in the cell, with the
+date also available as its own column. A tooltip alone hides it from
+anyone not hovering.
+
+**Checked-and-nothing-listed is a fact, not a gap.** Three states, never
+two: an em-dash for never looked, `none` for checked with nothing for
+sale, a figure otherwise. `priceOf` returns null for a payload carrying
+neither key, so silence never lands as a price of nothing and a silent
+refresh leaves an earlier figure alone. No `field_source` row either — a
+re-checkable market number is not a sourced claim about what a pressing
+is, and nothing may cluster or verify on it.
+
+**Name, title and label read through, in provenance order.** Typed, then
+the photograph's reading, then — label only — Discogs. The mop-up rows
+were photographed but never typed at, and the imported rows kept their
+label in `release.label` because M0's spreadsheet column came from
+Discogs to begin with, so `label` was filled on 61 of 500 rows and the
+column asked for was 88% em-dashes. It is 351 now. Both machine tiers
+lean and name their machine in the tooltip; only what a person stands
+behind stands upright. Name and title stop at the reading, because
+`release_title` is a combined artist-and-title string on 14 rows.
+DISPLAY ONLY: `/api/items` keeps capture, reading and release in
+separate columns, and the `v_*` views are untouched.
+
+**A pre-existing overflow, exposed by the six.** Cells were nowrap with
+no width cap, so one value set the column width for every row: item
+464's 118-character artist string made `name` 2948px and the table
+5833px inside a 1248px wrapper, putting ~value 4.4 screens right of the
+viewport. It reads as correct in the DOM and the accessibility tree,
+which is how it survived the old nine columns — where match was equally
+lost. Capped at 20rem with an ellipsis the six fit in 1246px; the detail
+panel still shows every field in full.
+
+**Validation:** typecheck and 305 tests green, 9 new. 286 releases
+priced against live Discogs at 2.5 s spacing, 0 problems, verified by
+readback; evidence in `data/price-refresh.json`.
+
 
 ## 2026-09-14 — PHOTO-BATCH-REQUEUE: approve and clear 29 empty attempts
 

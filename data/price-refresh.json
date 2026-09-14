@@ -1,0 +1,1441 @@
+{
+  "ranAt": "2026-09-14T12:24:19.937Z",
+  "currency": "GBP",
+  "due": 286,
+  "written": 286,
+  "listed": 248,
+  "unlisted": 38,
+  "problems": [],
+  "releases": [
+    {
+      "discogsId": 31061831,
+      "lowest": 45.02,
+      "forSale": 1
+    },
+    {
+      "discogsId": 14179632,
+      "lowest": 8.09,
+      "forSale": 1
+    },
+    {
+      "discogsId": 15156781,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 4507204,
+      "lowest": 2,
+      "forSale": 8
+    },
+    {
+      "discogsId": 12090157,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 5725717,
+      "lowest": 11.61,
+      "forSale": 5
+    },
+    {
+      "discogsId": 11916262,
+      "lowest": 5.41,
+      "forSale": 11
+    },
+    {
+      "discogsId": 8627281,
+      "lowest": 3.46,
+      "forSale": 6
+    },
+    {
+      "discogsId": 28998988,
+      "lowest": 3.69,
+      "forSale": 3
+    },
+    {
+      "discogsId": 13688756,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 3585474,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 11463781,
+      "lowest": 20.27,
+      "forSale": 1
+    },
+    {
+      "discogsId": 13790177,
+      "lowest": 6.9,
+      "forSale": 8
+    },
+    {
+      "discogsId": 3505720,
+      "lowest": 1.19,
+      "forSale": 36
+    },
+    {
+      "discogsId": 10452226,
+      "lowest": 5.47,
+      "forSale": 14
+    },
+    {
+      "discogsId": 7648296,
+      "lowest": 2.5,
+      "forSale": 11
+    },
+    {
+      "discogsId": 3344774,
+      "lowest": 1.5,
+      "forSale": 47
+    },
+    {
+      "discogsId": 10162503,
+      "lowest": 4.79,
+      "forSale": 4
+    },
+    {
+      "discogsId": 11736395,
+      "lowest": 2,
+      "forSale": 8
+    },
+    {
+      "discogsId": 13506717,
+      "lowest": 2.8,
+      "forSale": 2
+    },
+    {
+      "discogsId": 3437063,
+      "lowest": 1.35,
+      "forSale": 21
+    },
+    {
+      "discogsId": 15012141,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 25806259,
+      "lowest": 4.73,
+      "forSale": 2
+    },
+    {
+      "discogsId": 3408983,
+      "lowest": 1.34,
+      "forSale": 22
+    },
+    {
+      "discogsId": 3697241,
+      "lowest": 4.04,
+      "forSale": 4
+    },
+    {
+      "discogsId": 10568214,
+      "lowest": 1.07,
+      "forSale": 35
+    },
+    {
+      "discogsId": 13686190,
+      "lowest": 3.03,
+      "forSale": 5
+    },
+    {
+      "discogsId": 13560778,
+      "lowest": 2,
+      "forSale": 8
+    },
+    {
+      "discogsId": 7043100,
+      "lowest": 8.63,
+      "forSale": 4
+    },
+    {
+      "discogsId": 7289452,
+      "lowest": 1.99,
+      "forSale": 13
+    },
+    {
+      "discogsId": 9048266,
+      "lowest": 1.7,
+      "forSale": 30
+    },
+    {
+      "discogsId": 23447765,
+      "lowest": 1.57,
+      "forSale": 1
+    },
+    {
+      "discogsId": 7209415,
+      "lowest": 2.01,
+      "forSale": 2
+    },
+    {
+      "discogsId": 13724200,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 5846263,
+      "lowest": 5.34,
+      "forSale": 29
+    },
+    {
+      "discogsId": 30977176,
+      "lowest": 2.42,
+      "forSale": 2
+    },
+    {
+      "discogsId": 2163246,
+      "lowest": 1.19,
+      "forSale": 20
+    },
+    {
+      "discogsId": 1660873,
+      "lowest": 0.93,
+      "forSale": 27
+    },
+    {
+      "discogsId": 14827112,
+      "lowest": 6,
+      "forSale": 11
+    },
+    {
+      "discogsId": 12113251,
+      "lowest": 3.35,
+      "forSale": 3
+    },
+    {
+      "discogsId": 29018815,
+      "lowest": 17.57,
+      "forSale": 1
+    },
+    {
+      "discogsId": 6681519,
+      "lowest": 5.82,
+      "forSale": 2
+    },
+    {
+      "discogsId": 5516872,
+      "lowest": 1.28,
+      "forSale": 40
+    },
+    {
+      "discogsId": 13749448,
+      "lowest": 1.48,
+      "forSale": 1
+    },
+    {
+      "discogsId": 16061415,
+      "lowest": 2.74,
+      "forSale": 4
+    },
+    {
+      "discogsId": 15112970,
+      "lowest": 3.69,
+      "forSale": 3
+    },
+    {
+      "discogsId": 4868915,
+      "lowest": 1.74,
+      "forSale": 11
+    },
+    {
+      "discogsId": 7412661,
+      "lowest": 0.53,
+      "forSale": 31
+    },
+    {
+      "discogsId": 33398786,
+      "lowest": 8.11,
+      "forSale": 1
+    },
+    {
+      "discogsId": 6541620,
+      "lowest": 2.1,
+      "forSale": 10
+    },
+    {
+      "discogsId": 4731699,
+      "lowest": 0.53,
+      "forSale": 23
+    },
+    {
+      "discogsId": 7504760,
+      "lowest": 1.5,
+      "forSale": 14
+    },
+    {
+      "discogsId": 14661471,
+      "lowest": 1.94,
+      "forSale": 1
+    },
+    {
+      "discogsId": 7894315,
+      "lowest": 1.34,
+      "forSale": 12
+    },
+    {
+      "discogsId": 7935099,
+      "lowest": 14.79,
+      "forSale": 3
+    },
+    {
+      "discogsId": 9686091,
+      "lowest": 2.99,
+      "forSale": 8
+    },
+    {
+      "discogsId": 14415649,
+      "lowest": 6.76,
+      "forSale": 4
+    },
+    {
+      "discogsId": 23140553,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 30341567,
+      "lowest": 16.22,
+      "forSale": 1
+    },
+    {
+      "discogsId": 3736405,
+      "lowest": 2.99,
+      "forSale": 17
+    },
+    {
+      "discogsId": 7022456,
+      "lowest": 2.69,
+      "forSale": 8
+    },
+    {
+      "discogsId": 23585069,
+      "lowest": 4.05,
+      "forSale": 2
+    },
+    {
+      "discogsId": 7499444,
+      "lowest": 1.08,
+      "forSale": 34
+    },
+    {
+      "discogsId": 2606826,
+      "lowest": 0.66,
+      "forSale": 58
+    },
+    {
+      "discogsId": 35343673,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 4570102,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 29516755,
+      "lowest": 22.2,
+      "forSale": 1
+    },
+    {
+      "discogsId": 10475606,
+      "lowest": 4.04,
+      "forSale": 10
+    },
+    {
+      "discogsId": 11634508,
+      "lowest": 4.24,
+      "forSale": 12
+    },
+    {
+      "discogsId": 14334755,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 30907209,
+      "lowest": 5.34,
+      "forSale": 3
+    },
+    {
+      "discogsId": 5086232,
+      "lowest": 2.99,
+      "forSale": 16
+    },
+    {
+      "discogsId": 5862145,
+      "lowest": 0.65,
+      "forSale": 42
+    },
+    {
+      "discogsId": 10791814,
+      "lowest": 10.96,
+      "forSale": 1
+    },
+    {
+      "discogsId": 3001703,
+      "lowest": 0.62,
+      "forSale": 42
+    },
+    {
+      "discogsId": 25748839,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 9246175,
+      "lowest": 1.28,
+      "forSale": 9
+    },
+    {
+      "discogsId": 13564714,
+      "lowest": 0.27,
+      "forSale": 4
+    },
+    {
+      "discogsId": 12468245,
+      "lowest": 0.27,
+      "forSale": 10
+    },
+    {
+      "discogsId": 9939577,
+      "lowest": 1.19,
+      "forSale": 12
+    },
+    {
+      "discogsId": 8791756,
+      "lowest": 1.35,
+      "forSale": 17
+    },
+    {
+      "discogsId": 4322381,
+      "lowest": 1.68,
+      "forSale": 15
+    },
+    {
+      "discogsId": 16930830,
+      "lowest": 0.99,
+      "forSale": 10
+    },
+    {
+      "discogsId": 10332065,
+      "lowest": 1.19,
+      "forSale": 3
+    },
+    {
+      "discogsId": 17069481,
+      "lowest": 4.04,
+      "forSale": 4
+    },
+    {
+      "discogsId": 8572544,
+      "lowest": 0.31,
+      "forSale": 8
+    },
+    {
+      "discogsId": 15703654,
+      "lowest": 12.01,
+      "forSale": 1
+    },
+    {
+      "discogsId": 3325844,
+      "lowest": 0.68,
+      "forSale": 25
+    },
+    {
+      "discogsId": 493657,
+      "lowest": 0.14,
+      "forSale": 81
+    },
+    {
+      "discogsId": 4372120,
+      "lowest": 1.34,
+      "forSale": 12
+    },
+    {
+      "discogsId": 6104880,
+      "lowest": 0.68,
+      "forSale": 40
+    },
+    {
+      "discogsId": 11743574,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 23438729,
+      "lowest": 8.01,
+      "forSale": 2
+    },
+    {
+      "discogsId": 13761469,
+      "lowest": 20.01,
+      "forSale": 1
+    },
+    {
+      "discogsId": 21468886,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 2730762,
+      "lowest": 0.5,
+      "forSale": 28
+    },
+    {
+      "discogsId": 6911350,
+      "lowest": 1.19,
+      "forSale": 7
+    },
+    {
+      "discogsId": 2055961,
+      "lowest": 0.68,
+      "forSale": 33
+    },
+    {
+      "discogsId": 13365019,
+      "lowest": 2.69,
+      "forSale": 3
+    },
+    {
+      "discogsId": 28092040,
+      "lowest": 3,
+      "forSale": 1
+    },
+    {
+      "discogsId": 2049899,
+      "lowest": 1.19,
+      "forSale": 16
+    },
+    {
+      "discogsId": 2998840,
+      "lowest": 0.49,
+      "forSale": 30
+    },
+    {
+      "discogsId": 2636737,
+      "lowest": 0.7,
+      "forSale": 31
+    },
+    {
+      "discogsId": 8848379,
+      "lowest": 5,
+      "forSale": 6
+    },
+    {
+      "discogsId": 10228271,
+      "lowest": 5.41,
+      "forSale": 8
+    },
+    {
+      "discogsId": 31153631,
+      "lowest": 30.04,
+      "forSale": 10
+    },
+    {
+      "discogsId": 10805645,
+      "lowest": 4.77,
+      "forSale": 9
+    },
+    {
+      "discogsId": 9088802,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 7594967,
+      "lowest": 0.76,
+      "forSale": 14
+    },
+    {
+      "discogsId": 4332533,
+      "lowest": 10.01,
+      "forSale": 2
+    },
+    {
+      "discogsId": 13295609,
+      "lowest": 1.45,
+      "forSale": 8
+    },
+    {
+      "discogsId": 14522646,
+      "lowest": 3.35,
+      "forSale": 2
+    },
+    {
+      "discogsId": 13150755,
+      "lowest": 4.8,
+      "forSale": 13
+    },
+    {
+      "discogsId": 1985178,
+      "lowest": 1.19,
+      "forSale": 29
+    },
+    {
+      "discogsId": 9229913,
+      "lowest": 2.69,
+      "forSale": 9
+    },
+    {
+      "discogsId": 26868389,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 29783254,
+      "lowest": 8.7,
+      "forSale": 1
+    },
+    {
+      "discogsId": 3968098,
+      "lowest": 2.5,
+      "forSale": 8
+    },
+    {
+      "discogsId": 8949505,
+      "lowest": 8.88,
+      "forSale": 4
+    },
+    {
+      "discogsId": 28167400,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 11195965,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 15275031,
+      "lowest": 2.69,
+      "forSale": 9
+    },
+    {
+      "discogsId": 8848040,
+      "lowest": 3.38,
+      "forSale": 4
+    },
+    {
+      "discogsId": 1346162,
+      "lowest": 15.01,
+      "forSale": 2
+    },
+    {
+      "discogsId": 5511313,
+      "lowest": 2.7,
+      "forSale": 16
+    },
+    {
+      "discogsId": 31487645,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 4084798,
+      "lowest": 0.68,
+      "forSale": 25
+    },
+    {
+      "discogsId": 5051022,
+      "lowest": 1.01,
+      "forSale": 27
+    },
+    {
+      "discogsId": 22696889,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 9199564,
+      "lowest": 4.49,
+      "forSale": 1
+    },
+    {
+      "discogsId": 13256627,
+      "lowest": 4,
+      "forSale": 2
+    },
+    {
+      "discogsId": 15055322,
+      "lowest": 15.07,
+      "forSale": 1
+    },
+    {
+      "discogsId": 15407561,
+      "lowest": 6,
+      "forSale": 4
+    },
+    {
+      "discogsId": 2954611,
+      "lowest": 1.62,
+      "forSale": 35
+    },
+    {
+      "discogsId": 4741885,
+      "lowest": 2.96,
+      "forSale": 20
+    },
+    {
+      "discogsId": 12708908,
+      "lowest": 1.19,
+      "forSale": 17
+    },
+    {
+      "discogsId": 7174227,
+      "lowest": 0.39,
+      "forSale": 28
+    },
+    {
+      "discogsId": 2043075,
+      "lowest": 0.97,
+      "forSale": 29
+    },
+    {
+      "discogsId": 21038089,
+      "lowest": 1.35,
+      "forSale": 1
+    },
+    {
+      "discogsId": 9729077,
+      "lowest": 1.28,
+      "forSale": 14
+    },
+    {
+      "discogsId": 4157957,
+      "lowest": 0.66,
+      "forSale": 26
+    },
+    {
+      "discogsId": 23355746,
+      "lowest": 1.74,
+      "forSale": 3
+    },
+    {
+      "discogsId": 12146472,
+      "lowest": 0.53,
+      "forSale": 6
+    },
+    {
+      "discogsId": 7516819,
+      "lowest": 1.19,
+      "forSale": 8
+    },
+    {
+      "discogsId": 8298322,
+      "lowest": 0.41,
+      "forSale": 59
+    },
+    {
+      "discogsId": 6054297,
+      "lowest": 1.92,
+      "forSale": 1
+    },
+    {
+      "discogsId": 9514632,
+      "lowest": 8.02,
+      "forSale": 4
+    },
+    {
+      "discogsId": 4924726,
+      "lowest": 0.55,
+      "forSale": 33
+    },
+    {
+      "discogsId": 22111891,
+      "lowest": 4.04,
+      "forSale": 6
+    },
+    {
+      "discogsId": 31262698,
+      "lowest": 6.85,
+      "forSale": 3
+    },
+    {
+      "discogsId": 15165879,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 3172272,
+      "lowest": 0.57,
+      "forSale": 27
+    },
+    {
+      "discogsId": 13739391,
+      "lowest": 4.05,
+      "forSale": 3
+    },
+    {
+      "discogsId": 2967973,
+      "lowest": 0.41,
+      "forSale": 60
+    },
+    {
+      "discogsId": 19866523,
+      "lowest": 1.35,
+      "forSale": 4
+    },
+    {
+      "discogsId": 6658907,
+      "lowest": 0.8,
+      "forSale": 19
+    },
+    {
+      "discogsId": 7275586,
+      "lowest": 1.01,
+      "forSale": 6
+    },
+    {
+      "discogsId": 33327081,
+      "lowest": 1.69,
+      "forSale": 3
+    },
+    {
+      "discogsId": 18382135,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 3549490,
+      "lowest": 0.66,
+      "forSale": 85
+    },
+    {
+      "discogsId": 3123851,
+      "lowest": 1.34,
+      "forSale": 12
+    },
+    {
+      "discogsId": 25815499,
+      "lowest": 1.47,
+      "forSale": 1
+    },
+    {
+      "discogsId": 9683715,
+      "lowest": 4.45,
+      "forSale": 11
+    },
+    {
+      "discogsId": 13759816,
+      "lowest": 2,
+      "forSale": 23
+    },
+    {
+      "discogsId": 3750341,
+      "lowest": 0.99,
+      "forSale": 34
+    },
+    {
+      "discogsId": 16101746,
+      "lowest": 6.38,
+      "forSale": 3
+    },
+    {
+      "discogsId": 15134573,
+      "lowest": 8,
+      "forSale": 6
+    },
+    {
+      "discogsId": 8814436,
+      "lowest": 1.01,
+      "forSale": 3
+    },
+    {
+      "discogsId": 5905854,
+      "lowest": 0.99,
+      "forSale": 23
+    },
+    {
+      "discogsId": 6300249,
+      "lowest": 1.83,
+      "forSale": 3
+    },
+    {
+      "discogsId": 2144713,
+      "lowest": 1.19,
+      "forSale": 75
+    },
+    {
+      "discogsId": 13178775,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 6648804,
+      "lowest": 0.99,
+      "forSale": 5
+    },
+    {
+      "discogsId": 4714803,
+      "lowest": 0.34,
+      "forSale": 13
+    },
+    {
+      "discogsId": 34706661,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 12819631,
+      "lowest": 6.76,
+      "forSale": 1
+    },
+    {
+      "discogsId": 8633244,
+      "lowest": 4.03,
+      "forSale": 7
+    },
+    {
+      "discogsId": 9308355,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 13545844,
+      "lowest": 15.01,
+      "forSale": 1
+    },
+    {
+      "discogsId": 12675236,
+      "lowest": 6.76,
+      "forSale": 2
+    },
+    {
+      "discogsId": 33972480,
+      "lowest": 4.72,
+      "forSale": 1
+    },
+    {
+      "discogsId": 13377987,
+      "lowest": 1.19,
+      "forSale": 6
+    },
+    {
+      "discogsId": 12815021,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 11532205,
+      "lowest": 1.09,
+      "forSale": 22
+    },
+    {
+      "discogsId": 5281608,
+      "lowest": 1.19,
+      "forSale": 8
+    },
+    {
+      "discogsId": 15095684,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 31741199,
+      "lowest": 4.58,
+      "forSale": 1
+    },
+    {
+      "discogsId": 3301068,
+      "lowest": 1.42,
+      "forSale": 9
+    },
+    {
+      "discogsId": 6893606,
+      "lowest": 1.35,
+      "forSale": 28
+    },
+    {
+      "discogsId": 5495207,
+      "lowest": 0.68,
+      "forSale": 17
+    },
+    {
+      "discogsId": 19867060,
+      "lowest": 0.99,
+      "forSale": 7
+    },
+    {
+      "discogsId": 15571648,
+      "lowest": 1.92,
+      "forSale": 3
+    },
+    {
+      "discogsId": 2233466,
+      "lowest": 0.66,
+      "forSale": 26
+    },
+    {
+      "discogsId": 13698147,
+      "lowest": 5.39,
+      "forSale": 2
+    },
+    {
+      "discogsId": 8785043,
+      "lowest": 0.97,
+      "forSale": 23
+    },
+    {
+      "discogsId": 1682721,
+      "lowest": 0.53,
+      "forSale": 109
+    },
+    {
+      "discogsId": 23768045,
+      "lowest": 2.9,
+      "forSale": 4
+    },
+    {
+      "discogsId": 6803588,
+      "lowest": 6.08,
+      "forSale": 1
+    },
+    {
+      "discogsId": 7482587,
+      "lowest": 0.74,
+      "forSale": 2
+    },
+    {
+      "discogsId": 2925501,
+      "lowest": 3.5,
+      "forSale": 1
+    },
+    {
+      "discogsId": 8975670,
+      "lowest": 7.4,
+      "forSale": 9
+    },
+    {
+      "discogsId": 28065738,
+      "lowest": 2.7,
+      "forSale": 1
+    },
+    {
+      "discogsId": 4992678,
+      "lowest": 0.5,
+      "forSale": 26
+    },
+    {
+      "discogsId": 28965274,
+      "lowest": 2.69,
+      "forSale": 1
+    },
+    {
+      "discogsId": 8680121,
+      "lowest": 2.16,
+      "forSale": 2
+    },
+    {
+      "discogsId": 2241548,
+      "lowest": 1.62,
+      "forSale": 31
+    },
+    {
+      "discogsId": 21210448,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 35901679,
+      "lowest": 4,
+      "forSale": 1
+    },
+    {
+      "discogsId": 2233003,
+      "lowest": 0.69,
+      "forSale": 17
+    },
+    {
+      "discogsId": 31423913,
+      "lowest": 3.5,
+      "forSale": 1
+    },
+    {
+      "discogsId": 31923061,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 6829339,
+      "lowest": 0.68,
+      "forSale": 25
+    },
+    {
+      "discogsId": 2753621,
+      "lowest": 1.34,
+      "forSale": 37
+    },
+    {
+      "discogsId": 22114885,
+      "lowest": 13.51,
+      "forSale": 2
+    },
+    {
+      "discogsId": 23633552,
+      "lowest": 10.01,
+      "forSale": 2
+    },
+    {
+      "discogsId": 4726911,
+      "lowest": 1.16,
+      "forSale": 55
+    },
+    {
+      "discogsId": 6767891,
+      "lowest": 1.48,
+      "forSale": 16
+    },
+    {
+      "discogsId": 6610952,
+      "lowest": 4,
+      "forSale": 5
+    },
+    {
+      "discogsId": 31320144,
+      "lowest": 1.55,
+      "forSale": 1
+    },
+    {
+      "discogsId": 11195497,
+      "lowest": 0.97,
+      "forSale": 18
+    },
+    {
+      "discogsId": 5345242,
+      "lowest": 1.24,
+      "forSale": 23
+    },
+    {
+      "discogsId": 31085117,
+      "lowest": 2.19,
+      "forSale": 3
+    },
+    {
+      "discogsId": 14549529,
+      "lowest": 0.78,
+      "forSale": 5
+    },
+    {
+      "discogsId": 12280918,
+      "lowest": 1.11,
+      "forSale": 4
+    },
+    {
+      "discogsId": 24365930,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 21214852,
+      "lowest": 5.39,
+      "forSale": 4
+    },
+    {
+      "discogsId": 7582399,
+      "lowest": 2,
+      "forSale": 3
+    },
+    {
+      "discogsId": 23469236,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 12100297,
+      "lowest": 5.91,
+      "forSale": 4
+    },
+    {
+      "discogsId": 33795864,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 10505756,
+      "lowest": 4.5,
+      "forSale": 1
+    },
+    {
+      "discogsId": 5478300,
+      "lowest": 1.28,
+      "forSale": 17
+    },
+    {
+      "discogsId": 2170765,
+      "lowest": 0.66,
+      "forSale": 24
+    },
+    {
+      "discogsId": 17091738,
+      "lowest": 3.99,
+      "forSale": 1
+    },
+    {
+      "discogsId": 9617476,
+      "lowest": 2.69,
+      "forSale": 4
+    },
+    {
+      "discogsId": 25367845,
+      "lowest": 4.04,
+      "forSale": 3
+    },
+    {
+      "discogsId": 6884828,
+      "lowest": 1.62,
+      "forSale": 12
+    },
+    {
+      "discogsId": 6759746,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 15255128,
+      "lowest": 5,
+      "forSale": 2
+    },
+    {
+      "discogsId": 27965565,
+      "lowest": 1.73,
+      "forSale": 8
+    },
+    {
+      "discogsId": 3497091,
+      "lowest": 1.92,
+      "forSale": 4
+    },
+    {
+      "discogsId": 11401002,
+      "lowest": 1.35,
+      "forSale": 11
+    },
+    {
+      "discogsId": 6869852,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 6539982,
+      "lowest": 1.19,
+      "forSale": 33
+    },
+    {
+      "discogsId": 5035829,
+      "lowest": 0.39,
+      "forSale": 18
+    },
+    {
+      "discogsId": 2398718,
+      "lowest": 0.46,
+      "forSale": 57
+    },
+    {
+      "discogsId": 1444191,
+      "lowest": 1.28,
+      "forSale": 20
+    },
+    {
+      "discogsId": 28898938,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 8521425,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 2226924,
+      "lowest": 0.25,
+      "forSale": 98
+    },
+    {
+      "discogsId": 3786573,
+      "lowest": 0.01,
+      "forSale": 43
+    },
+    {
+      "discogsId": 7445073,
+      "lowest": 1.35,
+      "forSale": 14
+    },
+    {
+      "discogsId": 10403319,
+      "lowest": 1.5,
+      "forSale": 3
+    },
+    {
+      "discogsId": 12203162,
+      "lowest": 3.99,
+      "forSale": 10
+    },
+    {
+      "discogsId": 7204268,
+      "lowest": 1.41,
+      "forSale": 2
+    },
+    {
+      "discogsId": 6611528,
+      "lowest": 0.27,
+      "forSale": 51
+    },
+    {
+      "discogsId": 31634845,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 9092222,
+      "lowest": 2.69,
+      "forSale": 7
+    },
+    {
+      "discogsId": 32541291,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 1593618,
+      "lowest": 7,
+      "forSale": 10
+    },
+    {
+      "discogsId": 8701094,
+      "lowest": 0.01,
+      "forSale": 18
+    },
+    {
+      "discogsId": 4573357,
+      "lowest": 1.19,
+      "forSale": 11
+    },
+    {
+      "discogsId": 10122551,
+      "lowest": 1.19,
+      "forSale": 8
+    },
+    {
+      "discogsId": 3241345,
+      "lowest": 0.21,
+      "forSale": 57
+    },
+    {
+      "discogsId": 7820396,
+      "lowest": 1,
+      "forSale": 10
+    },
+    {
+      "discogsId": 3076864,
+      "lowest": 1.19,
+      "forSale": 23
+    },
+    {
+      "discogsId": 5760263,
+      "lowest": 1.19,
+      "forSale": 18
+    },
+    {
+      "discogsId": 9224321,
+      "lowest": 4.24,
+      "forSale": 10
+    },
+    {
+      "discogsId": 11645209,
+      "lowest": 2,
+      "forSale": 6
+    },
+    {
+      "discogsId": 3418745,
+      "lowest": 1.26,
+      "forSale": 27
+    },
+    {
+      "discogsId": 2117693,
+      "lowest": 2.49,
+      "forSale": 43
+    },
+    {
+      "discogsId": 4552784,
+      "lowest": 2.7,
+      "forSale": 34
+    },
+    {
+      "discogsId": 7801594,
+      "lowest": 0.43,
+      "forSale": 19
+    },
+    {
+      "discogsId": 10960528,
+      "lowest": 10,
+      "forSale": 1
+    },
+    {
+      "discogsId": 395642,
+      "lowest": 1.5,
+      "forSale": 19
+    },
+    {
+      "discogsId": 197626,
+      "lowest": 1,
+      "forSale": 138
+    },
+    {
+      "discogsId": 56303,
+      "lowest": 0.74,
+      "forSale": 200
+    },
+    {
+      "discogsId": 197627,
+      "lowest": 1.77,
+      "forSale": 90
+    },
+    {
+      "discogsId": 772013,
+      "lowest": 1,
+      "forSale": 136
+    },
+    {
+      "discogsId": 589486,
+      "lowest": 1.18,
+      "forSale": 77
+    },
+    {
+      "discogsId": 3367031,
+      "lowest": 4.01,
+      "forSale": 34
+    },
+    {
+      "discogsId": 778001,
+      "lowest": 0.3,
+      "forSale": 271
+    },
+    {
+      "discogsId": 5784006,
+      "lowest": 5,
+      "forSale": 56
+    },
+    {
+      "discogsId": 14788262,
+      "lowest": null,
+      "forSale": 0
+    },
+    {
+      "discogsId": 7387168,
+      "lowest": 2.15,
+      "forSale": 21
+    },
+    {
+      "discogsId": 2759910,
+      "lowest": 0.23,
+      "forSale": 32
+    }
+  ]
+}

@@ -15,6 +15,17 @@ const BASE = 'https://api.discogs.com';
 /** Discogs requires a descriptive user-agent and blocks generic ones. */
 export const USER_AGENT = 'VinylSorter/0.1 +https://github.com/djDAOjones/vinyl-sorting';
 
+/**
+ * The currency every stored price is in.
+ *
+ * One constant rather than a setting: `release.lowest_price` is a
+ * single REAL column with no currency beside it, so two jobs fetching
+ * in different currencies would silently mix pounds and dollars in one
+ * column and the collection total would be a number with no meaning.
+ * Change it here and re-run the refresh — never per caller.
+ */
+export const PRICE_CURRENCY = 'GBP';
+
 export interface SearchResult {
   id: number;
   catno?: string;
@@ -194,7 +205,17 @@ export class DiscogsClient {
     return body.results ?? [];
   }
 
-  async getRelease(id: number): Promise<Record<string, unknown>> {
-    return await this.#get(`/releases/${id}`) as Record<string, unknown>;
+  /**
+   * A release, priced in a currency we NAME.
+   *
+   * `lowest_price` comes back in the currency of whichever account the
+   * token belongs to unless `curr_abbr` says otherwise, so a number
+   * stored without asking is a number nobody can label later. The
+   * column has held nothing since M1; it is being filled now, and
+   * filling it with an unlabelled figure would be worse than leaving
+   * it empty (CATALOGUE-CONTROLS).
+   */
+  async getRelease(id: number, currency: string = PRICE_CURRENCY): Promise<Record<string, unknown>> {
+    return await this.#get(`/releases/${id}`, { curr_abbr: currency }) as Record<string, unknown>;
   }
 }

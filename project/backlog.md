@@ -60,15 +60,8 @@
 
 ### Next milestone
 
-<!-- Intent: The half of the interface brief needing data the database does not hold — value (genre shipped as the four lists on 2026-09-09), a re-verification sweep for when the backlog empties, and readings that name their source photograph. Each blocked on a migration, a backfill or a pack-format change rather than on M2. -->
+<!-- Intent: What is left of the interface brief once the data arrived — value shipped on 2026-09-14 and genre as the four lists on 2026-09-09, so the half that needed a migration or a backfill is done. The remainder is a re-verification sweep for when the backlog empties, and readings that name their source photograph: a pack-format change rather than anything M2 owes. -->
 
-- [~] **CATALOGUE-CONTROLS Sort, filter and choose columns on the
-  collection screen** (2026-08-31) — The interface half is done — every
-  column sortable and choosable, five named views including the mop-up
-  crate, and the whole view in the URL — and genre shipped as the four
-  lists (FOUR-LISTS, 2026-09-09), so what remains is the one sort that
-  needs data the database does not hold: value, which needs a price
-  backfill.
 - [ ] **AI-ROUND-TRIP Make the hand-carried reading loop fast, and make
   it say which photograph it read** (2026-08-31) — The maintainer kept the
   no-metered-services rule, so the answer is a better round trip rather

@@ -164,9 +164,15 @@ about that row (4xx).
 
 ## Browse and correct the collection
 
-`/browse` lists every row with its catalogue number, label, crate, match
-state and photograph count, filterable by state, by whether a photograph
-exists, and by free text. Opening one shows every field with **where the
+`/browse` opens on six columns — id, name, title, label, **~value** and
+match — filterable by state, by whether a photograph exists, and by free
+text. Twenty-five more, catalogue number and crate and photograph count
+among them, are a tick away in the column chooser, and any set travels
+in the URL. Each of those three falls back in provenance order — what a
+person typed, then what was read off a photograph, then (label only)
+what Discogs says — and both machine tiers lean, with the tooltip naming
+which machine and saying nobody has confirmed it. Only a value a person
+stands behind stands upright. Opening one shows every field with **where the
 value came from** and whether a person has confirmed it — read at the
 shelf, from Discogs, read off a photograph, legacy import, guess, or
 nothing recorded at all — plus the match history behind the row: each
@@ -181,6 +187,29 @@ decision-eligible — only the review queue can confirm a release.
 Photographs are listed by key rather than shown: serving one needs a
 Worker route a sign-in-free v1 deliberately does not have. Use
 `tools/photos-pull.mjs` to fetch them to a desk.
+
+### ~value: what the cheapest copy is asking
+
+`~value` is `release.lowest_price` — the cheapest current listing on
+Discogs in GBP. Not a valuation and not what a disc would fetch, which
+is what the tilde is for. Three states, and they are different facts: an
+em-dash means nobody has looked, `none` means it was checked and nothing
+is listed, and a figure over 30 days old is dimmed and dated in place so
+a stale market snapshot cannot read as today's.
+
+A new match carries a price for free — it comes off the release request
+the tracklist already pays for. Everything matched before 2026-09-14
+needs the backfill, and prices go stale, so re-run it:
+
+```bash
+node tools/price-refresh.mjs --older-than 30
+```
+
+One request per release, paced as everything here is. It writes three
+columns on `release` and nothing else — no item repointed, no
+confirmation altered. Unlike `release-backfill.mjs` it overwrites rather
+than fills gaps, because a price that is never overwritten is a price
+that lies.
 
 ## Re-verify the existing matches
 

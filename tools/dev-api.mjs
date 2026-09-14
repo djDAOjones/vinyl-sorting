@@ -77,8 +77,52 @@ if (args.includes('--demo')) {
     INSERT INTO raw_value (item_id, field, value) VALUES (2, 'label_raw', 'Classics for Pleasure');
     INSERT INTO field_source (entity, entity_id, field, source)
       VALUES ('raw_value', 1, 'label_raw', 'vision');
+
+    -- Item 4 is PHOTO-ONLY: photographed and read, never typed at, and
+    -- the reason the collection screen reads through to the reading at
+    -- all. With capture empty, name and title come off the photograph
+    -- and lean; no capture row exists for it deliberately.
+    INSERT INTO item (crate, position, list) VALUES ('C2','7','classical');
+    INSERT INTO raw_value (item_id, field, value) VALUES
+      (4, 'name_raw', 'Klemperer'),
+      (4, 'title_raw', 'Beethoven Symphony No. 7'),
+      (4, 'catno_raw', 'SAX 2334');
+    INSERT INTO field_source (entity, entity_id, field, source) VALUES
+      ('raw_value', 2, 'name_raw', 'vision'),
+      ('raw_value', 3, 'title_raw', 'vision'),
+      ('raw_value', 4, 'catno_raw', 'vision');
+
+    -- THE FOUR STATES OF ~value, one per row, because the screen has to
+    -- render all four without any of them looking broken or looking
+    -- like each other (CATALOGUE-CONTROLS):
+    --   item 1  a fresh price
+    --   item 2  checked, nothing listed  -> none
+    --   item 3  no release at all        -> em-dash, nobody has looked
+    --   item 4  a price 45 days old      -> dimmed, and dated in place
+    INSERT INTO release (discogs_id, title, label, catno, lowest_price, num_for_sale, price_checked_at)
+      VALUES
+        (3200885, 'Mahler - Symphony No. 1', 'Decca', 'SXL 6113', 12.5, 8, datetime('now')),
+        (3310022, 'Beethoven - Symphony No. 4', 'Classics for Pleasure', 'CFP 40001', NULL, 0, datetime('now')),
+        (1122334, 'Beethoven - Symphony No. 7', 'Columbia', 'SAX 2334', 2.15, 21, datetime('now','-45 days'));
+    UPDATE item SET release_id = 1 WHERE id = 1;
+    UPDATE item SET release_id = 2 WHERE id = 2;
+    UPDATE item SET release_id = 3 WHERE id = 4;
+
+    -- Item 5 is the shape of the 446 IMPORTED rows, and the third tier
+    -- of the label column exists for it: M0's spreadsheet label column
+    -- came from Discogs, so it landed in release.label and
+    -- capture.label_raw is empty. No photograph, so no reading either.
+    -- Its label leans as sourced where item 4's leans as a reading and
+    -- item 1's stands upright.
+    INSERT INTO item (crate, position, list, import_ref)
+      VALUES ('A1','3','classical','DG-0007');
+    INSERT INTO capture (item_id, catno_raw, name_raw, title_raw)
+      VALUES (5, 'SXL 2314', 'Ansermet', 'Swan Lake');
+    INSERT INTO release (discogs_id, title, label, catno)
+      VALUES (4455667, 'Tchaikovsky - Swan Lake', 'Decca', 'SXL 2314');
+    UPDATE item SET release_id = 4 WHERE id = 5;
   `);
-  console.log('dev-api: seeded 3 review-queue items');
+  console.log('dev-api: seeded 5 collection items (3 in the review queue)');
 }
 
 const app = createApp();

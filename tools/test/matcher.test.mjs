@@ -13,7 +13,9 @@ import { compactCatno, normaliseCatno } from '../../worker/match/normalise.ts';
 import { checkCatno, checkRow } from '../../worker/match/sanity.ts';
 import { GATE, applyGate, scoreCandidate } from '../../worker/match/score.ts';
 import { buildQueries, otherCatnoVariants } from '../../worker/match/queries.ts';
-import { claimRow, fetchTracks, matchRow, parseDuration, persistRun } from '../../worker/match/run.ts';
+import {
+  claimRow, fetchReleaseFacts, matchRow, parseDuration, persistRun, priceOf,
+} from '../../worker/match/run.ts';
 import { makeEnv } from './helpers/bindings.mjs';
 
 // ── normalisation ─────────────────────────────────────────────────
@@ -416,11 +418,105 @@ test('a release already known still gains a tracklist it lacks', async () => {
     'a known release with no tracklist acquires one');
 });
 
+test('a price of nothing and a price never taken are different facts', () => {
+  // `release.lowest_price` has been an empty column since M1, and the
+  // reason to be careful filling it is that "nobody is selling one" and
+  // "nobody has looked" are opposite answers. A payload carrying
+  // neither key says nothing at all and must not be written as zero.
+  assert.deepEqual(priceOf({ lowest_price: 12.5, num_for_sale: 4 }), { lowest: 12.5, forSale: 4 });
+  assert.deepEqual(priceOf({ num_for_sale: 0 }), { lowest: null, forSale: 0 },
+    'nothing listed is a fact about the marketplace, not a missing reading');
+  assert.equal(priceOf({ title: 'Mahler' }), null,
+    'a payload with no price keys must not be stored as a price of nothing');
+  assert.equal(priceOf({ lowest_price: null, num_for_sale: null }), null);
+});
+
+test('an accepted match stores the price off the release it already fetched', async () => {
+  // The tracklist call was already being paid for, so the marketplace
+  // figures ride along at no extra rate limit — which is what makes the
+  // column fillable at all on a 30/min budget (CATALOGUE-CONTROLS).
+  const env = makeEnv();
+  env.DB.raw.exec("INSERT INTO item (crate) VALUES ('B4')");
+  env.DB.raw.exec("INSERT INTO capture (item_id, catno_raw, label_raw, title_raw) "
+    + "VALUES (1, 'SXL 6113', 'Decca', 'Mahler')");
+
+  let calls = 0;
+  const client = {
+    search: async () => [{ id: 999, catno: 'SXL 6113', label: ['Decca'], title: 'Mahler' }],
+    getRelease: async () => {
+      calls += 1;
+      return { lowest_price: 8.75, num_for_sale: 12, tracklist: [{ position: 'A1', title: 'Allegro' }] };
+    },
+  };
+  const row = { itemId: 1, catnoRaw: 'SXL 6113', labelRaw: 'Decca', titleRaw: 'Mahler' };
+  await persistRun(env, row, await matchRow(row, client), await claimRow(env, 1));
+
+  const rel = env.DB.raw.prepare(
+    'SELECT lowest_price, num_for_sale, price_checked_at FROM release').get();
+  assert.equal(Number(rel.lowest_price), 8.75);
+  assert.equal(Number(rel.num_for_sale), 12);
+  assert.ok(rel.price_checked_at, 'a price with no date on it reads as current for ever');
+  assert.equal(calls, 1, 'the price must cost no request the tracklist did not already make');
+});
+
+test('a release seen before has its price refreshed but not its tracklist', async () => {
+  // The asymmetry is the point: a tracklist is a fact about a pressing
+  // and is written once; a lowest listing is a fact about a marketplace
+  // on a Tuesday, and a stale one left in place reads as today's.
+  const env = makeEnv();
+  env.DB.raw.exec("INSERT INTO item (crate) VALUES ('B4'), ('B5')");
+  env.DB.raw.exec("INSERT INTO capture (item_id, catno_raw, label_raw, title_raw) "
+    + "VALUES (1,'SXL 6113','Decca','Mahler'), (2,'SXL 6113','Decca','Mahler')");
+
+  let price = 8.75;
+  const client = {
+    search: async () => [{ id: 999, catno: 'SXL 6113', label: ['Decca'], title: 'Mahler' }],
+    getRelease: async () => ({
+      lowest_price: price, num_for_sale: 12, tracklist: [{ position: 'A1', title: 'Allegro' }],
+    }),
+  };
+  const row1 = { itemId: 1, catnoRaw: 'SXL 6113', labelRaw: 'Decca', titleRaw: 'Mahler' };
+  await persistRun(env, row1, await matchRow(row1, client), await claimRow(env, 1));
+
+  price = 21.5;
+  const row2 = { itemId: 2, catnoRaw: 'SXL 6113', labelRaw: 'Decca', titleRaw: 'Mahler' };
+  await persistRun(env, row2, await matchRow(row2, client), await claimRow(env, 2));
+
+  assert.equal(Number(env.DB.raw.prepare('SELECT lowest_price FROM release').get().lowest_price), 21.5,
+    'the second sighting must carry the newer price');
+  assert.equal(Number(env.DB.raw.prepare('SELECT COUNT(*) n FROM release_track').get().n), 1,
+    'a release that already has a tracklist is still left alone');
+});
+
+test('a release endpoint that says nothing about price leaves the column alone', async () => {
+  // A payload with no price keys must not blank a figure a refresh pass
+  // took an hour to collect.
+  const env = makeEnv();
+  env.DB.raw.exec("INSERT INTO item (crate) VALUES ('B4'), ('B5')");
+  env.DB.raw.exec("INSERT INTO capture (item_id, catno_raw, label_raw, title_raw) "
+    + "VALUES (1,'SXL 6113','Decca','Mahler'), (2,'SXL 6113','Decca','Mahler')");
+
+  let payload = { lowest_price: 8.75, num_for_sale: 12, tracklist: [{ position: 'A1', title: 'Allegro' }] };
+  const client = {
+    search: async () => [{ id: 999, catno: 'SXL 6113', label: ['Decca'], title: 'Mahler' }],
+    getRelease: async () => payload,
+  };
+  const row1 = { itemId: 1, catnoRaw: 'SXL 6113', labelRaw: 'Decca', titleRaw: 'Mahler' };
+  await persistRun(env, row1, await matchRow(row1, client), await claimRow(env, 1));
+
+  payload = { tracklist: [{ position: 'A1', title: 'Allegro' }] };
+  const row2 = { itemId: 2, catnoRaw: 'SXL 6113', labelRaw: 'Decca', titleRaw: 'Mahler' };
+  await persistRun(env, row2, await matchRow(row2, client), await claimRow(env, 2));
+
+  assert.equal(Number(env.DB.raw.prepare('SELECT lowest_price FROM release').get().lowest_price), 8.75,
+    'silence about the price is not a price of nothing');
+});
+
 test('a tracklist that cannot be fetched does not fail the match', async () => {
   // The verdict was reached on the search rungs and stands. Enrichment
   // that fails loses nothing that was ever had.
   const client = { search: async () => [], getRelease: async () => { throw new Error('HTTP 502'); } };
-  assert.deepEqual(await fetchTracks(client, 999), []);
+  assert.deepEqual(await fetchReleaseFacts(client, 999), { tracks: [], price: null });
 });
 
 test('a verified release is stored with what Discogs actually returned', async () => {

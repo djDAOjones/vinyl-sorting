@@ -175,7 +175,35 @@ dd:hover .ftools, dd:focus-within .ftools { opacity: 1; }
    a sentence under each field; in a table of 484 rows there is no room
    for a sentence, so it is the type: a reading leans, a typed value
    stands upright. */
-table.rows td.reading { font-style: italic; color: var(--text-2); }
+/* Both machine tiers lean; only a value a person stands behind stands
+   upright. `.sourced` is Discogs' answer, shown where capture and the
+   photograph both have nothing — the label column on the 290 imported
+   rows whose spreadsheet column came from Discogs in the first place.
+   Distinct class, same type, because the tooltip carries WHICH machine
+   and the eye only needs to know it was not a person. */
+table.rows td.reading,
+table.rows td.sourced { font-style: italic; color: var(--text-2); }
 
 /* A closed set of answers edits through a select (FOUR-LISTS). */
 .inline select { flex: 1 1 8rem; min-width: 0; width: auto; font-size: var(--t-base); padding: var(--s1); min-height: 2rem; }
+
+/* ── ~value: the lowest listing on Discogs (CATALOGUE-CONTROLS) ───
+   A market snapshot, not a valuation — which is what the tilde in the
+   heading and in every cell is for. `.money` inherits td.num's right
+   alignment and mono figures so a column of prices can be scanned down
+   rather than read across.
+
+   `.stale` is the honest part. A price over PRICE_STALE_DAYS old is
+   dimmed and carries its date in the cell, so nobody reads a six-week-
+   old cheapest listing as today's — the record asked for
+   price_checked_at to be shown rather than hidden, and a tooltip alone
+   hides it from anyone not hovering. */
+/* `.money` rides on td.num for its mono figures and right alignment —
+   valueCell always emits both — and only overrides the colour: a price
+   is one of six columns the screen opens on, so it carries the same
+   weight as the name beside it rather than an id's. `--text`, not
+   `--text-1`: there is no such token, and naming one that does not
+   exist fails silently as an inherited colour that looks deliberate. */
+table.rows td.money { color: var(--text); }
+table.rows td.money.stale { color: var(--text-3); }
+table.rows td.money .asat { font-size: var(--t-xs); color: var(--text-3); margin-left: var(--s1); }
