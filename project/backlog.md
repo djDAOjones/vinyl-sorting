@@ -15,6 +15,10 @@
   Worker secrets are per-script and EDIT_TOKEN did not come across — so
   correcting a reading and downloading an export both answer 503 until one
   command is run.
+- [ ] **PHOTO-BATCH-REQUEUE Requeue the 29 newly populated photo
+  entries** [sign-off] (2026-09-14) — Approve clearing the 29 exact empty
+  zero-query matching attempts for items 490–518 so the online matcher can
+  read their newly populated vision fields.
 - [~] **SPIKE-PHOTO-TO-FIELDS Can a label photograph populate the
   capture fields?** [spike] [blocked: ground truth typed to the scorer's
   columns — `decoy_numbers` above all] (2026-08-30) — The round trip has

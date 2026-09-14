@@ -1,0 +1,29 @@
+{
+  "records": 30,
+  "photos": 97,
+  "populated_fields": 154,
+  "split": {
+    "original_item": 499,
+    "from_photo": 5,
+    "staying_photos": 4,
+    "moving_photos": 2
+  },
+  "sqlite_rehearsal": "passed",
+  "capture_unchanged": true,
+  "match_history_unchanged": true,
+  "foreign_key_check": "passed",
+  "repeat_import": "idempotent",
+  "vision_confirmations": 0,
+  "production_verification": "passed",
+  "new_item": 519,
+  "original_items_unchanged": true,
+  "photos_conserved": true,
+  "population_verified_fields": 154,
+  "preserved_empty_match_runs": 29,
+  "npm_gate": "passed",
+  "tests_passed": 300,
+  "photo_import": "30/30",
+  "memory_structural_failures": 0,
+  "memory_budget_warnings": 5,
+  "backlog_check": "passed"
+}

@@ -2,6 +2,17 @@
 
 <!-- Append-only, newest first. -->
 
+
+## 2026-09-14 — PHOTO-BATCH-2026-09-14: populate 30 photo readings and split item 499
+
+**Decision:** Read the 97 new photos for entries 490–518 without catalogue lookups. Insert 154 unconfirmed `vision` raw fields for 30 records. Item 499 keeps the four Jill Jones photos; new item 519 receives the two David Essex photos and inherits its collection list and capture/location metadata. All human capture rows, original item metadata, photo objects and matching history are preserved.
+
+**Rationale:** The user requested transcription, population and separation of combined records, ready for online matching. Sleeve and label evidence identifies one definite combined entry; the Moody Blues double album and the two-sided Clapton single stay together. Known cassette/CD, matrix and price/label codes are excluded from matcher alternatives. Unreadable dates stay blank. These are image readings, not confirmed release identities or an accuracy benchmark.
+
+**Validation:** Existing importer accepts 30/30 IDs. A rehearsal against the live schema checks the 154 values, idempotence, foreign keys and unchanged capture/history; production readback verifies all values and all 97 photo assignments. Local evidence and checksums are in `data/photo-runs/2026-09-14-fresh-batch/`; images, database snapshots and SQL remain ignored.
+
+**Pending:** PHOTO-BATCH-REQUEUE holds approval to remove exactly 29 empty, unreviewed, zero-query matching attempts. Their deletion is held under the no-destructive-data rule; no manual match run was started. Item 519 is eligible for the existing scheduler.
+
 ## 2026-09-11 — NEILS-LIST: lists become data, and item is never rebuilt on D1
 
 **Decision:** a tester's list — Neil's — is added, and with it the shape

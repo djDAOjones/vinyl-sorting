@@ -1,0 +1,4 @@
+photos/
+*.private.json
+photo-manifest.json
+*.sql

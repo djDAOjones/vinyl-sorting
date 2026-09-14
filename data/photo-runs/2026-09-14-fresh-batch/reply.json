@@ -1,0 +1,383 @@
+[
+  {
+    "row_id": "490",
+    "catno_raw": "2490-137 A",
+    "label_raw": "Oyster; Polydor",
+    "name_raw": "Rainbow; Blackmore's Rainbow",
+    "title_raw": "Rising",
+    "year_raw": "℗ 1976",
+    "side": "A",
+    "other_numbers": [],
+    "unreadable": [],
+    "rotate_cw": {
+      "490-2.jpg": 270
+    }
+  },
+  {
+    "row_id": "491",
+    "catno_raw": "TWINS 124",
+    "label_raw": "Arista",
+    "name_raw": "Thompson Twins",
+    "title_raw": "You Take Me Up",
+    "year_raw": "℗ 1984; © 1984",
+    "side": "1",
+    "other_numbers": [],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "492",
+    "catno_raw": "205 971",
+    "label_raw": "Arista",
+    "name_raw": "Thompson Twins",
+    "title_raw": "Into the Gap",
+    "year_raw": null,
+    "side": "TWO",
+    "other_numbers": [],
+    "unreadable": [
+      "year_raw"
+    ],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "493",
+    "catno_raw": "TWINS 122",
+    "label_raw": "Arista",
+    "name_raw": "Thompson Twins",
+    "title_raw": "Hold Me Now",
+    "year_raw": "℗ 1983; © 1983",
+    "side": "B",
+    "other_numbers": [],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "494",
+    "catno_raw": "CHS 12 2668",
+    "label_raw": "Reformation; Chrysalis",
+    "name_raw": "Spandau Ballet",
+    "title_raw": "Communication (Club Mix)",
+    "year_raw": "℗ 1983; © 1983",
+    "side": "B",
+    "other_numbers": [],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "495",
+    "catno_raw": "CHS 12 2602",
+    "label_raw": "Reformation; Chrysalis",
+    "name_raw": "Spandau Ballet",
+    "title_raw": "Instinction",
+    "year_raw": "℗ 1982; © 1982",
+    "side": "B",
+    "other_numbers": [],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "496",
+    "catno_raw": "S EPC 80341",
+    "label_raw": "Epic",
+    "name_raw": "Russ Ballard",
+    "title_raw": "Russ Ballard",
+    "year_raw": "℗ 1974",
+    "side": "1",
+    "other_numbers": [
+      "EPC 80341"
+    ],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "497",
+    "catno_raw": "MCF 2704",
+    "label_raw": "MCA Records",
+    "name_raw": "Jack Jones",
+    "title_raw": "Best of Jack Jones",
+    "year_raw": null,
+    "side": "1",
+    "other_numbers": [
+      "0C 062·96427",
+      "MAPS 7776"
+    ],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "498",
+    "catno_raw": "6369 924",
+    "label_raw": "The Famous Charisma Label",
+    "name_raw": "Bo Hansson",
+    "title_raw": "Lord of the Rings",
+    "year_raw": "℗ 1972",
+    "side": "1",
+    "other_numbers": [],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "499",
+    "catno_raw": "WX 110",
+    "label_raw": "Paisley Park Records",
+    "name_raw": "Jill Jones",
+    "title_raw": "Jill Jones",
+    "year_raw": null,
+    "side": "1",
+    "other_numbers": [
+      "925 575-1"
+    ],
+    "unreadable": [
+      "year_raw"
+    ],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "500",
+    "catno_raw": "6359 109",
+    "label_raw": "Vertigo",
+    "name_raw": "Dire Straits",
+    "title_raw": "Love Over Gold",
+    "year_raw": "℗ 1982",
+    "side": "2",
+    "other_numbers": [],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "501",
+    "catno_raw": "465658 1",
+    "label_raw": "CBS",
+    "name_raw": "Billy Joel",
+    "title_raw": "Storm Front",
+    "year_raw": "℗ 1989",
+    "side": "1",
+    "other_numbers": [],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "502",
+    "catno_raw": "MB 1/2",
+    "label_raw": "Threshold",
+    "name_raw": "The Moody Blues",
+    "title_raw": "This Is the Moody Blues",
+    "year_raw": "℗ 1974",
+    "side": null,
+    "other_numbers": [
+      "MB 1"
+    ],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "503",
+    "catno_raw": "9102 501",
+    "label_raw": "Mercury",
+    "name_raw": "10 C.C.",
+    "title_raw": "How Dare You",
+    "year_raw": "℗ 1975",
+    "side": "1",
+    "other_numbers": [],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "504",
+    "catno_raw": "U26",
+    "label_raw": "Island",
+    "name_raw": "U2",
+    "title_raw": "The Joshua Tree",
+    "year_raw": "℗ 1987",
+    "side": "ONE",
+    "other_numbers": [],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "505",
+    "catno_raw": "EGOX 48",
+    "label_raw": "E'G",
+    "name_raw": "Bryan Ferry",
+    "title_raw": "He'll Have to Go",
+    "year_raw": "℗ 1988 (track 1); ℗ 1985 (track 2); © 1989",
+    "side": "One",
+    "other_numbers": [],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "506",
+    "catno_raw": "510341-1",
+    "label_raw": "Vertigo",
+    "name_raw": "Status Quo",
+    "title_raw": "Rock 'til You Drop",
+    "year_raw": "℗ 1991; © 1991",
+    "side": "B (A tracklist also printed)",
+    "other_numbers": [],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "507",
+    "catno_raw": "BELLS 244",
+    "label_raw": "Bell",
+    "name_raw": "Bay City Rollers",
+    "title_raw": "Rollin'",
+    "year_raw": "℗ 1974",
+    "side": "1",
+    "other_numbers": [
+      "2308 101"
+    ],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "508",
+    "catno_raw": "9102 500",
+    "label_raw": "Mercury",
+    "name_raw": "10 cc",
+    "title_raw": "The Original Soundtrack",
+    "year_raw": "℗ 1975",
+    "side": "1",
+    "other_numbers": [],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "509",
+    "catno_raw": "EPC 26514",
+    "label_raw": "Epic; Burning Rome Records",
+    "name_raw": "Spear of Destiny",
+    "title_raw": "World Service",
+    "year_raw": "℗ 1985",
+    "side": "1",
+    "other_numbers": [],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "510",
+    "catno_raw": "RSOX 87-A",
+    "label_raw": "RSO",
+    "name_raw": "Derek and the Dominoes; Eric Clapton",
+    "title_raw": "Layla (Full Version); Wonderful Tonight (Live)",
+    "year_raw": "℗ 1970 (side one); ℗ 1980 (side two)",
+    "side": "ONE; TWO",
+    "other_numbers": [],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "511",
+    "catno_raw": "K 56032",
+    "label_raw": "Warner Bros. Records",
+    "name_raw": "Alan Price",
+    "title_raw": "Between Today and Yesterday",
+    "year_raw": "℗ 1974; © 1974",
+    "side": "ONE",
+    "other_numbers": [],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "512",
+    "catno_raw": "UAS 29062",
+    "label_raw": "United Artists",
+    "name_raw": "Salvation",
+    "title_raw": "Salvation",
+    "year_raw": "℗ 1968",
+    "side": "1",
+    "other_numbers": [],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "513",
+    "catno_raw": "1A 062-64121",
+    "label_raw": "Motown",
+    "name_raw": "Stevie Wonder",
+    "title_raw": "Hotter Than July",
+    "year_raw": "℗ 1980",
+    "side": "1",
+    "other_numbers": [],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "514",
+    "catno_raw": "K 52181",
+    "label_raw": "Asylum Records",
+    "name_raw": "Eagles",
+    "title_raw": "The Long Run",
+    "year_raw": "℗ 1979",
+    "side": "ONE",
+    "other_numbers": [
+      "5E-508"
+    ],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "515",
+    "catno_raw": "JETLP 236",
+    "label_raw": "Jet Records",
+    "name_raw": "ELO",
+    "title_raw": "Time",
+    "year_raw": "℗ 1981",
+    "side": "1",
+    "other_numbers": [
+      "FZ 37371"
+    ],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "516",
+    "catno_raw": "K 52005",
+    "label_raw": "Elektra",
+    "name_raw": "Carly Simon",
+    "title_raw": "Hotcakes",
+    "year_raw": "℗ 1974",
+    "side": "1",
+    "other_numbers": [],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "517",
+    "catno_raw": "THS.7",
+    "label_raw": "Threshold",
+    "name_raw": "The Moody Blues",
+    "title_raw": "Seventh Sojourn",
+    "year_raw": "℗ 1972",
+    "side": "1",
+    "other_numbers": [],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "518",
+    "catno_raw": "AMLH 68502",
+    "label_raw": "A&M Records",
+    "name_raw": "The Police",
+    "title_raw": "Outlandos d'Amour",
+    "year_raw": "℗ 1978",
+    "side": "ONE",
+    "other_numbers": [],
+    "unreadable": [],
+    "rotate_cw": {}
+  },
+  {
+    "row_id": "519",
+    "catno_raw": "S 69160",
+    "label_raw": "CBS",
+    "name_raw": "David Essex",
+    "title_raw": "All the Fun of the Fair",
+    "year_raw": "℗ 1975",
+    "side": "1",
+    "other_numbers": [],
+    "unreadable": [],
+    "rotate_cw": {}
+  }
+]
