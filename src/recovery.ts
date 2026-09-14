@@ -8,6 +8,7 @@ import { readStoredPhoto } from './photo-read.ts';
 const app = document.getElementById('app')!;
 let snapshot: QueuedCapture[] = [], parts: QueuedCapture[][] = [], smallParts: QueuedCapture[][] = [];
 let prepared: File | null = null, objectUrl: string | null = null;
+let previousUrl: string | null = null;
 let exporting = false, uploadStarted = false, uploadBusy = false;
 let connection = 'Not checked. This test reads the server; only upload receipts prove that records were written.';
 let storage = 'Not checked';
@@ -16,11 +17,9 @@ let artifactDescription = '';
 let artifactSequence = 0;
 const mb = (bytes: number) => bytes < 1048576 ? `${Math.ceil(bytes / 1024)} KB` : `${(bytes / 1048576).toFixed(1)} MB`;
 const message = (text: string) => { document.getElementById('message')!.textContent = text; };
-function saveLink() {
-  if (!prepared || !objectUrl) return;
-  const a = document.createElement('a'); a.href = objectUrl; a.download = prepared.name;
-  document.body.appendChild(a); a.click(); a.remove();
-  message(`${artifactDescription} Download requested. Check the file in Files / Downloads. The phone queue is unchanged.`);
+function downloadRequested() {
+  trace(`Download requested: ${prepared?.name ?? 'no prepared file'}`);
+  message(`${artifactDescription} Download requested. Check the file in Files / Downloads, then select the next part. The phone queue is unchanged.`);
 }
 async function refresh() {
   if (exporting) return;
@@ -70,7 +69,7 @@ async function boot() {
     <div id="parts">${parts.map((group, i) => `<div class="backup-part"><span>Part ${i + 1} of ${parts.length}: ${group.length} entries, ${group.reduce((n, e) => n + e.photos.length, 0)} photos, ${mb(group.reduce((n, e) => n + e.photos.reduce((s, p) => s + p.blob.size, 0), 0))}</span><button class="btn btn-ghost" data-part="${i}">Prepare part ${i + 1}</button></div>`).join('') || '<p>No saved entries were found in this browser. If another app shows a queue, return to that app; this is not proof that its work is lost.</p>'}</div>
     <details><summary>Try smaller rescue parts</summary><p>These have separate numbering and target 8 MB each.</p>${smallParts.map((group, i) => `<div class="backup-part"><span>Small part ${i + 1} of ${smallParts.length}: ${group.length} entries</span><button class="btn btn-ghost" data-small="${i}">Prepare small part ${i + 1}</button></div>`).join('')}</details>
     <details><summary>Rescue one record at a time</summary><p>Use these if a part still cannot be prepared.</p>${snapshot.map((e, i) => `<div class="backup-part"><span>Record ${i + 1}: ${esc(e.clientId)} · ${e.photos.length} photos</span><button class="btn btn-ghost" data-record="${i}">Prepare record ${i + 1}</button></div>`).join('')}</details>
-    <div id="prepared" hidden><strong id="filename"></strong><p id="artifactSummary"></p><p>Save this file and check it exists before preparing the next one.</p><button class="btn btn-primary" id="share">Save / share file</button> <button class="btn btn-ghost" id="download">Download file</button><p><button class="btn btn-ghost" id="finish">I’ve saved this file</button></p></div>
+    <div id="prepared" hidden><strong id="filename"></strong><p id="artifactSummary"></p><p>Save this file and check it exists in Files / Downloads. Then select the next part directly—no acknowledgement button is needed.</p><button class="btn btn-primary" id="share">Save / share file</button> <a class="btn btn-ghost" id="download" download>Download file</a></div>
     <p id="message" role="status" aria-live="polite"></p>
     <h2>3. Diagnose and resume uploads</h2><p>Keep the app visible and the phone online while uploading. The count falls only after server confirmation. Confirmed entries are temporarily retained locally.</p>
     <button class="btn btn-ghost" id="check">Check connection</button> <button class="btn btn-primary" id="upload">Start / resume uploads</button>
@@ -78,11 +77,13 @@ async function boot() {
     <button class="btn btn-ghost" id="copy">Copy diagnostics</button> <button class="btn btn-ghost" id="refresh">Refresh diagnostics</button>
     <textarea id="diagnostics" readonly aria-label="Upload diagnostics"></textarea><p>Build: ${esc(RECOVERY_BUILD)}</p>`;
   app.addEventListener('click', async (event) => {
+    const link = (event.target as HTMLElement).closest<HTMLAnchorElement>('a#download');
+    if (link) { downloadRequested(); return; } // Native user-activated download; never preventDefault.
     const target = (event.target as HTMLElement).closest<HTMLElement>('button'); if (!target) return;
     let stage = `control ${target.id || target.textContent}`;
     try {
       if (target.dataset.part !== undefined || target.dataset.small !== undefined || target.dataset.record !== undefined || target.id === 'metadata') {
-        if (exporting || prepared) return; exporting = true;
+        if (exporting) return; exporting = true;
         app.querySelectorAll<HTMLButtonElement>('[data-part], [data-small], [data-record], #metadata').forEach(b => { b.disabled = true; });
         document.getElementById('prepared')!.hidden = true;
         stage = 'position backup controls';
@@ -91,8 +92,10 @@ async function boot() {
           row.parentNode.insertBefore(panel, row.nextSibling);
           row.parentNode.insertBefore(document.getElementById('message')!, panel.nextSibling);
         }
-        // Only the explicit saved-file acknowledgement releases a prior URL.
-        // Keep one independent prepared file at a time to bound phone memory.
+        // Keep the immediately previous file available through the next prepare.
+        // Older files can be regenerated; never revoke this URL at download click.
+        if (previousUrl) URL.revokeObjectURL(previousUrl);
+        previousUrl = objectUrl;
         prepared = null; objectUrl = null;
         const single = target.dataset.record !== undefined, small = target.dataset.small !== undefined;
         const groups = small ? smallParts : parts;
@@ -127,28 +130,25 @@ async function boot() {
           stage = 'create independent download file';
           prepared = new File([bytes], `vinyl-rescue-v2-${new Date().toISOString().replace(/[:.]/g, '-')}-${++artifactSequence}-${suffix}`, { type: bytes.type });
           objectUrl = URL.createObjectURL(prepared);
+          const download = document.getElementById('download') as HTMLAnchorElement;
+          download.href = objectUrl; download.download = prepared.name;
           document.getElementById('filename')!.textContent = `${prepared.name} (${mb(prepared.size)})`;
           document.getElementById('artifactSummary')!.textContent = artifactDescription;
           document.getElementById('prepared')!.hidden = false;
           message(`${artifactDescription} Now save the file and check it exists in Files / Downloads.`);
           panel.scrollIntoView({ block: 'nearest' });
           trace(artifactDescription); await refresh();
-        } finally { exporting = false; app.querySelectorAll<HTMLButtonElement>('[data-part], [data-small], [data-record], #metadata').forEach(b => { b.disabled = prepared !== null; }); await refresh(); }
-      }
-      if (target.id === 'finish' && prepared) {
-        trace(`User acknowledged saving ${prepared.name}`);
-        if (objectUrl) URL.revokeObjectURL(objectUrl);
-        objectUrl = null; prepared = null; document.getElementById('prepared')!.hidden = true;
-        app.querySelectorAll<HTMLButtonElement>('[data-part], [data-small], [data-record], #metadata').forEach(b => { b.disabled = false; });
-        message('Keep the saved file. You can now prepare the next one.');
+        } finally { exporting = false; app.querySelectorAll<HTMLButtonElement>('[data-part], [data-small], [data-record], #metadata').forEach(b => { b.disabled = false; }); await refresh(); }
       }
       if (target.id === 'share' && prepared) {
         if (navigator.canShare?.({ files: [prepared] })) {
           await navigator.share({ files: [prepared], title: 'Vinyl queue backup' });
           message(`${artifactDescription} Share sheet completed; check the file in Files or on the receiving computer.`);
-        } else saveLink();
+        } else {
+          message('Use Download file below, then select the next part after checking it is saved.');
+          document.getElementById('download')!.focus();
+        }
       }
-      if (target.id === 'download') saveLink();
       if (target.id === 'copy') {
         const field = document.getElementById('diagnostics') as HTMLTextAreaElement;
         try { await navigator.clipboard.writeText(field.value); message('Diagnostics copied.'); }
@@ -172,7 +172,7 @@ async function boot() {
     } catch (err) {
       exporting = false;
       if (document.getElementById('prepared')!.hidden || !objectUrl) { prepared = null; objectUrl = null; }
-      app.querySelectorAll<HTMLButtonElement>('[data-part], [data-small], [data-record], #metadata').forEach(b => { b.disabled = prepared !== null; });
+      app.querySelectorAll<HTMLButtonElement>('[data-part], [data-small], [data-record], #metadata').forEach(b => { b.disabled = false; });
       const failure = `FAILED at ${stage}: ${String(err)}`; backupReport += `\n${failure}`;
       message(`${failure}. No source records were deleted. Try saving all record details, or one record at a time.`);
       trace(backupReport); await refresh();

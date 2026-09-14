@@ -15,6 +15,10 @@
   Worker secrets are per-script and EDIT_TOKEN did not come across — so
   correcting a reading and downloading an export both answer 503 until one
   command is run.
+- [~] **CAPTURE-BACKUP-NEXT Keep sequential backup downloads
+  responsive** (2026-09-14) — Remove the hidden saved-file acknowledgement
+  lock and use a native download link so users can save a file then
+  prepare the next part directly.
 - [ ] **CAPTURE-INCIDENT-DIAGNOSIS Establish device-specific missing
   capture cause and recovery** [blocked: Revised rescue exports and exact
   failed-photo diagnostics from the device] (2026-09-14) — Upload

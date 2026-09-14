@@ -1,5 +1,5 @@
 /** Temporary local incident tracing. No photos, field values, cookies or tokens. */
-export const RECOVERY_BUILD = '2026-09-14 photo rescue 2';
+export const RECOVERY_BUILD = '2026-09-14 photo rescue 3';
 const KEY = 'vs.sync-debug';
 export function trace(message: string): void {
   try {
