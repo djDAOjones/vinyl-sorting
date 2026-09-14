@@ -5,7 +5,7 @@ summary: Upload safeguards are deployed; inspect the affected device queue to es
 status: todo
 milestone: current
 flags: blocked
-blocked-on: Revised rescue exports and exact failed-photo diagnostics from the device
+blocked-on: Replacement photographs and final recovery reconciliation in the other task
 date: 2026-09-14
 order: 1
 ---
@@ -16,29 +16,25 @@ which occurred on the affected device or that all missing captures reached
 local storage. The browser context is now known. Preserve website data and any unsaved photographs;
 do not reinstall, clear storage, or equate an empty queue with recovery.
 
-The user now reports a visible waiting queue. CAPTURE-QUEUE-BACKUP is live:
-open Save queued work within the same app/browser, save and verify every
-ZIP part, copy diagnostics, then explicitly resume uploads. The recovery
-screen does not start uploads automatically. Confirmed entries are retained
-temporarily. A subset of received archives has now passed independent ZIP
-and photo checksum checks. The user assigned restoration of those complete
-archives to another task; this task has made no import writes and owns the
-remaining failed-part rescue. Keep actual counts and receipts private.
+The ten received archives have been audited and their available photo bytes
+restored by the user's other task. Its private recovery report identifies
+remaining missing photographs and preserved metadata. That task also owns
+photo transcription and online matching; this task has made no import writes.
+Keep actual counts, timings, identities and receipts in private local evidence.
 
-CAPTURE-BACKUP-SALVAGE is deployed: export all record metadata independently,
-retry affected original-size parts, and preserve explicit incomplete ZIPs
-where photos remain unreadable. Fresh record reads and FileReader fallback
-may recover a stale handle; they do not prove that underlying photo bytes
-remain available. Request exact missing-photo reports, then check local
-originals and existing server photo objects using the preserved keys.
-Avoid overlapping writes with the other restoration task.
+CAPTURE-BACKUP-SALVAGE preserves readable photos and explicit missing-image
+reports; CAPTURE-BACKUP-NEXT removes the hidden acknowledgement gate.
+CAPTURE-PHOTO-VERIFY adds saved-byte read-back and complete attachment receipt
+checks. These fix demonstrated defects but cannot establish the original
+phone storage failure mechanism retrospectively. Preserve the phone queue
+and original ZIPs until replacement photos and final reconciliation are done.
 
-After recording the existing status, guide a safe same-origin refresh to
-load the recovery build and inspect Upload details / Copy diagnostics.
-Compare retained client IDs and server receipts where available; establish
-what arrived, what remains queued, and any unresolved gap. Resume
-PHOTO-BATCH-NEXT only for newly received images. Keep personal timings,
-device diagnostics and catalogue metadata in private local evidence.
+After backing up any current unsaved photographs, refresh within the same
+Safari tab and origin to load the capture-checks build. Do not clear website
+data. Confirm the build and visible upload status before new capture. Local
+and deployed Chrome failure checks passed; physical iPhone Safari behaviour
+still needs confirmation on the affected device. Keep temporary diagnostics
+and confirmed-entry retention until CAPTURE-RECOVERY-UPKEEP is signed off.
 
 Close only with evidence of the actual cause and recovery outcome, or a
 clearly bounded finding that the remaining evidence cannot establish it.

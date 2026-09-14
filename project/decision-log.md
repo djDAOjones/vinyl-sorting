@@ -2,6 +2,52 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-09-14 — CAPTURE-PHOTO-VERIFY: verify local saves and complete uploads
+
+**Decision:** Deployed source `84f82a4` with `--keep-vars`, Worker version
+`06feb89b-f0d7-4cdf-9554-506d2c29faa8`. Copy and hash photo bytes, commit and
+read back photos and entered fields before clearing capture. A failed draft
+keeps its client ID and visible originals for retry. Preflight queued photos
+before state writes; leave unreadable source entries untouched, warn clearly
+and continue healthy entries. Confirm upload only after a server detail
+receipt identifies the capture and every expected photo attachment. Retain
+local photos on incomplete receipts. Recovery build: `capture checks 1`.
+
+**Rationale:** Transaction success alone cannot prove stored image bytes are
+readable, and a returned item number cannot prove all photos were attached.
+These checks reduce and expose failure; they do not guarantee browser storage
+cannot later lose data. Device diagnosis and remaining recovery gaps stay
+open. The user's other task owns all import and matching writes.
+
+**Verify:** 339 tests, typecheck and production build pass. Local and deployed
+Chrome failure injection confirms read-back failure retains the current
+photos, retries reuse the same ID, incomplete receipts stay failed, unreadable
+entries are not rewritten and healthy entries continue. Camera warnings are
+visible; no page errors. All capture-test API requests were intercepted.
+Deployed recovery assets match local build bytes; metadata and partial ZIP
+exports pass with zero queue/API writes. This is not physical iPhone Safari
+verification. PM form and generated-view checks pass with existing budget
+warnings.
+
+## 2026-09-14 — CAPTURE-BACKUP-NEXT: allow consecutive downloads directly
+
+**Decision:** Deployed source `b6bf0bb`, version
+`2e1a7137-bafa-4702-afa7-8a000dfe852b`, subsequently included in the photo
+verification deployment above. Remove the saved-file acknowledgement lock.
+Use a native download link; keep next-part preparation available when idle
+and retain the immediately previous download URL while preparing another.
+A download request is never described as proof that a file was saved.
+
+**Rationale:** An easily missed acknowledgement left working download controls
+appearing unresponsive. Consecutive backups should follow directly without
+that hidden gate; source queue contents and incomplete-photo warnings remain.
+
+**Verify:** Candidate gate passed 330 tests and production build. Browser
+checks cover repeated downloads, consecutive complete/partial parts, failure
+retry and previous-file readability. Deployed compiled exports and six linked
+assets verified; no queue/API writes or page errors. The subsequent 339-test
+hardening gate and live backup checks also pass.
+
 ## 2026-09-14 — CAPTURE-BACKUP-SALVAGE: preserve readable photos and identify failures
 
 **Decision:** Deployed tested `fd39bed` to the existing Worker with

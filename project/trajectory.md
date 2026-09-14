@@ -57,3 +57,5 @@
 - CAPTURE-SYNC-RELIABILITY — deployed interrupted-upload recovery, committed storage saves and visible server receipts; device-specific diagnosis remains open (2026-09-14) — see decision-log
 - CAPTURE-QUEUE-BACKUP — deployed portable record/photo ZIP backups, explicit recovery and temporary local diagnostics/retention; actual device recovery remains open (2026-09-14) — see decision-log
 - CAPTURE-BACKUP-SALVAGE — deployed metadata-only export, photo-level failure reports and explicit partial rescue ZIPs; source queue untouched and device-specific diagnosis remains open (2026-09-14) — see decision-log
+- CAPTURE-BACKUP-NEXT — Consecutive backup downloads use a native link without a hidden acknowledgement gate; live exports verified (2026-09-14) — see decision-log
+- CAPTURE-PHOTO-VERIFY — Saved photos read back before clearing capture; unreadable entries warn without rewriting; all server attachments required for confirmation (2026-09-14) — see decision-log

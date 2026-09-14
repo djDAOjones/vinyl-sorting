@@ -15,19 +15,11 @@
   Worker secrets are per-script and EDIT_TOKEN did not come across — so
   correcting a reading and downloading an export both answer 503 until one
   command is run.
-- [~] **CAPTURE-BACKUP-NEXT Keep sequential backup downloads
-  responsive** (2026-09-14) — Remove the hidden saved-file acknowledgement
-  lock and use a native download link so users can save a file then
-  prepare the next part directly.
 - [ ] **CAPTURE-INCIDENT-DIAGNOSIS Establish device-specific missing
-  capture cause and recovery** [blocked: Revised rescue exports and exact
-  failed-photo diagnostics from the device] (2026-09-14) — Upload
+  capture cause and recovery** [blocked: Replacement photographs and final
+  recovery reconciliation in the other task] (2026-09-14) — Upload
   safeguards are deployed; inspect the affected device queue to establish
   its actual failure and recover any retained entries.
-- [~] **CAPTURE-PHOTO-VERIFY Verify saved photo bytes and complete
-  server photo receipts** (2026-09-14) — Check stored photos before
-  clearing capture, isolate unreadable queued images, and require all
-  expected server attachments before confirming upload.
 - [ ] **PHOTO-BATCH-NEXT Process the next photo batch when its location
   is known** [blocked: New batch location or completed upload]
   (2026-09-14) — User requests another photo batch; await its location or
