@@ -2,6 +2,28 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-09-14 — RECORD-SCREEN-DEPLOY: collection and record screen changes are live
+
+**Decision:** On the maintainer's explicit “lets deploy”, deployed source
+commit `8db69ee` (including `89ea0ca`) to the existing `vinyl-sorter` Worker
+with `wrangler deploy --keep-vars`. Live version:
+`59cdfab9-88ef-432a-b1ee-04a6ebeb3e54`. Prior version for rollback:
+`73db74c3-a34e-4715-8c10-d847def3950a`.
+
+**Rationale:** This release requires only code and static assets. The
+first-install script also applies schema and seeds data, so it was not
+used. Existing variables, secrets, D1/R2/KV bindings and five-minute cron
+remain in place; no migrations or catalogue writes were performed.
+
+**Verify:** Source matched the already tested 311-test candidate; production
+build passed again. Live Chrome checks pass: four linked browse assets
+match build bytes, detail API includes stored release data, named photos
+load full-screen, records open at the top, Back/Forward restore table
+position, six overview fields and closed extras appear, and list menus
+open instantly. Phone width has no overflow; zero page errors and zero
+API writes during checks. PM validators pass with existing budget warnings.
+Live: https://vinyl-sorter.joe-2d2.workers.dev
+
 ## 2026-09-14 — RECORD-SCREEN: a dedicated record screen with a compact overview
 
 **Decision:** Clicking or keyboard-activating a collection row opens a

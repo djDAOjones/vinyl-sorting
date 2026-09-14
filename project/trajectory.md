@@ -53,3 +53,4 @@
 - CATALOGUE-CONTROLS — the collection opens on six columns with ~value among them, and release.lowest_price is filled after holding nothing since M1: the matcher takes the price off the release call the tracklist already pays for, a refresh tool backfilled 286, one named currency, and price_checked_at is shown rather than hidden because a stale market snapshot reads as today's (2026-09-14) — see decision-log
 - COLLECTION-INTERACTIONS — sorting and column changes preserve the open editor and scroll; photographs open full-screen; the shared list menu opens and closes instantly (2026-09-14) — see decision-log
 - RECORD-SCREEN — records open at the top of their own screen and return to the prior table position; six key fields and photos lead, with other details collapsed (2026-09-14) — see decision-log
+- RECORD-SCREEN-DEPLOY — deployed 8db69ee to vinyl-sorter; live asset, navigation, photo and menu checks pass with no catalogue writes (2026-09-14) — see decision-log
