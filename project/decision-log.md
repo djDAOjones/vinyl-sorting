@@ -2,6 +2,34 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-09-14 — CAPTURE-SYNC-RELIABILITY: recover interrupted uploads and show confirmed receipts
+
+**Decision:** Deployed tested source `b9519b2` to the existing Vinyl sorter
+Worker with `--keep-vars`. Version `834f7347-c251-4cb7-9545-a6f12452c9da`;
+previous version `59cdfab9-88ef-432a-b1ee-04a6ebeb3e54` remains the rollback.
+Uploads have a bounded deadline, interrupted states are retried using the
+same client IDs and photo keys, and a valid photo/item receipt is required
+before recording success. Device storage resolves only on transaction
+commit; a failed save retains the current photographs and gives an error.
+Persistent upload counts, camera warnings, retry and diagnostic controls
+separate device saves from online recording. No dependencies or schema
+changes were needed.
+
+**Rationale:** Code inspection demonstrated permanent orphaned syncing
+states, unbounded requests, unchecked successful responses, premature
+storage success and misleading camera feedback. These are confirmed defects,
+not proof of the reported device-specific cause. That investigation and
+recovery verification remain open as CAPTURE-INCIDENT-DIAGNOSIS; personal
+incident evidence stays outside the repository.
+
+**Verify:** 321 tests and production build pass. Real Chrome failure checks
+prove persisted interruption recovery, receipt-based retry, camera warnings,
+diagnostic copying, offline photo retention and photo preservation after
+transaction abort following request success. Five live linked assets match
+build bytes. The deployed compiled app recovers a synthetic orphan with an
+intercepted receipt, no production writes, page errors or phone overflow.
+PM validators pass with existing budget warnings.
+
 ## 2026-09-14 — RECORD-SCREEN-DEPLOY: collection and record screen changes are live
 
 **Decision:** On the maintainer's explicit “lets deploy”, deployed source

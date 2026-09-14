@@ -15,10 +15,11 @@
   Worker secrets are per-script and EDIT_TOKEN did not come across — so
   correcting a reading and downloading an export both answer 503 until one
   command is run.
-- [~] **CAPTURE-SYNC-RELIABILITY Recover interrupted uploads and make
-  capture receipt status unmistakable** (2026-09-14) — Investigate missing
-  captures, prevent a stuck upload from silently blocking the queue, and
-  distinguish locally saved entries from server-confirmed records.
+- [ ] **CAPTURE-INCIDENT-DIAGNOSIS Establish device-specific missing
+  capture cause and recovery** [blocked: Device queue status and browser
+  context from the user] (2026-09-14) — Upload safeguards are deployed;
+  inspect the affected device queue to establish its actual failure and
+  recover any retained entries.
 - [ ] **PHOTO-BATCH-NEXT Process the next photo batch when its location
   is known** [blocked: New batch location or completed upload]
   (2026-09-14) — User requests another photo batch; await its location or
