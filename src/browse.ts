@@ -685,13 +685,7 @@ function render(): void {
 
     <div class="tablewrap">
       <table class="rows">
-        <thead><tr>${view.cols.map((k) => {
-    const c = COLUMN.get(k);
-    if (!c) return '';
-    const on = view.sort === k;
-    return `<th class="sortable" data-sort="${k}"${on ? ` aria-sort="${view.dir}ending"` : ''}
-      >${esc(c.label)}${on ? `<span class="arrow"> ${view.dir === 'asc' ? '↑' : '↓'}</span>` : ''}</th>`;
-  }).join('')}</tr></thead>
+        <thead><tr>${columnHeadersHtml()}</tr></thead>
         <tbody>${shown.map(rowHtml).join('')}</tbody>
       </table>
     </div>
@@ -716,6 +710,25 @@ function render(): void {
       render();
     });
   }
+  bindSortHeaders();
+  document.getElementById('colsBtn')?.addEventListener('click', openColumns);
+
+  bindRows();
+  if (openId !== null) void openDetail(openId, false);
+  restoreListFocus();
+}
+
+function columnHeadersHtml(): string {
+  return view.cols.map((k) => {
+    const c = COLUMN.get(k);
+    if (!c) return '';
+    const on = view.sort === k;
+    return `<th class="sortable" data-sort="${k}"${on ? ` aria-sort="${view.dir}ending"` : ''}
+      >${esc(c.label)}${on ? `<span class="arrow"> ${view.dir === 'asc' ? '↑' : '↓'}</span>` : ''}</th>`;
+  }).join('');
+}
+
+function bindSortHeaders(): void {
   for (const th of app.querySelectorAll<HTMLElement>('th[data-sort]')) {
     th.addEventListener('click', () => {
       const k = th.dataset.sort ?? 'id';
@@ -723,14 +736,24 @@ function render(): void {
       // new one starts ascending, which is what every table does.
       if (view.sort === k) view.dir = view.dir === 'asc' ? 'desc' : 'asc';
       else { view.sort = k; view.dir = 'asc'; }
-      render();
+      repaintTable();
     });
   }
-  document.getElementById('colsBtn')?.addEventListener('click', openColumns);
+}
 
-  bindRows();
-  if (openId !== null) void openDetail(openId);
-  restoreListFocus();
+/** Sorting/columns change the table, not the open editor or its photos. */
+function repaintTable(): void {
+  const wrap = app.querySelector<HTMLElement>('.tablewrap');
+  const left = wrap?.scrollLeft ?? 0;
+  const top = wrap?.scrollTop ?? 0;
+  const pageX = window.scrollX;
+  const pageY = window.scrollY;
+  const header = app.querySelector('thead tr');
+  if (header) header.innerHTML = columnHeadersHtml();
+  repaintList();
+  bindSortHeaders();
+  if (wrap) { wrap.scrollLeft = left; wrap.scrollTop = top; }
+  window.scrollTo({ left: pageX, top: pageY, behavior: 'instant' });
 }
 
 /** The column chooser. Order follows COLUMNS, not the order ticked. */
@@ -762,11 +785,11 @@ function openColumns(): void {
     // rows that still respond to clicks.
     view.cols = ticked.length ? COLUMNS.filter((c) => ticked.includes(c.key)).map((c) => c.key) : [...DEFAULT_COLS];
   };
-  dlg.querySelector('#colsDone')?.addEventListener('click', () => { apply(); dlg?.close(); render(); });
+  dlg.querySelector('#colsDone')?.addEventListener('click', () => { apply(); dlg?.close(); repaintTable(); });
   dlg.querySelector('#colsReset')?.addEventListener('click', () => {
     view.cols = [...DEFAULT_COLS];
     dlg?.close();
-    render();
+    repaintTable();
   });
   dlg.showModal();
 }
@@ -808,7 +831,7 @@ function rowHtml(r: Row): string {
     }).join('')}</tr>`;
 }
 
-async function openDetail(id: number): Promise<void> {
+async function openDetail(id: number, scroll = true): Promise<void> {
   openId = id;
   const panel = document.getElementById('detail')!;
   panel.hidden = false;
@@ -822,7 +845,7 @@ async function openDetail(id: number): Promise<void> {
     for (const tr of app.querySelectorAll('tr.open')) tr.classList.remove('open');
   });
   wireEditing(panel, id);
-  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  if (scroll) panel.scrollIntoView({ behavior: 'instant', block: 'nearest' });
 }
 
 /**
@@ -1071,8 +1094,11 @@ function detailHtml(d: Detail): string {
         ${d.photos.length
     ? `<div class="shots">${d.photos.map((p, i) => `
          <figure class="shotfig">
-           <img src="${API}/photos/${encodeURI(p.r2_key)}"
-                alt="Photograph ${i + 1} of item ${d.item.id}">
+           <a data-photo-viewer href="${API}/photos/${encodeURI(p.r2_key)}"
+              aria-label="Open photograph ${i + 1} of item ${d.item.id} full-screen">
+             <img src="${API}/photos/${encodeURI(p.r2_key)}"
+                  alt="Photograph ${i + 1} of item ${d.item.id}">
+           </a>
            <figcaption><span class="n">${i + 1}</span>
              ${esc(p.added_at)}${p.kind === 'other' ? '' : ` · ${esc(p.kind)}`}</figcaption>
          </figure>`).join('')}</div>`

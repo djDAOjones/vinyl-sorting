@@ -8,6 +8,7 @@
  * exactly one screen.
  */
 
+import { installPhotoViewer } from './photo-viewer.ts';
 import {
   BUILT_IN, choiceLabelFor, isListKey, labelFor, type ListChoice, type ListDef,
 } from './lists.ts';
@@ -203,17 +204,16 @@ export interface ListPickOptions {
 /**
  * The selector, as a string, for the same reason the header is one.
  *
- * A native <select>: it opens the platform's own picker, which is the
- * one control a gloved thumb in a loft can work, and it is what "a
- * drop-down" means to the person who asked for one. It carries no
- * motion of its own; the picker is the platform's, and the only thing
- * that changes on hover is a border colour on the motion token, which
- * reduced-motion sets to nothing.
+ * An instant listbox replaces the platform picker, whose opening and
+ * closing animation cannot be disabled by page CSS. The hidden select
+ * keeps the existing value/change contract shared by all screens.
  *
  * `unsorted` is offered only while it is true of something — a count
  * of zero hides it, and a screen with no counts shows it, since it
  * cannot know. It is never offered where a disc is being filed.
  */
+let listPickSequence = 0;
+
 export function listPickHtml(opts: ListPickOptions = {}): string {
   const current = storedList();
   const keys = knownLists().map((l) => l.key);
@@ -224,12 +224,21 @@ export function listPickHtml(opts: ListPickOptions = {}): string {
   // the first list is not silently selected by being first.
   const blank = opts.concrete && !isKnownList(current)
     ? '<option value="" selected disabled>Choose a list…</option>' : '';
-  return `<label class="listpick"><span class="lp-label">List</span>
-    <select aria-label="Which list to look at">${blank}${shown.map((c) => {
+  const menuId = `list-menu-${++listPickSequence}`;
+  const labelFor = (c: ListChoice): string => {
     const n = opts.counts?.[c];
-    const label = choiceLabel(c) + (n === undefined ? '' : ` · ${n.toLocaleString('en-GB')}`);
-    return `<option value="${esc(c)}"${c === current ? ' selected' : ''}>${esc(label)}</option>`;
-  }).join('')}</select></label>`;
+    return choiceLabel(c) + (n === undefined ? '' : ` · ${n.toLocaleString('en-GB')}`);
+  };
+  return `<div class="listpick"><span class="lp-label">List</span>
+    <select aria-label="Which list to look at" hidden tabindex="-1" aria-hidden="true">${blank}${shown.map((c) =>
+    `<option value="${esc(c)}"${c === current ? ' selected' : ''}>${esc(labelFor(c))}</option>`
+  ).join('')}</select>
+    <button type="button" class="listpick-toggle" aria-label="Which list to look at: ${blank ? 'Choose a list' : esc(labelFor(current))}"
+      aria-haspopup="listbox" aria-expanded="false" aria-controls="${menuId}">${blank ? 'Choose a list…' : esc(labelFor(current))}<span aria-hidden="true"> ▾</span></button>
+    <div class="listpick-menu" id="${menuId}" role="listbox" aria-label="Lists" hidden>
+      ${shown.map((c) => `<button type="button" role="option" tabindex="-1"
+        aria-selected="${c === current}" data-list-choice="${esc(c)}">${esc(labelFor(c))}</button>`).join('')}
+    </div></div>`;
 }
 
 /**
@@ -250,12 +259,7 @@ let listFocusUntil = 0;
 
 export function restoreListFocus(): void {
   if (Date.now() > listFocusUntil) return;
-  // A cast rather than the generic: with @cloudflare/workers-types in
-  // scope, HTMLRewriter's Element merges into the DOM one and
-  // HTMLSelectElement no longer satisfies it (its `remove` differs).
-  const pick = document.querySelector('.listpick select') as HTMLSelectElement | null;
-  // `unknown` for the same reason: the merged Element and the select
-  // are unrelated types to the checker, though one is the other at runtime.
+  const pick = document.querySelector('.listpick-toggle') as HTMLButtonElement | null;
   const active: unknown = document.activeElement;
   if (pick && active !== pick) pick.focus({ preventScroll: true });
 }
@@ -266,12 +270,90 @@ export function restoreListFocus(): void {
  * element itself would be lost at the next render.
  */
 function installListPick(): void {
+  const close = (pick: HTMLElement, focus = false): void => {
+    pick.querySelector<HTMLElement>('.listpick-menu')!.hidden = true;
+    const toggle = pick.querySelector<HTMLButtonElement>('.listpick-toggle')!;
+    toggle.setAttribute('aria-expanded', 'false');
+    if (focus) toggle.focus({ preventScroll: true });
+  };
+  const show = (pick: HTMLElement, last = false): void => {
+    for (const other of document.querySelectorAll<HTMLElement>('.listpick')) {
+      if (other !== pick) close(other);
+    }
+    pick.querySelector<HTMLElement>('.listpick-menu')!.hidden = false;
+    pick.querySelector('.listpick-toggle')!.setAttribute('aria-expanded', 'true');
+    const options = [...pick.querySelectorAll<HTMLButtonElement>('[role="option"]')];
+    const selected = options.find((option) => option.getAttribute('aria-selected') === 'true');
+    (last ? options.at(-1) : selected ?? options[0])?.focus({ preventScroll: true });
+  };
+  const choose = (pick: HTMLElement, option: HTMLElement): void => {
+    const select = pick.querySelector('select') as HTMLSelectElement;
+    select.value = option.dataset.listChoice ?? '';
+    // Settings keeps its header in place; other screens may rebuild it.
+    // Update the visible value in either case before announcing the change.
+    const toggle = pick.querySelector<HTMLButtonElement>('.listpick-toggle')!;
+    const label = option.textContent?.trim() ?? '';
+    toggle.innerHTML = `${esc(label)}<span aria-hidden="true"> ▾</span>`;
+    toggle.setAttribute('aria-label', `Which list to look at: ${label}`);
+    for (const choice of pick.querySelectorAll<HTMLElement>('[data-list-choice]')) {
+      choice.setAttribute('aria-selected', String(choice === option));
+    }
+    close(pick);
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    const pick = target.closest<HTMLElement>('.listpick');
+    if (!pick) {
+      for (const other of document.querySelectorAll<HTMLElement>('.listpick')) close(other);
+      return;
+    }
+    if (target.closest('.listpick-toggle')) {
+      if (pick.querySelector<HTMLElement>('.listpick-menu')!.hidden) show(pick);
+      else close(pick, true);
+    }
+    const option = target.closest<HTMLElement>('[data-list-choice]');
+    if (option) choose(pick, option);
+  });
+  document.addEventListener('focusin', (e) => {
+    for (const pick of document.querySelectorAll<HTMLElement>('.listpick')) {
+      if (!pick.contains(e.target as Node)) close(pick);
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    const target = e.target as HTMLElement;
+    const pick = target.closest<HTMLElement>('.listpick');
+    if (!pick || target.tagName === 'SELECT' || e.metaKey || e.ctrlKey || e.altKey) return;
+    e.stopPropagation();
+    const menu = pick.querySelector<HTMLElement>('.listpick-menu')!;
+    if (e.key === 'Escape') { e.preventDefault(); close(pick, true); return; }
+    if (menu.hidden) {
+      if (['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(e.key)) {
+        e.preventDefault(); show(pick, e.key === 'ArrowUp');
+      }
+      return;
+    }
+    const options = [...menu.querySelectorAll<HTMLButtonElement>('[role="option"]')];
+    const index = options.indexOf(target as HTMLButtonElement);
+    let next: HTMLButtonElement | undefined;
+    if (e.key === 'ArrowDown') next = options[(index + 1) % options.length];
+    else if (e.key === 'ArrowUp') next = options[(index - 1 + options.length) % options.length];
+    else if (e.key === 'Home') next = options[0];
+    else if (e.key === 'End') next = options.at(-1);
+    else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault(); if (target.matches('[data-list-choice]')) choose(pick, target); return;
+    } else if (e.key.length === 1) {
+      next = [...options.slice(index + 1), ...options.slice(0, index + 1)]
+        .find((option) => option.textContent?.trim().toLowerCase().startsWith(e.key.toLowerCase()));
+    }
+    if (next) { e.preventDefault(); next.focus({ preventScroll: true }); }
+  });
   document.addEventListener('change', (e) => {
     const el = e.target;
     if (!(el instanceof HTMLSelectElement) || !el.closest('.listpick')) return;
     if (!isListChoice(el.value)) return;
     const active: unknown = document.activeElement;
-    listFocusUntil = active === el ? Date.now() + 4000 : 0;
+    listFocusUntil = active === el || el.closest('.listpick')?.contains(document.activeElement) ? Date.now() + 4000 : 0;
     setList(el.value);
     restoreListFocus();
   });
@@ -406,10 +488,7 @@ export function installKeys(screenKeys: KeyHelp[] = []): void {
     if (key === 'l') {
       // The list selector, wherever the screen put it. Focusing is
       // enough: the arrow keys and Space take it from there.
-      // A cast rather than the generic: with @cloudflare/workers-types
-      // in scope, HTMLRewriter's Element merges into the DOM one and
-      // HTMLSelectElement no longer satisfies it (its `remove` differs).
-      const pick = document.querySelector('.listpick select') as HTMLSelectElement | null;
+      const pick = document.querySelector('.listpick-toggle') as HTMLButtonElement | null;
       if (pick) { e.preventDefault(); pick.focus(); }
       return;
     }
@@ -474,5 +553,6 @@ export function bootChrome(screenKeys: KeyHelp[] = []): void {
   watchSystemTheme();
   installKeys(screenKeys);
   installListPick();
+  installPhotoViewer();
   void refreshLists();
 }

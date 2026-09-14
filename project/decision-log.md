@@ -2,6 +2,36 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-09-14 — COLLECTION-INTERACTIONS: steady table, full-screen photographs and instant list menu
+
+**Decision:** Sorting or changing visible columns repaints only the table,
+retaining its scroll position, the open record and unsaved field input.
+Browse photographs and review photographs/sleeves open in a viewport-filling
+dialog with an uncropped image, Close button, Escape and restored focus.
+The candidate sleeve is a separate control from accepting a match.
+The shared list picker opens and closes immediately; it retains list counts,
+concrete-only capture choices, keyboard navigation and focus after selection.
+This implements the maintainer's clarified request about menu motion.
+
+**Rationale:** The old sort/column handlers rebuilt the whole page, fetched
+its open detail again and scrolled to it. The native select's platform
+animation could not be disabled with page CSS, so a small delegated listbox
+keeps the existing list/change contract. No dependencies or data changes.
+Root pm-next records remain canonical; the local pm-skills task stages
+informed scope, implementation, validation and close.
+
+**Verify:** `npm run gate` passes all 305 tests; `npm run build` passes.
+Chrome checks against the disposable in-memory Worker, with added fixture
+rows/photos, cover preserved detail/editor identity, unsaved text and scroll,
+column changes, image click/keyboard/Close/Escape/focus, 1100×800 and 390×844
+viewports, list keyboard controls, and zero POSTs during image inspection.
+Screenshots checked for photo fit, button contrast and mobile layout.
+The menu was also exercised on home, capture and settings. PM memory/view
+validators pass with existing budget warnings. No production deployment;
+no Safari or physical-device check. Discogs sleeve enlargement uses the
+stored thumbnail, so its source resolution limits detail. Existing memory
+budget upkeep is left separate from this focused interface change.
+
 ## 2026-09-14 — CATALOGUE-CONTROLS: six columns by default, and ~value is one of them
 
 **Decision:** the collection screen opens on six columns in the

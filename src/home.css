@@ -128,8 +128,8 @@
    does not have — "the main menu has a drop-down" (FOUR-LISTS). This
    copy carries the count per list, which no other screen's does, and
    every number on the page follows it. */
-.hero .listpick select { font-size: var(--t-sm); min-height: 2.25rem; }
+.hero .listpick-toggle { font-size: var(--t-sm); min-height: 2.25rem; }
 @media (max-width: 30rem) {
   .hero .listpick { flex-basis: 100%; order: 9; }
-  .hero .listpick select { font-size: 1rem; min-height: var(--tap); }
+  .hero .listpick-toggle { font-size: 1rem; min-height: var(--tap); }
 }

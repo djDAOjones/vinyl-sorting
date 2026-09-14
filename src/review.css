@@ -47,7 +47,7 @@ main#review { padding-bottom: 5rem; }
 
 .cand {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: auto 1fr auto;
   align-items: stretch;
   background: var(--surface);
   border: 1px solid var(--line);
@@ -63,7 +63,7 @@ main#review { padding-bottom: 5rem; }
 
 .cand .pick {
   display: grid;
-  grid-template-columns: 2.1rem auto 1fr auto;
+  grid-template-columns: 2.1rem 1fr auto;
   gap: var(--s3);
   align-items: start;
   background: none;
@@ -124,6 +124,8 @@ main#review { padding-bottom: 5rem; }
   border: 1px solid var(--line);
   flex: none;
 }
+.sleeve-preview { padding: var(--s3) 0 var(--s3) var(--s3); }
+.sleeve-preview a { display: block; border-radius: var(--r-sm); }
 /* The absence, drawn on purpose: a disc outline, faint. */
 .sleeve.none {
   display: block;
@@ -175,11 +177,12 @@ main#review { padding-bottom: 5rem; }
 .shots .shot-link { width: 6.5rem; height: 5rem; }
 
 @media (max-width: 30rem) {
-  .cand .pick { grid-template-columns: 1.8rem auto 1fr; padding: var(--s2); gap: var(--s2); }
+  .cand .pick { grid-template-columns: 1.8rem 1fr; padding: var(--s2); gap: var(--s2); }
+  .sleeve-preview { padding: var(--s2) 0 var(--s2) var(--s2); }
   .sleeve { width: 2.75rem; height: 2.75rem; }
   /* The score moves under the title rather than squeezing it: on a
      narrow screen the title is what identifies the record and the
      score is a footnote to it. */
-  .cand .score { grid-column: 3; text-align: left; display: flex; gap: var(--s1); align-items: baseline; }
+  .cand .score { grid-column: 2; text-align: left; display: flex; gap: var(--s1); align-items: baseline; }
   .cand .score small { display: inline; }
 }

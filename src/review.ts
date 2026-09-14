@@ -129,9 +129,8 @@ function render(): void {
     </div></div>
     <div id="toast"></div>`;
 
-  // Only the left half accepts. The right half is a plain link and
-  // needs no handler — which is the point: nothing that opens Discogs
-  // can accidentally record a decision.
+  // Sleeve preview and Discogs link are siblings of the accept button,
+  // so inspecting either cannot record a decision.
   for (const button of app.querySelectorAll<HTMLButtonElement>('.cand .pick')) {
     button.addEventListener('click', () => { void choose(Number(button.dataset.discogsId)); });
   }
@@ -170,7 +169,7 @@ function photosHtml(item: QueueItem): string {
     return '<p class="note">No photograph — one of the 446 rows imported from the spreadsheet.</p>';
   }
   return `<div class="shots">${keys.map((k, i) => `
-    <a class="shot-link" href="${API}/photos/${encodeURI(k)}" target="_blank" rel="noopener">
+    <a class="shot-link" data-photo-viewer href="${API}/photos/${encodeURI(k)}" target="_blank" rel="noopener">
       <img src="${API}/photos/${encodeURI(k)}"
            alt="Photograph ${i + 1} of item ${item.item_id}">
     </a>`).join('')}</div>`;
@@ -279,9 +278,10 @@ function renderCandidate(c: Candidate, i: number): string {
    * a broken image.
    */
   const art = release?.thumb
-    ? `<img class="sleeve" src="${esc(release.thumb)}" alt="" loading="eager"
+    ? `<a data-photo-viewer href="${esc(release.thumb)}" aria-label="Open candidate sleeve full-screen">
+       <img class="sleeve" src="${esc(release.thumb)}" alt="Candidate sleeve" loading="eager"
          referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(
-           document.createElement('span'), { className: 'sleeve none', title: 'no sleeve image' }))">`
+           document.createElement('span'), { className: 'sleeve none', title: 'no sleeve image' }))"></a>`
     : '<span class="sleeve none" title="no sleeve image — this match ran before they were stored"></span>';
 
   // A format signal that is NEGATIVE is evidence against and gets said
@@ -291,10 +291,10 @@ function renderCandidate(c: Candidate, i: number): string {
 
   return `
     <div class="cand${i === 0 ? ' best' : ''}">
+      <div class="sleeve-preview">${art}</div>
       <button class="pick" data-discogs-id="${c.discogs_id}"
               title="Accept this match (or press ${i + 1})">
         <span class="key">${i + 1}</span>
-        ${art}
         <span class="body">
           <span class="title">${heading}</span>
           ${sub ? `<span class="rel">${sub}</span>` : ''}

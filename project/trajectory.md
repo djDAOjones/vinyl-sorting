@@ -51,3 +51,4 @@
 - PHOTO-BATCH-2026-09-14 — 97 photos read into 30 records, 154 vision fields verified live, item 499 split to 519; requeue approval pending (2026-09-14) — see decision-log
 - PHOTO-BATCH-REQUEUE — user-approved removal of 29 empty attempts verified; entries re-queued, photos and readings preserved (2026-09-14) — see decision-log
 - CATALOGUE-CONTROLS — the collection opens on six columns with ~value among them, and release.lowest_price is filled after holding nothing since M1: the matcher takes the price off the release call the tracklist already pays for, a refresh tool backfilled 286, one named currency, and price_checked_at is shown rather than hidden because a stale market snapshot reads as today's (2026-09-14) — see decision-log
+- COLLECTION-INTERACTIONS — sorting and column changes preserve the open editor and scroll; photographs open full-screen; the shared list menu opens and closes instantly (2026-09-14) — see decision-log
