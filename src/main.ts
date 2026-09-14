@@ -18,7 +18,8 @@
  * on 0% of the backlog and caused the 9% match error rate M0 measured.
  */
 
-import { putEntry, allEntries, deleteEntry } from './queue.ts';
+import { putEntry, getEntry, allEntries, deleteEntry } from './queue.ts';
+import { putVerifiedCapture } from './verified-photos.ts';
 import {
   CAPTURED_KIND, PHOTO_LONG_EDGE, UNDO_MS, heldForUndo, scaleTo, summarise, queueHealth,
   torchSupported, videoConstraints, type QueuedCapture, type QueuedPhoto,
@@ -738,6 +739,8 @@ function readFields(): Record<string, string> {
 /** True while a queue write is in flight. See `save`. */
 let saving = false;
 let saveError: string | null = null;
+let retryClientId: string | null = null;
+let retryCreatedAt = 0;
 
 async function save(from: 'form' | 'camera' = 'form'): Promise<void> {
   const fields = readFields();
@@ -764,12 +767,13 @@ async function save(from: 'form' | 'camera' = 'form'): Promise<void> {
 
   let stored = false;
   try {
-    const clientId = uid();
+    if (!retryClientId) { retryClientId = uid(); retryCreatedAt = Date.now(); }
+    const clientId = retryClientId;
     // Held back from the drain for the undo window — a delayed SEND, not
     // a delayed write. See `heldForUndo`.
     const entry: QueuedCapture = heldForUndo({
       clientId,
-      createdAt: Date.now(),
+      createdAt: retryCreatedAt,
       msToCapture: Date.now() - startedAt,
       fields,
       photos: await Promise.all(photos.map(async (p, i) => ({
@@ -786,10 +790,9 @@ async function save(from: 'form' | 'camera' = 'form'): Promise<void> {
       nextAttemptAt: 0,
     }, Date.now());
 
-    // On disk before anything else. The UI never awaits the network:
-    // this is the whole offline guarantee, and it is why a hard refresh
-    // in a loft loses nothing.
-    await putEntry(entry);
+    // Commit and read back the photos before clearing the originals.
+    // This does not wait for the network; server receipt is separate.
+    await putVerifiedCapture(entry, { put: putEntry, get: getEntry });
     stored = true;
     saveError = null;
     // Only a roster name may be remembered. Un-parking the `capturedBy`
@@ -816,7 +819,7 @@ async function save(from: 'form' | 'camera' = 'form'): Promise<void> {
     // a pass now would skip it and the one `closeUndo` fires sends it.
   } catch (err) {
     saveError = stored ? 'Saved on this device, but the screen could not update. Check upload status before leaving.'
-      : `Record NOT saved. Keep these photographs on screen and retry. ${err instanceof Error ? err.message : String(err)}`;
+      : `Record NOT safely saved. Keep these photographs on screen and retry. ${err instanceof Error ? err.message : String(err)}`;
     flash(saveError, 'err');
     void refreshStatus();
   } finally {
@@ -856,6 +859,7 @@ async function downscale(file: Blob): Promise<Blob> {
 }
 
 function resetForm(): void {
+  retryClientId = null;
   for (const id of ['catnoRaw', 'labelRaw', 'nameRaw', 'titleRaw', 'matrixRunout', 'yearRaw',
     'position', 'crate']) {
     const el = document.getElementById(id) as HTMLInputElement | null;

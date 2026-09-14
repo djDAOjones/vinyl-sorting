@@ -1,6 +1,9 @@
 /** Upload state machine, independent of browser storage for failure testing. */
 import { captureReceipt, markFailed, recoverInterrupted, selectDrainable, shouldStopDraining,
   SYNC_LEASE_MS, toRequestBody, type QueuedCapture } from './queue-logic.ts';
+import { copyVerifiedPhotos, type PhotoReader } from './verified-photos.ts';
+
+type Send = (url: string, init: RequestInit) => Promise<{ ok: boolean; status: number; body: string }>;
 
 interface SyncOptions {
   allEntries: () => Promise<QueuedCapture[]>;
@@ -11,6 +14,8 @@ interface SyncOptions {
   timeoutMs?: number;
   onChange?: () => void;
   onEvent?: (message: string) => void;
+  readPhoto?: PhotoReader;
+  verifyReceipt?: (entry: QueuedCapture, itemId: number, send: Send) => Promise<boolean>;
 }
 class SendError extends Error {
   readonly status: number | null;
@@ -51,11 +56,21 @@ export function createSyncController(opts: SyncOptions) {
     if (running) return { sent: 0, failed: 0 };
     running = true;
     let sent = 0; let failed = 0;
+    let unreadable = 0;
     lastError = null;
     try {
       let entries = recoverInterrupted(await opts.allEntries(), at);
       if (forceRetry) entries = entries.map((e) => e.state === 'failed' ? { ...e, nextAttemptAt: at } : e);
-      for (const entry of selectDrainable(entries, at)) {
+      for (const queued of selectDrainable(entries, at)) {
+        let entry: QueuedCapture;
+        try { entry = await copyVerifiedPhotos(queued, opts.readPhoto); }
+        catch (err) {
+          // Do not rewrite an unreadable stored Blob just to mark a retry.
+          // Leave it intact for recovery and continue with healthy entries.
+          failed++; unreadable++;
+          lastError = `${unreadable} queued ${unreadable === 1 ? 'entry has' : 'entries have'} unreadable photos. Pause and open Save queued work. Keep this device data.`;
+          event(`${lastError} ${String(err)}`); changed(); continue;
+        }
         const renew = () => opts.putEntry({ ...entry, state: 'syncing', nextAttemptAt: now() + SYNC_LEASE_MS });
         await renew(); changed();
         try {
@@ -78,6 +93,9 @@ export function createSyncController(opts: SyncOptions) {
           try { receipt = JSON.parse(res.body); } catch { /* invalid receipt is a failure below */ }
           const serverItemId = captureReceipt(receipt);
           if (serverItemId === null) throw new SendError('The server did not confirm a record number. Entry kept for retry.', null);
+          if (opts.verifyReceipt && !await opts.verifyReceipt(entry, serverItemId, send)) {
+            throw new SendError('The server record does not confirm every expected photograph. Keep the local backup and review the upload details.', 409);
+          }
           await opts.putEntry({ ...entry, state: 'synced', serverItemId, syncedAt: now(), lastError: undefined });
           sent++; changed();
           event(`Confirmed ${entry.clientId} as server item ${serverItemId}`);

@@ -10,6 +10,8 @@
 export type QueueState = 'pending' | 'syncing' | 'synced' | 'failed';
 
 export interface QueuedPhoto {
+  /** Optional on older captures; new saves and upload preflight verify this. */
+  sha256?: string;
   kind: 'label_a' | 'label_b' | 'front' | 'back' | 'runout' | 'other';
   blob: Blob;
   /** Assigned client-side so an upload can be retried to the same key. */

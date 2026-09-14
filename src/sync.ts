@@ -2,11 +2,22 @@
 import { allEntries, putEntry } from './queue.ts';
 import { createSyncController } from './sync-engine.ts';
 import { trace } from './sync-debug.ts';
+import { readStoredPhoto } from './photo-read.ts';
+import { completePhotoReceipt } from './verified-photos.ts';
+import { storedCapturer } from './who.ts';
 
 let onChange = (): void => {};
 // Temporary incident retention: keep even confirmed records/photos for backup.
 const controller = createSyncController({ allEntries, putEntry, pruneSynced: async () => {},
-  fetch: (...args) => fetch(...args), onChange: () => onChange(), onEvent: trace });
+  fetch: (...args) => fetch(...args), onChange: () => onChange(), onEvent: trace,
+  readPhoto: readStoredPhoto,
+  verifyReceipt: async (entry, id, send) => {
+    const who = entry.fields.capturedBy?.trim() || storedCapturer();
+    const response = await send(`/api/items/${id}`, { method: 'GET', cache: 'no-store',
+      headers: who ? { 'x-capturer': who } : {} });
+    if (!response.ok) return false;
+    try { return completePhotoReceipt(entry, id, JSON.parse(response.body)); } catch { return false; }
+  } });
 export const syncError = controller.error;
 
 export async function drain(now = Date.now(), forceRetry = false): Promise<{ sent: number; failed: number }> {
