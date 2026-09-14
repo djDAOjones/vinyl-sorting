@@ -2,6 +2,39 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-09-14 — CAPTURE-QUEUE-BACKUP: portable phone backups and explicit recovery
+
+**Decision:** Deployed `6936730` to the existing Worker with `--keep-vars`,
+version `af9211f0-718c-4116-8faf-e007c6b5215e`; previous version
+`834f7347-c251-4cb7-9545-a6f12452c9da` is the rollback. Home and capture link
+to a same-origin recovery page that reads the queue without auto-uploading.
+Independent ZIP parts contain full record metadata and original photo blobs,
+with CRC and SHA-256 integrity checks. Parts target 32 MB and 20 records,
+keeping any oversized record whole. A second user gesture saves/shares the
+prepared file; the UI requires checking the actual file rather than claiming
+a prepared download is already backed up.
+
+Explicit controls check the read connection, start uploads and copy detailed
+local diagnostics. A bounded local request log records upload stages and
+errors without photo contents, field values, cookies or tokens. Browser sync
+temporarily retains confirmed entries as well as unsent work. No dependency,
+server-data or schema changes. Device evidence stays private.
+
+**Rationale:** A visible device queue offers a concrete recovery path, but
+only actual backup and receipt evidence establishes preservation. Keep
+CAPTURE-INCIDENT-DIAGNOSIS open for that evidence; temporary tracing and
+retention cleanup are tracked in CAPTURE-RECOVERY-UPKEEP.
+
+**Verify:** 325 tests and production build pass. Chrome exported a synthetic
+129-entry/258-photo queue in seven parts without writes or queue changes;
+Python's ZIP reader independently verified complete metadata, CRCs and all
+photo hashes. Explicit recovery retained all local entries, confirmed the
+accepted records and exposed the rejected record. Six live linked assets
+match build bytes; the deployed Home link and actual ZIP download work with
+all writes blocked. That downloaded photo also matches its original bytes
+and hash. No page errors or phone overflow. PM validators pass with existing
+budget warnings.
+
 ## 2026-09-14 — CAPTURE-SYNC-RELIABILITY: recover interrupted uploads and show confirmed receipts
 
 **Decision:** Deployed tested source `b9519b2` to the existing Vinyl sorter

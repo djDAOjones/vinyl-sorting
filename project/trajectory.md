@@ -55,3 +55,4 @@
 - RECORD-SCREEN — records open at the top of their own screen and return to the prior table position; six key fields and photos lead, with other details collapsed (2026-09-14) — see decision-log
 - RECORD-SCREEN-DEPLOY — deployed 8db69ee to vinyl-sorter; live asset, navigation, photo and menu checks pass with no catalogue writes (2026-09-14) — see decision-log
 - CAPTURE-SYNC-RELIABILITY — deployed interrupted-upload recovery, committed storage saves and visible server receipts; device-specific diagnosis remains open (2026-09-14) — see decision-log
+- CAPTURE-QUEUE-BACKUP — deployed portable record/photo ZIP backups, explicit recovery and temporary local diagnostics/retention; actual device recovery remains open (2026-09-14) — see decision-log

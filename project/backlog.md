@@ -16,14 +16,10 @@
   correcting a reading and downloading an export both answer 503 until one
   command is run.
 - [ ] **CAPTURE-INCIDENT-DIAGNOSIS Establish device-specific missing
-  capture cause and recovery** [blocked: Device queue status and browser
-  context from the user] (2026-09-14) — Upload safeguards are deployed;
-  inspect the affected device queue to establish its actual failure and
-  recover any retained entries.
-- [~] **CAPTURE-QUEUE-BACKUP Preserve device queue with photo backups
-  and recovery diagnostics** (2026-09-14) — Add a read-only device
-  recovery screen with portable record and photo backups, detailed
-  diagnostics and explicit upload controls.
+  capture cause and recovery** [blocked: Device backup files, diagnostics
+  and browser context from the user] (2026-09-14) — Upload safeguards are
+  deployed; inspect the affected device queue to establish its actual
+  failure and recover any retained entries.
 - [ ] **PHOTO-BATCH-NEXT Process the next photo batch when its location
   is known** [blocked: New batch location or completed upload]
   (2026-09-14) — User requests another photo batch; await its location or
@@ -75,6 +71,11 @@
 
 <!-- Intent: What is left of the interface brief once the data arrived — value shipped on 2026-09-14 and genre as the four lists on 2026-09-09, so the half that needed a migration or a backfill is done. The remainder is a re-verification sweep for when the backlog empties, and readings that name their source photograph: a pack-format change rather than anything M2 owes. -->
 
+- [ ] **CAPTURE-RECOVERY-UPKEEP Retire temporary capture diagnostics and
+  review local retention** [blocked: Verified incident recovery and
+  maintainer approval of retention cleanup] [sign-off] (2026-09-14) —
+  After incident recovery is verified, remove temporary detailed tracing
+  and agree when confirmed local copies may be pruned again.
 - [ ] **AI-ROUND-TRIP Make the hand-carried reading loop fast, and make
   it say which photograph it read** (2026-08-31) — The maintainer kept the
   no-metered-services rule, so the answer is a better round trip rather

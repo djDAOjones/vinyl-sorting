@@ -5,7 +5,7 @@ summary: Upload safeguards are deployed; inspect the affected device queue to es
 status: todo
 milestone: current
 flags: blocked
-blocked-on: Device queue status and browser context from the user
+blocked-on: Device backup files, diagnostics and browser context from the user
 date: 2026-09-14
 order: 1
 ---
@@ -16,6 +16,13 @@ which occurred on the affected device or that all missing captures reached
 local storage. Await its queued/sent/retrying status and browser versus
 home-screen context. Preserve website data and any unsaved photographs;
 do not reinstall, clear storage, or equate an empty queue with recovery.
+
+The user now reports a visible waiting queue. CAPTURE-QUEUE-BACKUP is live:
+open Save queued work within the same app/browser, save and verify every
+ZIP part, copy diagnostics, then explicitly resume uploads. The recovery
+screen does not start uploads automatically. Confirmed entries are retained
+temporarily. Actual phone backup and recovery are still unverified; do not
+substitute successful synthetic checks for the affected device's evidence.
 
 After recording the existing status, guide a safe same-origin refresh to
 load the recovery build and inspect Upload details / Copy diagnostics.
