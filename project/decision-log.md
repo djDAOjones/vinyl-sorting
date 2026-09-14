@@ -2,6 +2,39 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-09-15 — SOURCE-COMPARISON-PILOT: additional identification sources
+
+**Decision:** Complete the authorised read-only 25-record pilot. MusicBrainz
+returned ten catalogue-associated vinyl leads, seven useful title/performance
+leads, one weak partial lead, six rows without useful results and one incomplete
+row. None is a confirmed match. Fifty planned searches required 65 requests;
+49 succeeded eventually, with 16 HTTP 503 failures across attempts. Three broad
+queries exceeded the 25-result cap. Five vinyl leads carry Discogs cross-links;
+four of ten additional link lookups failed, so absent links there are unknown.
+
+Stored history shows 14 zero-query rejections, one all-query error, seven older
+rejections without request outcomes, two never-run records and one pending run.
+This purposive sample compares newer curated inputs with stored attempts, not
+fresh provider accuracy. CHARM supplied the Three Tenors vinyl issue and
+Désormière session context; Muziekweb supplied Brahms/Leinsdorf CD context.
+
+Recommend recovery with improved inputs first, a separate MusicBrainz candidate
+panel next, and targeted specialist links. Keep object, performance and work
+identity distinct; source scores and cross-links never confirm ownership or a
+pressing. No provider integration, catalogue write, deployment, dependency or
+schema change is included. Full private findings and hashed evidence remain in
+ignored `project/reports/source-pilot-2026-09-14/report.md`.
+
+**Rationale:** More sources help discovery, but stale inputs, failed requests,
+alternate couplings and incomplete sets are distinct resolution problems.
+
+**Verify:** All 25 assessment IDs match the frozen sample; each selected
+MusicBrainz ID occurs in its saved response; every logged payload hash agrees.
+Three relevant Decca pages were visually checked. `npm run gate` passed typecheck
+and all 364 tests; memory validation had zero structural failures (five existing
+budget warnings); generated backlog and whitespace checks passed.
+
+
 ## 2026-09-14 — MATCH-RECOVERY: prepare and resolve failed identifications
 
 **Decision:** Add a preparation panel to each collection record, an unconfirmed
