@@ -1260,7 +1260,8 @@ addEventListener('popstate', () => {
 startAdditions(() => { void refreshAdditionStatus().catch(() => {}); });
 load().then(() => refreshAdditionStatus()).catch((err: unknown) => {
   app.innerHTML = `<p class="note-bad">Could not load the collection: ${
-    esc(err instanceof Error ? err.message : String(err))}</p>`;
+    esc(err instanceof Error ? err.message : String(err))}</p><p>Saved photo additions remain on this device. Reconnect to load the collection.</p><p class="photo-needs" data-collection-upload-status role="status" hidden></p><p><a class="btn btn-ghost" href="${esc(location.href)}">Try collection again</a> <a href="/recovery.html">Save queued work</a></p>`;
+  void refreshAdditionStatus();
 });
 // The selector in the header changed: same rows, different list.
 addEventListener('vs:list', () => { if (rows.length) render(); });
