@@ -54,6 +54,9 @@ export const putEntry = (entry: QueuedCapture): Promise<IDBValidKey> =>
 export const allEntries = (): Promise<QueuedCapture[]> =>
   tx('readonly', (s) => s.getAll() as IDBRequest<QueuedCapture[]>);
 
+export const getEntry = (clientId: string): Promise<QueuedCapture | undefined> =>
+  tx('readonly', (s) => s.get(clientId) as IDBRequest<QueuedCapture | undefined>);
+
 export const deleteEntry = (clientId: string): Promise<undefined> =>
   tx('readwrite', (s) => s.delete(clientId) as IDBRequest<undefined>);
 

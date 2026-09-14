@@ -15,6 +15,10 @@
   Worker secrets are per-script and EDIT_TOKEN did not come across — so
   correcting a reading and downloading an export both answer 503 until one
   command is run.
+- [~] **CAPTURE-BACKUP-SALVAGE Isolate unreadable photos and preserve
+  recoverable queue backups** (2026-09-14) — Make backup failures identify
+  the exact stage and photo, export metadata independently, and preserve
+  readable photos with explicit incomplete manifests.
 - [ ] **CAPTURE-INCIDENT-DIAGNOSIS Establish device-specific missing
   capture cause and recovery** [blocked: Device backup files, diagnostics
   and browser context from the user] (2026-09-14) — Upload safeguards are
