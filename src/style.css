@@ -394,3 +394,17 @@ body.shooting #flash { bottom: calc(7.2rem + env(safe-area-inset-bottom)); }
    choice is not one of the four. Four big targets, because it is
    answered with a thumb. */
 .listgate { display: grid; gap: var(--s2); margin: var(--s3) 0; }
+
+/* Receipt status is visible while filing, including inside the camera. */
+.sync-notice { position: sticky; top: .5rem; z-index: 12; padding: var(--s3); margin: 0 0 var(--s4); border: 2px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
+.sync-notice strong { display: block; font-size: var(--t-base); }
+.sync-notice p { margin: var(--s1) 0 var(--s2); font-size: var(--t-sm); overflow-wrap: anywhere; }
+.sync-notice details { margin-top: var(--s2); }
+.sync-notice summary { cursor: pointer; font-size: var(--t-sm); }
+.sync-notice.sync-waiting { border-color: var(--accent); }
+.sync-notice.sync-error { border-color: var(--danger); }
+.sync-notice.sync-error > strong { color: var(--danger); }
+.sync-notice.sync-ok { border-color: var(--ok); }
+.camera-sync { position: absolute; top: max(1rem, env(safe-area-inset-top)); left: 1rem; right: 5rem; z-index: 3; padding: .6rem; background: #17251c; color: #fff; border: 2px solid #88ba95; border-radius: var(--r-sm); font-size: .875rem; }
+.camera-sync.sync-waiting { background: #382b0a; border-color: #e9bd4d; }
+.camera-sync.sync-error { background: #5e1717; border-color: #ffaaaa; }

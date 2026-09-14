@@ -1,0 +1,92 @@
+/** Upload state machine, independent of browser storage for failure testing. */
+import { captureReceipt, markFailed, recoverInterrupted, selectDrainable, shouldStopDraining,
+  SYNC_LEASE_MS, toRequestBody, type QueuedCapture } from './queue-logic.ts';
+
+interface SyncOptions {
+  allEntries: () => Promise<QueuedCapture[]>;
+  putEntry: (entry: QueuedCapture) => Promise<unknown>;
+  pruneSynced: () => Promise<void>;
+  fetch: typeof fetch;
+  now?: () => number;
+  timeoutMs?: number;
+  onChange?: () => void;
+}
+class SendError extends Error {
+  readonly status: number | null;
+  constructor(message: string, status: number | null) { super(message); this.status = status; }
+}
+export function createSyncController(opts: SyncOptions) {
+  let running = false;
+  let lastError: string | null = null;
+  const now = opts.now ?? Date.now;
+  const changed = (): void => { opts.onChange?.(); };
+  const send = async (url: string, init: RequestInit) => {
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        (async () => {
+          const response = await opts.fetch(url, { ...init, signal: controller.signal });
+          // Include reading the receipt/error body in the deadline.
+          return { ok: response.ok, status: response.status, body: await response.text() };
+        })(),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => {
+            controller.abort();
+            reject(new SendError('Upload timed out. The entry is still saved on this device.', null));
+          }, opts.timeoutMs ?? 45_000);
+        }),
+      ]);
+    } catch (err) {
+      if (err instanceof SendError) throw err;
+      throw new SendError(err instanceof Error ? err.message : 'Network upload failed', null);
+    } finally { clearTimeout(timer); }
+  };
+  const run = async (at = now(), forceRetry = false): Promise<{ sent: number; failed: number }> => {
+    if (running) return { sent: 0, failed: 0 };
+    running = true;
+    let sent = 0; let failed = 0;
+    lastError = null;
+    try {
+      let entries = recoverInterrupted(await opts.allEntries(), at);
+      if (forceRetry) entries = entries.map((e) => e.state === 'failed' ? { ...e, nextAttemptAt: at } : e);
+      for (const entry of selectDrainable(entries, at)) {
+        const renew = () => opts.putEntry({ ...entry, state: 'syncing', nextAttemptAt: now() + SYNC_LEASE_MS });
+        await renew(); changed();
+        try {
+          for (const photo of entry.photos) {
+            const res = await send(`/api/photos/${encodeURIComponent(photo.key)}`, {
+              method: 'PUT', headers: { 'content-type': photo.blob.type || 'image/jpeg' }, body: photo.blob,
+            });
+            if (!res.ok) throw new SendError(`Photo upload: HTTP ${res.status}. ${res.body.slice(0, 160)}`, res.status);
+            let receipt: { r2Key?: unknown } = {};
+            try { receipt = JSON.parse(res.body); } catch { /* require the photo receipt below */ }
+            if (receipt?.r2Key !== `labels/${photo.key}`) {
+              throw new SendError('The server did not confirm the photograph. Entry kept for retry.', null);
+            }
+            await renew();
+          }
+          const res = await send('/api/captures', { method: 'POST',
+            headers: { 'content-type': 'application/json' }, body: JSON.stringify(toRequestBody(entry)) });
+          if (!res.ok) throw new SendError(`Record upload: HTTP ${res.status}. ${res.body.slice(0, 160)}`, res.status);
+          let receipt: unknown;
+          try { receipt = JSON.parse(res.body); } catch { /* invalid receipt is a failure below */ }
+          const serverItemId = captureReceipt(receipt);
+          if (serverItemId === null) throw new SendError('The server did not confirm a record number. Entry kept for retry.', null);
+          await opts.putEntry({ ...entry, state: 'synced', serverItemId, syncedAt: now(), lastError: undefined });
+          sent++; changed();
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          await opts.putEntry(markFailed(entry, message, now()));
+          failed++; changed();
+          if (shouldStopDraining(err instanceof SendError ? err.status : null)) break;
+        }
+      }
+      await opts.pruneSynced();
+    } catch (err) {
+      lastError = `Phone storage could not update the upload queue: ${err instanceof Error ? err.message : String(err)}`;
+    } finally { running = false; changed(); }
+    return { sent, failed };
+  };
+  return { run, error: () => lastError };
+}

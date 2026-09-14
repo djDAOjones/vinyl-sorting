@@ -35,10 +35,16 @@ function open(): Promise<IDBDatabase> {
 function tx<T>(mode: IDBTransactionMode, run: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
   return open().then((db) => new Promise<T>((resolve, reject) => {
     const t = db.transaction(STORE, mode);
-    const req = run(t.objectStore(STORE));
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-    t.oncomplete = () => db.close();
+    let req: IDBRequest<T>;
+    try { req = run(t.objectStore(STORE)); }
+    catch (err) { db.close(); reject(err); return; }
+    // A successful request can still be rolled back by a quota or disk
+    // error at commit. Never tell capture it is saved until commit wins.
+    let result: T;
+    req.onsuccess = () => { result = req.result; };
+    t.oncomplete = () => { db.close(); resolve(result); };
+    t.onabort = () => { db.close(); reject(t.error ?? req.error ?? new Error('Phone storage transaction was aborted')); };
+    t.onerror = () => { /* onabort reports the transaction failure */ };
   }));
 }
 

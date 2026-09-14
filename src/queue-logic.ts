@@ -92,6 +92,8 @@ export interface QueuedCapture {
   attempts: number;
   nextAttemptAt: number;
   lastError?: string;
+  serverItemId?: number;
+  syncedAt?: number;
 }
 
 /**
@@ -287,4 +289,45 @@ export function toRequestBody(entry: QueuedCapture): Record<string, unknown> {
     body.photos = entry.photos.map((p) => ({ kind: p.kind, r2Key: `labels/${p.key}` }));
   }
   return body;
+}
+
+/** A live sender renews this lease after every photograph. */
+export const SYNC_LEASE_MS = 120_000;
+
+/** Old versions left syncing entries with their already-expired due time. */
+export function recoverInterrupted(entries: QueuedCapture[], now: number): QueuedCapture[] {
+  return entries.map((e) => e.state === 'syncing' && e.nextAttemptAt <= now
+    ? { ...e, state: 'failed', nextAttemptAt: now, lastError: 'Previous upload was interrupted. Retrying safely.' }
+    : e);
+}
+
+export function captureReceipt(value: unknown): number | null {
+  if (!value || typeof value !== 'object') return null;
+  const id = (value as { itemId?: unknown }).itemId;
+  return typeof id === 'number' && Number.isSafeInteger(id) && id > 0 ? id : null;
+}
+
+export interface QueueHealth {
+  tone: 'ok' | 'waiting' | 'error'; title: string; message: string;
+  outstanding: number; oldest: number | null; lastError: string | null;
+  lastConfirmed: number | null;
+}
+export function queueHealth(entries: QueuedCapture[], now: number, online: boolean): QueueHealth {
+  const unsent = entries.filter((e) => e.state !== 'synced');
+  const failed = unsent.filter((e) => e.state === 'failed');
+  const interrupted = unsent.some((e) => e.state === 'syncing' && e.nextAttemptAt <= now);
+  const oldest = unsent.length ? Math.min(...unsent.map((e) => e.createdAt)) : null;
+  const delayed = oldest !== null && now - oldest >= SYNC_LEASE_MS;
+  const receipts = entries.filter((e) => e.state === 'synced' && e.syncedAt).map((e) => e.syncedAt!);
+  const common = { outstanding: unsent.length, oldest,
+    lastError: failed.find((e) => e.lastError)?.lastError ?? null,
+    lastConfirmed: receipts.length ? Math.max(...receipts) : null };
+  if (unsent.length) return { ...common,
+    tone: failed.length || interrupted || delayed ? 'error' : 'waiting',
+    title: `${unsent.length} ${unsent.length === 1 ? 'entry is' : 'entries are'} not recorded online`,
+    message: `${online ? 'Saved only on this device.' : 'Offline — saved only on this device.'} Keep this app open and online until uploads are confirmed. Do not clear website data.` };
+  if (!online) return { ...common, tone: 'waiting', title: 'You are offline',
+    message: 'New entries will be saved on this device and uploaded when the connection returns.' };
+  return { ...common, tone: 'ok', title: entries.length ? 'All saved entries recorded online' : 'No entries waiting to upload',
+    message: 'After each save, wait for confirmation that it is recorded online.' };
 }

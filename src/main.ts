@@ -20,10 +20,10 @@
 
 import { putEntry, allEntries, deleteEntry } from './queue.ts';
 import {
-  CAPTURED_KIND, PHOTO_LONG_EDGE, UNDO_MS, heldForUndo, scaleTo, summarise,
+  CAPTURED_KIND, PHOTO_LONG_EDGE, UNDO_MS, heldForUndo, scaleTo, summarise, queueHealth,
   torchSupported, videoConstraints, type QueuedCapture, type QueuedPhoto,
 } from './queue-logic.ts';
-import { startSync, drain } from './sync.ts';
+import { startSync, drain, syncError } from './sync.ts';
 import {
   forgetCapturer, rememberCapturer, resolveCapturer, storedCapturer,
 } from './who.ts';
@@ -180,6 +180,7 @@ function render(): void {
 
     <div class="cam" id="cam" hidden>
       <video id="video" playsinline muted autoplay></video>
+      <div class="camera-sync" data-sync-camera role="status" aria-live="polite"></div>
       <!-- Out of the bar and into the corner. The torch is set once on the
            way into the loft; everything left in the bar is used per disc or
            per photograph, and the column it vacated is the one Next disc
@@ -735,6 +736,7 @@ function readFields(): Record<string, string> {
 
 /** True while a queue write is in flight. See `save`. */
 let saving = false;
+let saveError: string | null = null;
 
 async function save(from: 'form' | 'camera' = 'form'): Promise<void> {
   const fields = readFields();
@@ -759,6 +761,7 @@ async function save(from: 'form' | 'camera' = 'form'): Promise<void> {
   // time, so the Undo on screen always names the disc it would recall.
   closeUndo();
 
+  let stored = false;
   try {
     const clientId = uid();
     // Held back from the drain for the undo window — a delayed SEND, not
@@ -786,6 +789,8 @@ async function save(from: 'form' | 'camera' = 'form'): Promise<void> {
     // this is the whole offline guarantee, and it is why a hard refresh
     // in a loft loses nothing.
     await putEntry(entry);
+    stored = true;
+    saveError = null;
     // Only a roster name may be remembered. Un-parking the `capturedBy`
     // box would otherwise let free text back into `dg.who`, which is
     // exactly what the gate exists to keep out.
@@ -802,12 +807,17 @@ async function save(from: 'form' | 'camera' = 'form'): Promise<void> {
     undoTimer = setTimeout(closeUndo, UNDO_MS) as unknown as number;
 
     flash(from === 'camera'
-      ? `Filed — ${shots.length} photo${shots.length === 1 ? '' : 's'}. Next disc.`
-      : `Queued — ${Math.round(entry.msToCapture / 1000)}s. Next disc.`, 'ok', undoQueued);
+      ? `Saved on this device — ${shots.length} photo${shots.length === 1 ? '' : 's'}. Upload pending.`
+      : 'Saved on this device. Upload pending.', 'ok', undoQueued);
     resetForm();
     void refreshStatus();
     // No drain here any more: the entry is deliberately not due yet, so
     // a pass now would skip it and the one `closeUndo` fires sends it.
+  } catch (err) {
+    saveError = stored ? 'Saved on this device, but the screen could not update. Check upload status before leaving.'
+      : `Record NOT saved. Keep these photographs on screen and retry. ${err instanceof Error ? err.message : String(err)}`;
+    flash(saveError, 'err');
+    void refreshStatus();
   } finally {
     saving = false;
     if (saveBtn) saveBtn.disabled = false;
@@ -866,18 +876,77 @@ function resetForm(): void {
   scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-async function refreshStatus(): Promise<void> {
-  const s = summarise(await allEntries());
-  const median = s.medianMs === null ? '—' : `${(s.medianMs / 1000).toFixed(1)}s`;
-  const failed = s.failed ? ` · <span class="bad">${s.failed} retrying</span>` : '';
-  const el = document.getElementById('status');
-  if (el) {
-    // A crate that half-uploads must LOOK half-uploaded — the drain
-    // now continues past a single bad row, so "3 retrying" beside a
-    // falling queue is the honest picture rather than a stalled one.
-    el.innerHTML = `<b>${s.pending}</b> queued · ${s.synced} sent${failed}<br>median ${median}`;
+let statusRead = 0;
+let diagnostics = '';
+function showSyncNotice(tone: string, title: string, message: string, extra = ''): void {
+  let notice = document.getElementById('syncNotice');
+  if (!notice) {
+    notice = document.createElement('section');
+    notice.id = 'syncNotice';
+    const header = app.querySelector('header');
+    if (header?.parentNode) header.parentNode.insertBefore(notice, header.nextSibling);
+    else app.insertBefore(notice, app.firstChild);
+  }
+  notice.className = `sync-notice sync-${tone}`;
+  notice.setAttribute('role', tone === 'error' ? 'alert' : 'status');
+  notice.setAttribute('aria-live', 'polite');
+  const html = `<strong>${esc(title)}</strong><p>${esc(message)}</p>${extra}`;
+  if (notice.innerHTML !== html) notice.innerHTML = html;
+  const camera = document.querySelector<HTMLElement>('[data-sync-camera]');
+  if (camera) {
+    camera.className = `camera-sync sync-${tone}`;
+    camera.textContent = `${title}. ${tone === 'error' ? `${message} ` : ''}${tone === 'ok' ? '' : 'Tap Done for upload details.'}`;
   }
 }
+async function refreshStatus(): Promise<void> {
+  const request = ++statusRead;
+  try {
+    const entries = await allEntries();
+    if (request !== statusRead) return;
+    const s = summarise(entries);
+    const health = queueHealth(entries, Date.now(), navigator.onLine);
+    const problem = saveError ?? syncError();
+    const el = document.getElementById('status');
+    if (el) el.textContent = `${health.outstanding} awaiting upload · ${s.synced} recent confirmations`;
+    const when = (n: number | null): string => n === null ? 'not available' : new Date(n).toLocaleString('en-GB');
+    diagnostics = [`App: ${location.origin}`, 'Capture sync: 2026-09-14 recovery build',
+      `Checked: ${new Date().toISOString()}`, `Browser reports online: ${navigator.onLine}`,
+      `Pending: ${s.pending}; retrying: ${s.failed}; recent confirmed: ${s.synced}`,
+      `Oldest awaiting upload: ${when(health.oldest)}`, `Last server confirmation: ${when(health.lastConfirmed)}`,
+      `Error: ${problem ?? health.lastError ?? 'none recorded'}`].join('\n');
+    const expanded = document.querySelector<HTMLDetailsElement>('#syncNotice details')?.open;
+    showSyncNotice(problem ? 'error' : health.tone, problem ? 'Capture needs attention' : health.title,
+      problem ?? health.message,
+      `${health.outstanding || syncError() ? '<button type="button" class="btn btn-ghost" data-retry-uploads>Retry uploads now</button>' : ''}
+      <details${expanded ? ' open' : ''}><summary>Upload details</summary>
+        ${health.oldest ? `<p>Oldest waiting: ${esc(when(health.oldest))}</p>` : ''}
+        ${health.lastConfirmed ? `<p>Last confirmed online: ${esc(when(health.lastConfirmed))}</p>` : ''}
+        <p>${esc(health.lastError ?? 'No upload error recorded.')}</p>
+        <button type="button" class="btn btn-quiet" data-copy-sync>Copy diagnostics</button>
+      </details>`);
+  } catch (err) {
+    if (request !== statusRead) return;
+    diagnostics = `App: ${location.origin}\nPhone storage error: ${err instanceof Error ? err.message : String(err)}`;
+    showSyncNotice('error', 'Phone storage is unavailable',
+      saveError ?? 'We cannot confirm that entries are saved. Stop capturing, keep this page open and check phone storage. Do not clear website data.',
+      '<button type="button" class="btn btn-quiet" data-copy-sync>Copy diagnostics</button>');
+  }
+}
+document.addEventListener('click', (e) => {
+  const target = e.target as HTMLElement;
+  const retry = target.closest<HTMLButtonElement>('[data-retry-uploads]');
+  if (retry) {
+    retry.disabled = true;
+    retry.textContent = 'Retrying…';
+    void drain(Date.now(), true).then(() => { void refreshStatus(); }, (err) => {
+      showSyncNotice('error', 'Uploads could not start', String(err));
+    });
+  }
+  if (target.closest('[data-copy-sync]')) {
+    void Promise.resolve().then(() => navigator.clipboard.writeText(diagnostics)).then(() => flash('Upload diagnostics copied.'))
+      .catch(() => { showSyncNotice('error', 'Could not copy diagnostics', diagnostics); });
+  }
+});
 
 render();
 startSync(() => { void refreshStatus(); });
