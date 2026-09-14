@@ -3,6 +3,15 @@
 <!-- Append-only, newest first. -->
 
 
+## 2026-09-14 — PHOTO-BATCH-REQUEUE: approve and clear 29 empty attempts
+
+**Decision:** The user approved the prepared cleanup (“please do go with your recommendations”). Remove exactly the 29 snapshotted, rejected, zero-query attempts for items 490–518, retaining all snapshots locally. Rechecked exact rows and guards before deletion; readback confirms all 97 photos, 154 unconfirmed vision fields and human capture rows are preserved. The 29 entries are now eligible for the existing scheduler. Item 519 already reached needs-review because candidates tied; no human decision was made.
+
+**Rationale:** These attempts predated the image text and only said “not searchable”. Removing them after explicit approval allows the normal matching queue to use the populated fields without changing schema, rate limits or matcher settings. Live pacing is 3000 ms; no cooldown key exists. The deployed-path batch formula permits one record per five-minute tick. The first automated pass is estimated around 14:35 BST today, subject to upstream errors and cooldowns; human verification may remain afterwards.
+
+**Validation:** Exact 29-row deletion and production preservation checks passed. Code is unchanged from the previously green 300-test gate. The record is closed and backlog regenerated; see the dated photo-batch README and validation JSON.
+
+
 ## 2026-09-14 — PHOTO-BATCH-2026-09-14: populate 30 photo readings and split item 499
 
 **Decision:** Read the 97 new photos for entries 490–518 without catalogue lookups. Insert 154 unconfirmed `vision` raw fields for 30 records. Item 499 keeps the four Jill Jones photos; new item 519 receives the two David Essex photos and inherits its collection list and capture/location metadata. All human capture rows, original item metadata, photo objects and matching history are preserved.

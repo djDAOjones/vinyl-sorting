@@ -2,7 +2,7 @@
 
 ## Completed
 
-97 photos of 29 uploaded entries were read directly without catalogue lookups. They describe 30 records. All 30 are populated in production D1 with 154 raw fields sourced `vision`, with no human confirmation asserted. Human capture text, original item metadata and prior matching history remain unchanged.
+97 photos of 29 uploaded entries were read directly without catalogue lookups. They describe 30 records. All 30 are populated in production D1 with 154 raw fields sourced `vision`, with no human confirmation asserted. Human capture text and original item metadata remain unchanged. Original matching history was retained through population; the explicitly approved empty-attempt cleanup is recorded below.
 
 Item 499 was split after photo 4: Jill Jones remains 499; David Essex is new item 519, retaining the rock-and-pop-to-sell list. All 97 photo objects are retained. Original filenames stay stable locally; `row-ids.csv` maps the two David Essex photos to 519.
 
@@ -10,7 +10,11 @@ The image readings were checked against sleeves and disc labels, then validated 
 
 ## Matching handoff
 
-The original 29 entries each have a rejected attempt made with no searchable text: zero queries, zero candidates and no human decision. They remain intact under the no-destructive-data-operations rule. Requeue SQL is prepared locally but has NOT run. Approval to remove only those 29 empty attempts is needed to make them eligible for the normal never-matched queue. The newly created item 519 has no inherited attempt and is eligible for the scheduled matcher. No manual matching run was started.
+On 14 September at approximately 12:06 BST, after the user's explicit approval, exactly 29 original empty zero-query attempts (IDs 522–550) were removed using the prepared guarded SQL. Every predicate still matched: no candidates, human decisions or chosen release. Readback confirmed all 97 photos, 154 vision fields and human capture rows remained intact. Before and response snapshots remain local.
+
+The online queue contains the 29 entries 490–518, with no older unmatched items ahead. Item 519 has already completed a search and needs review: the top candidates tied (margin zero), and four queries errored. No review decision has been made.
+
+The current scheduler is one record per five-minute tick (the subrequest/retry allowance is the limiting factor). Live manual and automatic Discogs spacing both read 3000 ms; the cooldown key is absent. From the next expected 12:10 BST tick, the final entry should start around 14:30 and finish by approximately 14:35 BST if ticks run normally. Throttling/cooldowns can extend that. This estimates completion of the first automated matching pass, not human confirmation of every pressing.
 
 ## Readings
 
