@@ -10,6 +10,7 @@ interface SyncOptions {
   now?: () => number;
   timeoutMs?: number;
   onChange?: () => void;
+  onEvent?: (message: string) => void;
 }
 class SendError extends Error {
   readonly status: number | null;
@@ -20,13 +21,16 @@ export function createSyncController(opts: SyncOptions) {
   let lastError: string | null = null;
   const now = opts.now ?? Date.now;
   const changed = (): void => { opts.onChange?.(); };
+  const event = (message: string): void => { try { opts.onEvent?.(message); } catch { /* diagnostics cannot block uploads */ } };
   const send = async (url: string, init: RequestInit) => {
+    const started = now(); event(`${init.method} ${url} started; bytes=${init.body instanceof Blob ? init.body.size : String(init.body ?? '').length}`);
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       return await Promise.race([
         (async () => {
           const response = await opts.fetch(url, { ...init, signal: controller.signal });
+          event(`${init.method} ${url} HTTP ${response.status}; headers after ${now() - started}ms`);
           // Include reading the receipt/error body in the deadline.
           return { ok: response.ok, status: response.status, body: await response.text() };
         })(),
@@ -38,6 +42,7 @@ export function createSyncController(opts: SyncOptions) {
         }),
       ]);
     } catch (err) {
+      event(`${init.method} ${url} failed after ${now() - started}ms: ${String(err)}`);
       if (err instanceof SendError) throw err;
       throw new SendError(err instanceof Error ? err.message : 'Network upload failed', null);
     } finally { clearTimeout(timer); }
@@ -75,8 +80,10 @@ export function createSyncController(opts: SyncOptions) {
           if (serverItemId === null) throw new SendError('The server did not confirm a record number. Entry kept for retry.', null);
           await opts.putEntry({ ...entry, state: 'synced', serverItemId, syncedAt: now(), lastError: undefined });
           sent++; changed();
+          event(`Confirmed ${entry.clientId} as server item ${serverItemId}`);
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
+          event(`Kept ${entry.clientId} for retry: ${message}`);
           await opts.putEntry(markFailed(entry, message, now()));
           failed++; changed();
           if (shouldStopDraining(err instanceof SendError ? err.status : null)) break;

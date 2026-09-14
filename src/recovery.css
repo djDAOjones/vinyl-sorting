@@ -1,0 +1,12 @@
+#app {padding: 1rem; max-width: 48rem; margin: auto;}
+h1 {font-size: 1.6rem; margin: 1rem 0;}
+h2 {font-size: 1.2rem; margin: 1.5rem 0 .5rem;}
+p {margin: .6rem 0;}
+.notice {border: 2px solid var(--accent); padding: 1rem; border-radius: .6rem;}
+#message {white-space: pre-wrap; overflow-wrap: anywhere; padding: .5rem 0;}
+.backup-part {display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: .7rem 0; padding: .7rem; border: 1px solid var(--line); border-radius: .5rem;}
+.backup-part span {flex: 1 1 12rem;}
+button, .download {min-height: 44px; margin: .2rem 0;}
+textarea {width: 100%; min-height: 18rem; font: 12px/1.4 monospace; white-space: pre;}
+#prepared {border: 1px solid var(--ok); padding: .8rem; margin: .8rem 0;}
+#prepared[hidden] {display: none;}

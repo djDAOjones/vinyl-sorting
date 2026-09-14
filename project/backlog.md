@@ -20,6 +20,10 @@
   context from the user] (2026-09-14) — Upload safeguards are deployed;
   inspect the affected device queue to establish its actual failure and
   recover any retained entries.
+- [~] **CAPTURE-QUEUE-BACKUP Preserve device queue with photo backups
+  and recovery diagnostics** (2026-09-14) — Add a read-only device
+  recovery screen with portable record and photo backups, detailed
+  diagnostics and explicit upload controls.
 - [ ] **PHOTO-BATCH-NEXT Process the next photo batch when its location
   is known** [blocked: New batch location or completed upload]
   (2026-09-14) — User requests another photo batch; await its location or

@@ -24,6 +24,7 @@ import {
   torchSupported, videoConstraints, type QueuedCapture, type QueuedPhoto,
 } from './queue-logic.ts';
 import { startSync, drain, syncError } from './sync.ts';
+import { RECOVERY_BUILD, readTrace } from './sync-debug.ts';
 import {
   forgetCapturer, rememberCapturer, resolveCapturer, storedCapturer,
 } from './who.ts';
@@ -909,15 +910,16 @@ async function refreshStatus(): Promise<void> {
     const el = document.getElementById('status');
     if (el) el.textContent = `${health.outstanding} awaiting upload · ${s.synced} recent confirmations`;
     const when = (n: number | null): string => n === null ? 'not available' : new Date(n).toLocaleString('en-GB');
-    diagnostics = [`App: ${location.origin}`, 'Capture sync: 2026-09-14 recovery build',
+    diagnostics = [`App: ${location.origin}`, `Capture sync: ${RECOVERY_BUILD}`,
       `Checked: ${new Date().toISOString()}`, `Browser reports online: ${navigator.onLine}`,
       `Pending: ${s.pending}; retrying: ${s.failed}; recent confirmed: ${s.synced}`,
       `Oldest awaiting upload: ${when(health.oldest)}`, `Last server confirmation: ${when(health.lastConfirmed)}`,
-      `Error: ${problem ?? health.lastError ?? 'none recorded'}`].join('\n');
+      `Error: ${problem ?? health.lastError ?? 'none recorded'}`, ...readTrace()].join('\n');
     const expanded = document.querySelector<HTMLDetailsElement>('#syncNotice details')?.open;
     showSyncNotice(problem ? 'error' : health.tone, problem ? 'Capture needs attention' : health.title,
       problem ?? health.message,
       `${health.outstanding || syncError() ? '<button type="button" class="btn btn-ghost" data-retry-uploads>Retry uploads now</button>' : ''}
+      <p><a href="/recovery.html">Save queued work / diagnostics</a></p>
       <details${expanded ? ' open' : ''}><summary>Upload details</summary>
         ${health.oldest ? `<p>Oldest waiting: ${esc(when(health.oldest))}</p>` : ''}
         ${health.lastConfirmed ? `<p>Last confirmed online: ${esc(when(health.lastConfirmed))}</p>` : ''}

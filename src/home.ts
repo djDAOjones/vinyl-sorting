@@ -107,6 +107,7 @@ function render(): void {
     </div>
 
     <nav class="tiles">
+      <a class="tile" href="/recovery.html"><span class="name">Save queued work</span><span class="what">Back up this device’s records and photos. Inspect upload errors and resume safely.</span></a>
       <a class="tile lead" href="${ROUTES.capture}">
         ${ICONS.add}
         <span class="name">Add vinyl</span>

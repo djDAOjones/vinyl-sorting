@@ -21,6 +21,7 @@ export default defineConfig({
         review: 'review.html',
         browse: 'browse.html',
         settings: 'settings.html',
+        recovery: 'recovery.html',
       },
     },
   },

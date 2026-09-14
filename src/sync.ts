@@ -1,10 +1,12 @@
 /** Browser wiring for the tested, receipt-based upload controller. */
-import { allEntries, putEntry, pruneSynced } from './queue.ts';
+import { allEntries, putEntry } from './queue.ts';
 import { createSyncController } from './sync-engine.ts';
+import { trace } from './sync-debug.ts';
 
 let onChange = (): void => {};
-const controller = createSyncController({ allEntries, putEntry, pruneSynced,
-  fetch: (...args) => fetch(...args), onChange: () => onChange() });
+// Temporary incident retention: keep even confirmed records/photos for backup.
+const controller = createSyncController({ allEntries, putEntry, pruneSynced: async () => {},
+  fetch: (...args) => fetch(...args), onChange: () => onChange(), onEvent: trace });
 export const syncError = controller.error;
 
 export async function drain(now = Date.now(), forceRetry = false): Promise<{ sent: number; failed: number }> {
@@ -12,14 +14,15 @@ export async function drain(now = Date.now(), forceRetry = false): Promise<{ sen
   // through expiring leases and the Worker's clientId idempotency.
   if (typeof navigator !== 'undefined' && navigator.locks) {
     return navigator.locks.request('vinyl-capture-upload', { ifAvailable: true },
-      (lock) => lock ? controller.run(now, forceRetry) : { sent: 0, failed: 0 });
+      (lock) => { if (lock) return controller.run(now, forceRetry);
+        trace('Upload deferred: another tab holds the upload lock'); return { sent: 0, failed: 0 }; });
   }
   return controller.run(now, forceRetry);
 }
 
 export function startSync(notify: () => void): void {
   onChange = notify;
-  const tick = (): void => { void drain().then(notify).catch(notify); };
+  const tick = (): void => { void drain().then(notify).catch(err => { trace(`Upload could not start: ${String(err)}`); notify(); }); };
   setInterval(tick, 15_000);
   addEventListener('online', tick);
   addEventListener('offline', notify);
