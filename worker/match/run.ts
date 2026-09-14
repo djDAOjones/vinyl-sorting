@@ -20,10 +20,12 @@ import { MAX_ATTEMPTS_PER_QUERY } from '../discogs.ts';
 import { buildQueries } from './queries.ts';
 import { applyGate, scoreCandidate, type Capture, type GateResult, type Scored } from './score.ts';
 import { checkRow } from './sanity.ts';
+import { MATCH_COLUMNS, MATCH_FROM } from './input.ts';
 
 export interface MatchRow {
   itemId: number;
   captureId: number | null;
+  queuedRunId?: number | null;
   catnoRaw?: string | null;
   labelRaw?: string | null;
   titleRaw?: string | null;
@@ -60,10 +62,12 @@ export interface MatchOutcome {
    * about the reading as well as about this match.
    */
   usedFallback?: boolean;
+  incomplete?: boolean;
+  attempts?: { type: string; params: Record<string, string>; status: 'ok' | 'error'; results?: number }[];
 }
 
-/** Stop early once the field is good enough to clear the gate. */
-const ENOUGH = 12;
+/** Bound stored candidates without letting an unrelated first page stop recall. */
+const MAX_CANDIDATES = 120;
 
 /**
  * Match one row. Pure of storage: it takes a client and returns what it
@@ -189,6 +193,9 @@ export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
   let queryErrors = 0;
   let lastError = '';
   let budgetStopped = false;
+  let candidateLimit = false;
+  const attempted: typeof queries = [];
+  const attempts: NonNullable<MatchOutcome['attempts']> = [];
 
   /**
    * Walk one ladder, filling `seen`.
@@ -200,7 +207,6 @@ export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
    */
   const walk = async (rungs: typeof queries): Promise<void> => {
     for (const q of rungs) {
-      if (seen.size >= ENOUGH) break;
       // Stop before spending Cloudflare's per-invocation subrequest cap.
       // A row that stops here keeps whatever it found and is recorded
       // honestly; a row that hits the cap kills the invocation and loses
@@ -209,6 +215,7 @@ export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
       // would otherwise never have a turn.
       if (client.budgetSpent?.(MAX_ATTEMPTS_PER_QUERY)) { budgetStopped = true; break; }
       queriesRun++;
+      attempted.push(q);
       let results: SearchResult[];
       try {
         results = await client.search(q.params);
@@ -219,57 +226,51 @@ export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
         // would silently mark it unmatched for ever. A rate-limited run
         // did exactly that to 53 rows out of 60.
         queryErrors++;
+        attempts.push({ ...q, status: 'error' });
         lastError = err instanceof Error ? err.message : String(err);
         continue;
       }
-      for (const r of results) if (r?.id && !seen.has(r.id)) seen.set(r.id, r);
+      attempts.push({ ...q, status: 'ok', results: results.length });
+      for (const r of results) {
+        if (!r?.id || seen.has(r.id)) continue;
+        seen.set(r.id, r);
+      }
+      if (seen.size > MAX_CANDIDATES) {
+        candidateLimit = true;
+        const keep = applyGate([...seen.values()].map(r => scoreCandidate(capture, r))).ranked.slice(0, MAX_CANDIDATES);
+        const ids = new Set(keep.map(r => r.id));
+        for (const id of seen.keys()) if (!ids.has(id)) seen.delete(id);
+      }
     }
   };
 
   await walk(queries);
 
-  /**
-   * The other numbers, only now.
-   *
-   * THE TRIGGER IS "NO FAMILY", NOT "NO SCORE", and the difference is
-   * not pedantry. Points and families are different currencies: a
-   * candidate picks up 5 points merely for BEING a vinyl LP, so a
-   * ladder that returned a dozen unrelated records all scoring 5 would
-   * read as "scored something" while having placed nothing whatever.
-   * Families are what the corroboration gate spends, and a field where
-   * not one candidate carries a single family is a field where the
-   * primary catalogue number found nobody — which is exactly the case
-   * a wrong primary number produces, and exactly the population that
-   * ends as "not found" today.
-   *
-   * So it costs nothing that is not already lost, and it decides mop-up
-   * cases by itself: one of two numbers matching is a finished row,
-   * neither matching is a re-shoot, and those two are currently
-   * indistinguishable from each other.
-   */
+  // A weak label/year match must not suppress the better identifier ladder.
   let usedFallback = false;
-  const anyPlaced = (): boolean =>
-    [...seen.values()].some((r) => scoreCandidate(capture, r).families.length > 0);
-  if (fallback.length && !budgetStopped && !anyPlaced()) {
-    const before = seen.size;
+  const primaryGate = applyGate([...seen.values()].map(r => scoreCandidate(capture, r)));
+  if (fallback.length && !budgetStopped && primaryGate.verdict !== 'verified') {
+    const before = new Set(seen.keys());
     await walk(fallback);
-    usedFallback = seen.size > before;
+    usedFallback = [...seen.values()].some(r => !before.has(r.id)
+      && scoreCandidate(capture, r).families.includes('identifier'));
   }
 
   const scored: Scored[] = [...seen.values()].map((r) => scoreCandidate(capture, r));
   const gate = applyGate(scored);
+  const incomplete = queryErrors > 0 || budgetStopped || candidateLimit;
 
   // Nothing found AND something went wrong is not a negative result.
-  if (scored.length === 0 && (queryErrors > 0 || budgetStopped)) {
+  if (scored.length === 0 && incomplete) {
     return {
       outcome: {
         itemId: row.itemId, verdict: 'error',
         reason: budgetStopped && queryErrors === 0
-          ? `stopped after ${queriesRun} of ${queries.length} queries: subrequest budget spent`
-          : `all ${queryErrors} of ${queriesRun} queries failed; last: ${lastError}`,
-        chosenDiscogsId: null, queriesRun, queryErrors, candidates: 0,
+          ? `stopped after ${queriesRun} queries: subrequest budget spent`
+          : `${queryErrors} of ${queriesRun} queries failed; last: ${lastError}`,
+        chosenDiscogsId: null, queriesRun, queryErrors, candidates: 0, incomplete: true, attempts,
       },
-      gate: null, queries: [...queries, ...fallback], tracks: [], price: null,
+      gate: null, queries: attempted, tracks: [], price: null,
     };
   }
 
@@ -280,33 +281,38 @@ export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
     ? await fetchReleaseFacts(client, chosenId)
     : { tracks: [], price: null };
 
+  // Fetch facts for the strongest candidate above, but never auto-link on an
+  // incomplete comparison. The missing query could contain the runner-up.
+  if (incomplete && gate.verdict === 'verified') gate.verdict = 'needs_review';
+
   return {
     tracks,
     price,
     outcome: {
       itemId: row.itemId,
-      verdict: gate.verdict,
+      verdict: incomplete && !scored.some(r => r.families.length > 0) ? 'error' : gate.verdict,
       // A verdict reached on a shortened ladder is still a verdict, but
       // it was reached on less evidence than the row deserved and must
       // say so — otherwise a budget-truncated "nothing found" is
       // indistinguishable from a real one.
-      reason: [gate.reason,
+      reason: [incomplete ? 'Search incomplete — check or retry before resolving.' : '', gate.reason,
         // Said in the verdict, not only in a flag: a reviewer looking
         // at this row should know the reading's PRIMARY number found
         // nothing and this came off an alternative, because that is a
         // fact about the reading as much as about the match.
         usedFallback ? '(found on an alternative number from the label)' : '',
         queryErrors ? `(${queryErrors} query error(s))` : '',
-        budgetStopped ? `(stopped at ${queriesRun} of ${queries.length} queries: subrequest budget)` : '',
+        candidateLimit ? '(candidate limit reached)' : '',
+        budgetStopped ? `(stopped at ${queriesRun} queries: subrequest budget)` : '',
       ].filter(Boolean).join(' '),
       chosenDiscogsId: gate.verdict === 'verified' ? gate.chosen?.id ?? null : null,
       queriesRun,
       queryErrors,
       candidates: scored.length,
-      usedFallback,
+      usedFallback, incomplete, attempts,
     },
     gate,
-    queries: usedFallback ? [...queries, ...fallback] : queries,
+    queries: attempted,
   };
 }
 
@@ -338,12 +344,15 @@ export async function matchRow(row: MatchRow, client: DiscogsClient): Promise<{
  * better failure: it is visible, and re-queueing is already a normal
  * operation here.
  */
-export async function claimRow(env: Env, itemId: number): Promise<number> {
+export async function claimRow(env: Env, itemId: number): Promise<number | null> {
   const run = await env.DB.prepare(
-    "INSERT INTO match_run (item_id, state) VALUES (?, 'pending') RETURNING id",
+    `INSERT INTO match_run (item_id, state) SELECT i.id, 'pending' FROM item i WHERE i.id = ?
+      AND NOT EXISTS (SELECT 1 FROM v_confirmed_field v WHERE v.entity = 'item'
+        AND v.entity_id = i.id AND v.field = 'release_id')
+      AND NOT EXISTS (SELECT 1 FROM match_run m WHERE m.item_id = i.id AND m.state = 'pending'
+        AND m.id = (SELECT MAX(m2.id) FROM match_run m2 WHERE m2.item_id = i.id)) RETURNING id`,
   ).bind(itemId).first<{ id: number }>();
-  if (!run) throw new Error('match_run claim returned no id');
-  return run.id;
+  return run?.id ?? null;
 }
 
 export async function persistRun(
@@ -369,7 +378,7 @@ export async function persistRun(
 
   // UPDATE, not INSERT: the row was claimed before the search began.
   await env.DB.prepare(
-    `UPDATE match_run SET state = ?, queries_json = ?, chosen_release_id = ?, ran_at = datetime('now')
+    `UPDATE match_run SET state = ?, queries_json = json_patch(COALESCE(queries_json, '{}'), ?), chosen_release_id = ?, ran_at = datetime('now')
       WHERE id = ?`,
   ).bind(
     state,
@@ -382,6 +391,12 @@ export async function persistRun(
       queries: result.queries,
       queriesRun: result.outcome.queriesRun,
       queryErrors: result.outcome.queryErrors,
+      input: { catnoRaw: row.catnoRaw ?? null, labelRaw: row.labelRaw ?? null,
+        titleRaw: row.titleRaw ?? null, nameRaw: row.nameRaw ?? null,
+        yearRaw: row.yearRaw ?? null, otherNumbers: row.otherNumbers ?? null },
+      attempts: result.outcome.attempts ?? [],
+      incomplete: result.outcome.incomplete ?? false,
+      ...(row.queuedRunId ? { retry: 'finished' } : {}),
       // Only when true, so the column does not grow a key on every one
       // of the 484 rows to record the ordinary case.
       ...(result.outcome.usedFallback ? { usedFallback: true } : {}),
@@ -431,16 +446,23 @@ export async function persistRun(
   }
 
   if (releaseId !== null) {
-    await env.DB.prepare('UPDATE item SET release_id = ? WHERE id = ?').bind(releaseId, row.itemId).run();
+    // A stale invocation may finish after a newer retry or a human decision.
+    // Keep its history, but do not let it replace the current identification.
+    const eligible = `id = ? AND ? = (SELECT MAX(m.id) FROM match_run m WHERE m.item_id = item.id)
+      AND NOT EXISTS (SELECT 1 FROM v_confirmed_field v WHERE v.entity = 'item'
+        AND v.entity_id = item.id AND v.field = 'release_id')`;
     // `discogs`, and unconfirmed: an auto-accepted match is still the
     // machine's opinion. A person confirms it in the review queue.
-    await env.DB.prepare(
+    await env.DB.batch([
+      env.DB.prepare(`UPDATE item SET release_id = ? WHERE ${eligible}`).bind(releaseId, row.itemId, runId),
+      env.DB.prepare(
       `INSERT INTO field_source (entity, entity_id, field, source, confidence)
-       VALUES ('item', ?, 'release_id', 'discogs', ?)
+       SELECT 'item', id, 'release_id', 'discogs', ? FROM item WHERE ${eligible}
        ON CONFLICT (entity, entity_id, field)
        DO UPDATE SET source = 'discogs', confidence = excluded.confidence,
                      confirmed_by = NULL, confirmed_at = NULL`,
-    ).bind(row.itemId, result.gate?.chosen?.score ?? null).run();
+    ).bind(result.gate?.chosen?.score ?? null, row.itemId, runId),
+    ]);
     written += 2;
   }
 
@@ -563,27 +585,20 @@ export async function pendingRows(
   // person decides. That is why using it here does not breach the
   // provenance rule, which governs clusters, coverage checks, sell
   // lists and shortlists — none of which this feeds.
-  const raw = (field: string) =>
-    `(SELECT r.value FROM raw_value r WHERE r.item_id = i.id AND r.field = '${field}')`;
-  const COLUMNS = `i.id AS itemId, c.id AS captureId,
-            COALESCE(c.catno_raw, ${raw('catno_raw')}) AS catnoRaw,
-            COALESCE(c.label_raw, ${raw('label_raw')}) AS labelRaw,
-            COALESCE(c.title_raw, ${raw('title_raw')}) AS titleRaw,
-            COALESCE(c.name_raw,  ${raw('name_raw')})  AS nameRaw,
-            COALESCE(c.year_raw,  ${raw('year_raw')})  AS yearRaw,
-            -- No COALESCE: other_numbers is a READING-only field.
-            -- Capture has no column for it, because a person typing at
-            -- a crate types the number they judged primary and the rest
-            -- are what a photograph saw (MATCH-OTHER-NUMBERS).
-            ${raw('other_numbers')} AS otherNumbers`;
-  const FROM = `FROM item i
-       LEFT JOIN capture c ON c.item_id = i.id`;
+  const COLUMNS = MATCH_COLUMNS;
+  const FROM = MATCH_FROM;
 
   const { results } = await env.DB.prepare(
-    `SELECT ${COLUMNS}
+    `SELECT ${COLUMNS},
+          (SELECT m.id FROM match_run m WHERE m.item_id = i.id ORDER BY m.id DESC LIMIT 1) AS queuedRunId
        ${FROM}
-      WHERE NOT EXISTS (SELECT 1 FROM match_run m WHERE m.item_id = i.id)
-      ORDER BY i.id
+      WHERE (NOT EXISTS (SELECT 1 FROM match_run m WHERE m.item_id = i.id)
+        OR EXISTS (SELECT 1 FROM match_run m WHERE m.item_id = i.id
+          AND m.id = (SELECT MAX(m2.id) FROM match_run m2 WHERE m2.item_id = i.id)
+          AND m.state = 'pending' AND json_extract(m.queries_json, '$.retry') = 'queued'))
+        AND NOT EXISTS (SELECT 1 FROM v_confirmed_field v WHERE v.entity = 'item'
+          AND v.entity_id = i.id AND v.field = 'release_id')
+      ORDER BY queuedRunId IS NOT NULL, i.id
       LIMIT ?`,
   ).bind(limit).all();
   const rows = results as unknown as MatchRow[];

@@ -6,6 +6,9 @@ import { insertCapture, parseCapture } from './capture.ts';
 import { DiscogsClient, MAX_ATTEMPTS_PER_QUERY, SUBREQUEST_BUDGET } from './discogs.ts';
 import { RateLimiter } from './rate-limit.ts';
 import { claimRow, matchRow, pendingRows, persistRun } from './match/run.ts';
+import { requestMatch, claimRetry, startManualReview } from './match/recovery.ts';
+import { loadMatchRow } from './match/input.ts';
+import { checkRow } from './match/sanity.ts';
 import { parseResolve, resolveRun } from './review.ts';
 // The roster is shared with the client on purpose: one list, so the
 // gate and the sign-in cannot disagree about who exists.
@@ -134,13 +137,15 @@ export function createApp() {
    * image while curl passed — the request a browser actually makes for
    * an `<img>` was never the request being tested.
    */
-  const namedCaller = (c: Context<{ Bindings: Env }>): boolean => {
-    if (resolveCapturer(c.req.header('x-capturer') ?? '')) return true;
+  const callerName = (c: Context<{ Bindings: Env }>): string | null => {
+    const header = resolveCapturer(c.req.header('x-capturer') ?? '');
+    if (header) return header;
     const raw = /(?:^|;\s*)dg_who=([^;]*)/.exec(c.req.header('cookie') ?? '')?.[1] ?? '';
     let decoded = raw;
     try { decoded = decodeURIComponent(raw); } catch { /* a malformed cookie is not a name */ }
-    return Boolean(resolveCapturer(decoded));
+    return resolveCapturer(decoded);
   };
+  const namedCaller = (c: Context<{ Bindings: Env }>): boolean => Boolean(callerName(c));
 
   const capturerGuard: MiddlewareHandler<{ Bindings: Env }> = async (c, next) => {
     if (!namedCaller(c)) {
@@ -303,6 +308,7 @@ export function createApp() {
       provenance: provenance.results,
       readings: readings.results.filter(r => !String(r.field).startsWith('photo-request:')),
       photoRequests: await photoRequests(c.env, id),
+      matching: await loadMatchRow(c.env, id).then(input => input ? { input, ...checkRow(input) } : null),
       runs: runs.results.map((r) => {
         const runId = (r as { id: number }).id;
         return {
@@ -341,6 +347,17 @@ export function createApp() {
     }
     await next();
   };
+
+  app.post('/api/items/:id{[0-9]+}/retry-match', guard, capturerGuard, async (c) => {
+    const result = await requestMatch(c.env, Number(c.req.param('id')),
+      callerName(c)!);
+    return c.json(result, result.status);
+  });
+
+  app.post('/api/items/:id{[0-9]+}/start-review', guard, capturerGuard, async (c) => {
+    const result = await startManualReview(c.env, Number(c.req.param('id')), callerName(c)!);
+    return c.json(result, result.status);
+  });
 
   app.post('/api/items/:id{[0-9]+}/photos', guard, capturerGuard, async (c) => {
     const id = Number(c.req.param('id'));
@@ -448,6 +465,12 @@ export function createApp() {
     // Skipped items leave the default queue but are re-queueable:
     // re-verification is a normal operation, not a migration.
     const includeSkipped = c.req.query('include') === 'skipped';
+    const recovery = c.req.query('view') === 'recovery';
+    const rawItem = c.req.query('item');
+    if (rawItem !== undefined && (!/^[1-9][0-9]*$/.test(rawItem) || !Number.isSafeInteger(Number(rawItem)))) {
+      return c.json({ error: 'Invalid item ID' }, 400);
+    }
+    const itemId = rawItem ? Number(rawItem) : null;
     // One list at a time, when asked: the device walking the dance
     // crate reviews the dance crate.
     const keys = keysOf(await allLists(c.env));
@@ -467,9 +490,9 @@ export function createApp() {
     : `NULL AS photo_keys`}
          FROM match_run m
          JOIN item i ON i.id = m.item_id
-         LEFT JOIN capture c ON c.item_id = i.id
+         LEFT JOIN capture c ON c.id = (SELECT id FROM capture WHERE item_id = i.id ORDER BY captured_at DESC, id DESC LIMIT 1)
          LEFT JOIN review_decision d ON d.match_run_id = m.id
-        WHERE m.state = 'needs-review'
+        WHERE (m.state = 'needs-review' OR (? = 1 AND m.state IN ('rejected', 'error', 'auto-accepted')))
           -- THE NEWEST RUN PER ITEM, NOT EVERY RUN. One run per item
           -- held until MATCH-REVERIFY-SWEEP made re-running a normal
           -- operation: a swept row that still cannot auto-accept writes
@@ -479,11 +502,12 @@ export function createApp() {
           -- rather than in a test, which is why the test below now
           -- exists.
           AND m.id = (SELECT MAX(m2.id) FROM match_run m2 WHERE m2.item_id = i.id)
-          AND (d.id IS NULL OR (? = 1 AND d.choice = 'skip'))
+          AND (? IS NULL OR i.id = ?)
+          AND (? IS NOT NULL OR d.id IS NULL OR (? = 1 AND d.choice IN ('skip', 'none')))
           AND ${scope.pred}
         ORDER BY m.item_id
         LIMIT ?`,
-    ).bind(includeSkipped ? 1 : 0, ...scope.args, limit).all();
+    ).bind(recovery || itemId ? 1 : 0, itemId, itemId, itemId, includeSkipped ? 1 : 0, ...scope.args, limit).all();
 
     // D1 allows at most 100 bound parameters per query, so the id list
     // is chunked rather than the page size being capped. Local SQLite
@@ -524,6 +548,7 @@ export function createApp() {
 
     const result = await resolveRun(c.env, Number(c.req.param('runId')), parsed.value);
     if (!result) return c.json({ error: 'no such review run' }, 404);
+    if ('error' in result) return c.json(result, 409);
     return c.json(result);
   });
 
@@ -840,7 +865,8 @@ export async function runMatchBatch(
     }
     // Claimed before the search, so an invocation that overruns the
     // cron period cannot have the next tick pick the same row up.
-    const runId = await claimRow(env, row.itemId);
+    const runId = row.queuedRunId ? await claimRetry(env, row.queuedRunId) : await claimRow(env, row.itemId);
+    if (runId === null) continue;
     rowsWritten += 1;
     const result = await matchRow(row, client);
     rowsWritten += await persistRun(env, row, result, runId);

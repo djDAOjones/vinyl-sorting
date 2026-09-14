@@ -2,6 +2,44 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-09-14 — MATCH-RECOVERY: prepare and resolve failed identifications
+
+**Decision:** Add a preparation panel to each collection record, an unconfirmed
+collection preset, explicit scheduled retries, and individual/recovery review
+for rejected, error and automatic matches. Never-searched records may enter
+manual review without waiting for usable search text. Notes survive unresolved
+and deferred decisions. Release URLs are parsed strictly and require a separate
+human confirmation in the interface; manual linking does not fetch metadata.
+
+Matching shares one newest-capture/readings input definition with preparation.
+Uncertain catalogue numbers are excluded from queries and scoring. Weak primary
+hits no longer suppress alternative identifiers or the combined text fallback;
+a crowded first page no longer stops the ladder. Retain up to 120 strongest
+candidates and five review cards. Failed requests, exhausted budgets and candidate
+limits mark an incomplete search and prevent automatic linking. Attempts retain
+their input snapshot and actual query outcomes in existing JSON.
+
+Retries require the existing edit passphrase and recognised name, preserve all
+previous attempts, and are claimed atomically by cron. Confirmed records,
+duplicate queued work and rapid repeats are refused; a stale running attempt
+may be retried after fifteen minutes. Stale review writes are guarded inside a
+transaction; stale matcher results cannot replace newer human confirmations.
+No schema, runtime dependency, upstream pacing or provenance-gate changes.
+
+**Rationale:** Failed identifications need better evidence and an explicit route
+back to a person. Increasing search recall must not turn partial results into
+confidence or erase why an earlier attempt failed.
+
+**Verify:** `npm run gate` passed all 364 tests; `npm run build` and
+`git diff --check` passed. Eighteen recovery regressions cover queued execution,
+concurrency, evidence precedence, URL rejection, incomplete search and manual
+review. The prior source-text precedence check is now a stronger SQLite behavior
+check. Local browser fixtures verified rejected and unmatched entry points,
+manual URL checking/confirmation, unresolved notes and queued retry; collection
+and review fit a 390px viewport without horizontal overflow. No live catalogue
+writes or deployment. Existing memory-budget warnings remain separate upkeep.
+
+
 ## 2026-09-14 — COLLECTION-PHOTO-FOLLOWUP: request and add photos in the collection
 
 **Decision:** Ship the existing-collection workflow: counted Needs photos

@@ -417,3 +417,33 @@ it is stricter about what matters:
   request.
 
 Deploy to the Pages subdomain rather than a guessable custom domain.
+
+
+## Recovering rejected and unmatched records
+
+In **Collection**, choose **Not confirmed** and open a record. **Prepare to
+resolve** shows the label details available to the matcher, gaps to check,
+and the latest search finding. Use **Check / edit label details** to correct
+what is legible in the photographs; release metadata is never reused as
+matching evidence.
+
+**Queue a fresh search** requires the edit passphrase and a recognised name.
+It adds an attempt without deleting history. Cron processes it through the
+shared Discogs limiter. Duplicate requests, attempts within five minutes,
+and confirmed releases are refused. A running attempt can be retried after
+fifteen minutes; an already queued request stays queued. Refresh the record
+to see progress. Corrections alone do not trigger a new search.
+
+**Review / link a release** opens the individual record, including rejected
+and error attempts. A never-searched record can enter manual review even
+without searchable text. Paste an exact Discogs **release** URL or numeric
+ID, open it, compare the pressing with the photographs, then confirm. Master
+and artist links are refused. Manual linking records your judgement; it does
+not fetch release metadata. **Leave unresolved** and **Decide later** retain
+an optional note and are accessible through **Include deferred / no match**.
+
+New searches retain their input snapshot and actual attempted queries.
+Errors, budget truncation and candidate limits are labelled incomplete and
+cannot produce an automatic match. Alternative numbers remain one evidence
+family; all automatic matches still require human confirmation before they
+feed collection decisions.

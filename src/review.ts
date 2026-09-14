@@ -11,6 +11,7 @@
  * basis to disagree with it, and disagreeing is the whole job.
  */
 
+import { parseDiscogsReleaseId } from './discogs-id.ts';
 import { ensureCapturerCookie, rememberCapturer, resolveCapturer, storedCapturer } from './who.ts';
 import {
   bootChrome, choiceLabel, esc, headerHtml, isTyping, labelOf, parseJson as parse, restoreListFocus,
@@ -68,10 +69,13 @@ async function load(): Promise<void> {
   // Scoped to the list in view (FOUR-LISTS): the device walking the
   // dance crate reviews the dance crate, and "all" is the whole queue.
   const q = new URLSearchParams({ limit: '200' });
+  const page = new URLSearchParams(location.search);
+  for (const key of ['item', 'view', 'include']) if (page.has(key)) q.set(key, page.get(key)!);
   const scope = storedList();
-  if (scope) q.set('list', scope);
+  if (scope && !page.has('item')) q.set('list', scope);
   const res = await fetch(`${API}/review-queue?${q}`,
     who ? { headers: { 'x-capturer': who } } : {});
+  if (!res.ok) { app.innerHTML = '<p class="note-bad">Could not load the review queue. Refresh to try again.</p>'; return; }
   queue = (await res.json() as { queue: QueueItem[] }).queue;
   cursor = 0;
   render();
@@ -82,14 +86,18 @@ function render(): void {
   const item = queue[cursor];
   if (!item) return renderDone();
 
-  const refusal = parse<{ reason?: string }>(item.queries_json, {}).reason ?? '';
+  const audit = parse<{ reason?: string; input?: Record<string, string | null> }>(item.queries_json, {});
+  const refusal = audit.reason ?? '';
 
   app.innerHTML = `
     ${headerHtml({ here: 'review', title: 'Resolve entries',
     aside: `<div class="tally"><b>${cursor + 1}</b> of ${queue.length} ·
-      ${resolvedCount} resolved<br>item ${item.item_id}</div>` })}
+      ${resolvedCount} reviewed<br>item ${item.item_id}</div>` })}
 
-    ${refusal ? `<p class="note-info"><strong>Not auto-accepted:</strong> ${esc(refusal)}</p>` : ''}
+    ${reviewNavigation()}
+    <p><a href="/browse.html?item=${item.item_id}">Prepare this record: check details, search again or request photographs →</a></p>
+    <p class="prov">Search status: ${esc(item.state)}. Compare the catalogue number, label, mono/stereo and pressing details before confirming.</p>
+    ${refusal ? `<p class="note-info"><strong>Search finding:</strong> ${esc(refusal)}</p>` : ''}
 
     <div class="split">
       <section class="readoff">
@@ -102,6 +110,11 @@ function render(): void {
           ${field('Crate', [item.crate, item.position].filter(Boolean).join(' · '))}
           ${field('List', item.list ? labelOf(item.list) : null)}
         </dl>
+        ${audit.input ? `<details ${[item.catno_raw, item.label_raw, item.title_raw, item.name_raw].some(Boolean) ? '' : 'open'}><summary>Saved details for this attempt</summary><dl class="facts">${
+          field('Catalogue', audit.input.catnoRaw ?? null) + field('Label', audit.input.labelRaw ?? null)
+          + field('Title', audit.input.titleRaw ?? null) + field('Name', audit.input.nameRaw ?? null)
+          + field('Other numbers', audit.input.otherNumbers ?? null)}</dl>
+          <p class="prov">Saved when this attempt was prepared. May include unconfirmed photo readings; check them against the photographs.</p></details>` : ''}
         ${photosHtml(item)}
       </section>
 
@@ -109,12 +122,16 @@ function render(): void {
         <div class="cands">
           ${item.candidates.length
             ? item.candidates.map(renderCandidate).join('')
-            : '<p class="note-info">No candidate scored above zero. Enter a Discogs ID, or record “none of these”.</p>'}
+            : '<p class="note-info">No candidate was saved. Check the label details or search Discogs, then enter an exact release URL. You can leave this unresolved with a note.</p>'}
         </div>
         <div class="manual">
-          <input id="manual" placeholder="Paste a Discogs release URL or ID, then Enter"
-            inputmode="numeric" autocomplete="off">
+          <input id="manual" placeholder="Paste an exact Discogs release URL or ID"
+            autocomplete="off" aria-label="Discogs release URL or ID">
+          <button type="button" class="btn btn-ghost" id="checkManual">Check release</button>
+          <div id="manualPreview" aria-live="polite"></div>
         </div>
+        <label class="review-note">Resolution note (optional)<textarea id="resolutionNote" rows="2" placeholder="What was checked, or what still needs identifying"></textarea></label>
+        <div class="review-actions"><button type="button" class="btn btn-ghost" id="leaveUnresolved">Leave unresolved</button><button type="button" class="btn btn-quiet" id="defer">Decide later</button></div>
       </section>
     </div>
 
@@ -140,6 +157,10 @@ function render(): void {
     if (e.key === 'Enter') void submitManual(manual.value);
     if (e.key === 'Escape') manual.blur();
   });
+  document.getElementById('checkManual')?.addEventListener('click', () => submitManual(manual.value));
+  manual.addEventListener('input', () => { document.getElementById('manualPreview')!.innerHTML = ''; });
+  document.getElementById('leaveUnresolved')?.addEventListener('click', () => { void resolve({ choice: 'none' }); });
+  document.getElementById('defer')?.addEventListener('click', () => { void resolve({ choice: 'skip' }); });
   restoreListFocus();
 }
 
@@ -166,7 +187,7 @@ const field = (label: string, value: string | null): string =>
 function photosHtml(item: QueueItem): string {
   const keys = (item.photo_keys ?? '').split('\n').map((k) => k.trim()).filter(Boolean);
   if (!keys.length) {
-    return '<p class="note">No photograph — one of the 446 rows imported from the spreadsheet.</p>';
+    return '<p class="note">No photograph recorded. Use the preparation screen to request or add one.</p>';
   }
   return `<div class="shots">${keys.map((k, i) => `
     <a class="shot-link" data-photo-viewer href="${API}/photos/${encodeURI(k)}" target="_blank" rel="noopener">
@@ -338,19 +359,24 @@ function renderWhoAmI(): void {
     // hand over the only thing this asks the typist to know.
     if (!named) { err.hidden = false; input.select(); return; }
     rememberCapturer(named);
-    render();
+    void load();
   };
   document.getElementById('start')!.addEventListener('click', go);
   input.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') go(); });
 }
 
+function reviewNavigation(): string {
+  return '<nav class="review-actions" aria-label="Review queues"><a href="/review.html">Needs review</a><a href="/review.html?view=recovery">All unresolved attempts</a><a href="/review.html?view=recovery&amp;include=skipped">Include deferred / no match</a></nav>';
+}
+
 function renderDone(): void {
   app.innerHTML = `
     ${headerHtml({ here: 'review', title: 'Resolve entries' })}
+    ${reviewNavigation()}
+    <p><a href="/browse.html?view=unresolved">Prepare records in the collection →</a></p>
     <div class="done">
-      <strong>Queue clear${storedList() ? ` — ${esc(choiceLabel(storedList()))}` : ''}</strong>
-      ${resolvedCount} resolved this session. Re-verification is a normal operation —
-      skipped items come back with <code>?include=skipped</code>.
+      <strong>No more entries in this view${storedList() ? ` — ${esc(choiceLabel(storedList()))}` : ''}</strong>
+      ${resolvedCount} reviewed this session. Use the links above to revisit deferred records or prepare another search.
     </div>`;
 }
 
@@ -372,6 +398,8 @@ async function resolve(body: Record<string, unknown>): Promise<void> {
   const item = queue[cursor];
   if (!item) return;
   const at = cursor;
+  const note = (document.getElementById('resolutionNote') as HTMLTextAreaElement | null)?.value.trim();
+  if (note) body = { ...body, note };
 
   cursor++;
   resolvedCount++;
@@ -404,12 +432,13 @@ function rollback(at: number, why: string): void {
 const choose = (discogsId: number): Promise<void> => resolve({ choice: 'candidate', discogsId });
 
 function submitManual(raw: string): void {
-  // Accepts a full Discogs URL or a bare id. Recording an id a person
-  // looked up is a human judgement, not an upstream call: nothing here
-  // touches Discogs, so the no-caller-controlled-query rule holds.
-  const id = Number((/(\d{3,})/.exec(raw) ?? [])[1]);
-  if (!Number.isInteger(id) || id <= 0) { toast('That does not contain a Discogs release id.', 'err'); return; }
-  void resolve({ choice: 'manual', discogsId: id });
+  const id = parseDiscogsReleaseId(raw);
+  if (id === null) { toast('Enter a Discogs release URL or numeric release ID. Master and artist links cannot identify a pressing.', 'err'); return; }
+  const preview = document.getElementById('manualPreview')!;
+  preview.innerHTML = `<p><a href="https://www.discogs.com/release/${id}" target="_blank" rel="noopener noreferrer">Open Discogs release ${id} ↗</a></p>
+    <p>Check this exact pressing against the label photographs. Pasting a link does not verify it or fetch its metadata.</p>
+    <button class="btn btn-primary" type="button" id="confirmManual">I checked it — confirm release ${id}</button>`;
+  document.getElementById('confirmManual')!.addEventListener('click', () => { void resolve({ choice: 'manual', discogsId: id }); });
 }
 
 addEventListener('keydown', (e) => {

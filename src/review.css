@@ -186,3 +186,8 @@ main#review { padding-bottom: 5rem; }
   .cand .score { grid-column: 2; text-align: left; display: flex; gap: var(--s1); align-items: baseline; }
   .cand .score small { display: inline; }
 }
+
+.review-actions { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1rem 0; }
+.review-note { display: grid; gap: .5rem; margin-top: 1.5rem; }
+.review-note textarea { width: 100%; box-sizing: border-box; font: inherit; padding: .75rem; }
+#manualPreview { overflow-wrap: anywhere; }

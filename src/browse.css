@@ -249,3 +249,12 @@ table.rows td.money .asat { font-size: var(--t-xs); color: var(--text-3); margin
 .photo-draft-previews figure { margin:0; }
 .photo-draft-previews img { width:100%; height:140px; object-fit:contain; background:var(--sunk); }
 @media(max-width:600px) { .photo-add-dialog { padding:1rem; } .photo-actions .btn { flex:1; text-align:center; } .photo-request-form .btn { margin-top:.5rem; } }
+
+/* The next action sits beside the evidence, above the detailed editor. */
+.match-preparation { border: 1px solid var(--line, #404040); border-radius: 12px; padding: 1.25rem; margin: 1.5rem 0; }
+.match-preparation h2 { margin-top: 0; }
+.match-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; }
+.match-inputs dt { font-size: .8rem; opacity: .7; }
+.match-inputs dd { margin: .25rem 0 0; overflow-wrap: anywhere; white-space: pre-line; }
+.match-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; }
+.match-preparation p, .run li { overflow-wrap: anywhere; }

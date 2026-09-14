@@ -2,8 +2,8 @@
  * The query ladder — ported from the CLI's `search_orchestrator.py`.
  *
  * Ordered by how much a hit would tell us, because the ladder spends a
- * shared 50/min budget: structured `catno` and `label`+`catno` first,
- * free-text last. Callers stop as soon as the gate is satisfied.
+ * shared 30/min budget: structured `catno` and `label`+`catno` first,
+ * free-text last. The alternative ladder is reserved for unresolved results.
  *
  * Every query is BUILT HERE from stored capture values. Nothing in a
  * request reaches Discogs — with no sign-in there is no caller to trust
@@ -11,6 +11,7 @@
  * query set is a pure function of the row.
  */
 
+import { checkCatno } from './sanity.ts';
 import { normaliseCatno } from './normalise.ts';
 
 export interface QuerySpec {
@@ -48,6 +49,7 @@ const MAX_CATNO_VARIANTS = 4;
 export function otherCatnoVariants(raw: string | null | undefined): string[] {
   const out: string[] = [];
   for (const part of String(raw ?? '').split(/[\n|]/)) {
+    if (!checkCatno(part).usable) continue;
     for (const v of normaliseCatno(part)) if (!out.includes(v)) out.push(v);
   }
   return out;
@@ -58,14 +60,13 @@ export function otherCatnoVariants(raw: string | null | undefined): string[] {
  *
  * `queries` is the ordinary ladder. `fallback` is built from the OTHER
  * numbers on the label and is deliberately kept separate rather than
- * appended: it must only be spent on a row the primary number failed
- * to place, which is the population that currently ends as "not found"
- * and therefore costs nothing that is not already lost.
+ * appended: it is spent when the primary ladder cannot clear the corroboration gate.
+ * Weak label or year hits do not suppress a better catalogue-number search.
  */
 export function buildQueries(row: QueryInput): {
   variants: string[]; queries: QuerySpec[]; fallback: QuerySpec[];
 } {
-  const variants = normaliseCatno(row.catnoRaw);
+  const variants = checkCatno(row.catnoRaw).usable ? normaliseCatno(row.catnoRaw) : [];
   const label = (row.labelRaw ?? '').trim();
   const title = (row.titleRaw ?? '').trim();
   const name = (row.nameRaw ?? '').trim();
@@ -110,6 +111,10 @@ export function buildQueries(row: QueryInput): {
   for (const catno of others) {
     if (label) addFallback({ type: 'label_catno', params: { label, catno } });
     addFallback({ type: 'catno', params: { catno } });
+  }
+
+  if (title && (name || label)) {
+    addFallback({ type: 'q', params: { q: [name || label, title].join(' ') } });
   }
 
   // The alternatives join the SCORING variants unconditionally, even

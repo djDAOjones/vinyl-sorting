@@ -60,3 +60,5 @@
 - CAPTURE-BACKUP-NEXT — Consecutive backup downloads use a native link without a hidden acknowledgement gate; live exports verified (2026-09-14) — see decision-log
 - CAPTURE-PHOTO-VERIFY — Saved photos read back before clearing capture; unreadable entries warn without rewriting; all server attachments required for confirmation (2026-09-14) — see decision-log
 - COLLECTION-PHOTO-FOLLOWUP — Collection photo requests, verified additions to existing records, offline retries and explicit checks deployed (2026-09-14) — see decision-log
+
+- MATCH-RECOVERY — Stronger searches, visible evidence gaps, preserved retry history and manual resolution for failed or never-searched records; locally verified, deployment pending (2026-09-14) — see decision-log

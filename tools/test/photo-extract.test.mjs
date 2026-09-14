@@ -56,14 +56,19 @@ test('promotion writes raw_value and vision, and never capture', () => {
   assert.match(code, /NOT EXISTS \(SELECT 1 FROM match_candidate/);
 });
 
-test('the matcher may read a reading, but capture always wins', () => {
-  // A photo-only capture has a row of nulls, so there is nothing to
-  // search on until a reading fills the gap. What a person typed must
-  // never be overridden by what a machine thought it saw.
-  const run = readFileSync('worker/match/run.ts', 'utf8');
-  assert.match(run, /COALESCE\(c\.catno_raw, /, 'capture first, reading second');
-  assert.match(run, /FROM raw_value r WHERE r\.item_id = i\.id/);
-  assert.ok(!/COALESCE\(\s*\(SELECT r\.value/.test(run), 'a reading never precedes capture');
+test('the matcher may read a reading, but capture always wins', async () => {
+  const { makeEnv } = await import('./helpers/bindings.mjs');
+  const { pendingRows } = await import('../../worker/match/run.ts');
+  const env = makeEnv();
+  env.DB.raw.exec(`INSERT INTO item (crate) VALUES ('A'), ('B');
+    INSERT INTO capture (item_id, catno_raw) VALUES (1, 'HUMAN 123'), (2, NULL);
+    INSERT INTO raw_value (item_id, field, value) VALUES
+      (1, 'catno_raw', 'MACHINE 456'), (2, 'catno_raw', 'PHOTO 789');`);
+  const before = env.DB.raw.prepare('SELECT * FROM capture').all();
+  const rows = await pendingRows(env, 10);
+  assert.equal(rows.find(r => r.itemId === 1).catnoRaw, 'HUMAN 123', 'capture first, reading second');
+  assert.equal(rows.find(r => r.itemId === 2).catnoRaw, 'PHOTO 789', 'a reading fills only the gap');
+  assert.deepEqual(env.DB.raw.prepare('SELECT * FROM capture').all(), before, 'matching input never rewrites capture');
 });
 
 test('nothing in the spike writes to capture', () => {

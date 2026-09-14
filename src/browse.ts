@@ -39,6 +39,7 @@ import {
   restoreListFocus, storedList, toast,
 } from './chrome.ts';
 import { recordSummary } from './record-summary.ts';
+import type { MatchRow } from '../worker/match/run.ts';
 import type { ListChoice } from './lists.ts';
 
 /**
@@ -99,6 +100,7 @@ interface Run {
   candidates: Candidate[]; decision: Decision | null;
 }
 interface Detail {
+  matching?: { input: MatchRow; usable: boolean; reason: string } | null;
   photoRequests?: PhotoRequest[];
   release: Record<string, unknown> | null;
   item: Record<string, unknown>;
@@ -144,7 +146,7 @@ async function write(path: string, body: unknown): Promise<boolean> {
   if (!token) { flash('Unlock editing first.', 'err'); return false; }
   const res = await fetch(`${API}${path}`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-edit-token': token },
+    headers: { 'content-type': 'application/json', 'x-edit-token': token, ...whoHeader() },
     body: JSON.stringify(body),
   });
   if (res.status === 401) {
@@ -205,7 +207,7 @@ const CAPTURE_FIELDS = [
   'catno_raw', 'label_raw', 'name_raw', 'title_raw', 'year_raw', 'matrix_runout',
 ] as const;
 
-const STATES = ['auto-accepted', 'needs-review', 'rejected', 'error', 'unmatched'] as const;
+const STATES = ['auto-accepted', 'needs-review', 'rejected', 'error', 'pending', 'unmatched'] as const;
 const stateOf = (r: Row): string => r.match_state ?? 'unmatched';
 
 /* ── Columns, sorts and saved views (CATALOGUE-CONTROLS) ──────────
@@ -474,6 +476,8 @@ interface Preset { key: string; label: string; hint: string; apply: (v: View) =>
 
 const needsPhotos = (r: Row) => Boolean(r.photo_needed) || r.photo_count === 0;
 const PRESETS: Preset[] = [
+  { key: 'unresolved', label: 'Not confirmed', hint: 'Prepare every record that still needs an identification',
+    apply: v => { v.state = ''; v.photos = ''; v.readings = ''; v.confirmed = 'no'; } },
   { key: 'needs-photos', label: 'Needs photos', hint: 'Requested photographs and records with no photos', apply: v => { v.state=''; v.photos='needed'; v.readings=''; v.confirmed=''; } },
   {
     key: 'all',
@@ -916,6 +920,27 @@ async function openDetail(id: number, moveToTop = true): Promise<void> {
     panel.innerHTML = detailHtml(detail);
     panel.querySelector('#closeDetail')!.addEventListener('click', leaveDetail);
     wireEditing(panel, id);
+    panel.querySelector<HTMLButtonElement>('[data-start-review]')?.addEventListener('click', async (event) => {
+      const button = event.currentTarget as HTMLButtonElement;
+      button.disabled = true;
+      try {
+        if (await write(`/items/${id}/start-review`, {})) location.href = `/review.html?item=${id}`;
+      } catch { flash('Could not open review. Refresh before trying again.', 'err'); }
+      finally { button.disabled = false; }
+    });
+    panel.querySelector<HTMLButtonElement>('[data-retry-match]')?.addEventListener('click', async (event) => {
+      const button = event.currentTarget as HTMLButtonElement;
+      button.disabled = true;
+      try {
+        if (await write(`/items/${id}/retry-match`, {})) await afterWrite('Search queued. Refresh this record after the next scheduled run.');
+      } catch { flash('Could not queue the search. Check the connection and refresh before retrying.', 'err'); }
+      finally { button.disabled = false; }
+    });
+    panel.querySelector('[data-edit-details]')?.addEventListener('click', () => {
+      const more = panel.querySelector<HTMLDetailsElement>('.record-more');
+      if (more) { more.open = true; more.scrollIntoView({ behavior: 'smooth' }); }
+    });
+    panel.querySelector('[data-refresh-match]')?.addEventListener('click', () => { void openDetail(id, false); });
     const summary = recordSummary(detail);
     const title = summary.filter(f => ['Artist', 'Title'].includes(f.label)).map(f => f.value).filter(Boolean).join(' — ') || `Item ${id}`;
     wirePhotoActions(panel, id, title, () => afterWrite('Photo details updated.'));
@@ -1137,6 +1162,7 @@ function detailHtml(d: Detail): string {
         ${f.note ? `<small>${esc(f.note)}</small>` : ''}</dd></div>`).join('')}</dl>
       ${photos}
     </div>
+    ${preparationHtml(d)}
     <details class="record-more">
       <summary>More details and editing</summary>
       <div class="dtools">
@@ -1205,12 +1231,52 @@ function detailHtml(d: Detail): string {
     </details>`;
 }
 
+function preparationHtml(d: Detail): string {
+  if (!d.matching) return '';
+  const { input, usable, reason } = d.matching;
+  const latest = d.runs[0];
+  const previousDecision = d.runs.find(run => run.decision)?.decision;
+  const audit = parse<{ incomplete?: boolean; queriesRun?: number; queryErrors?: number; reason?: string; retry?: string }>(latest?.queries_json ?? '', {});
+  const confirmed = d.provenance.some(p => p.entity === 'item' && p.field === 'release_id' && p.confirmed_by && p.confirmed_at);
+  const elapsed = latest ? Date.now() - (stamp(latest.ran_at)?.getTime() ?? Date.now()) : Infinity;
+  const busy = latest?.state === 'pending' && (audit.retry === 'queued' || elapsed < 15 * 60_000);
+  const recent = elapsed < 5 * 60_000;
+  const disabled = confirmed || !usable || busy || recent;
+  const facts = [
+    ['Catalogue number', input.catnoRaw], ['Label', input.labelRaw],
+    ['Title', input.titleRaw], ['Artist / performer', input.nameRaw], ['Other numbers', input.otherNumbers],
+  ];
+  const search = [input.labelRaw, input.catnoRaw].filter(Boolean).join(' ') || [input.nameRaw, input.titleRaw].filter(Boolean).join(' ');
+  return `<section class="match-preparation" aria-label="Prepare to resolve">
+    <h2>Prepare to resolve</h2>
+    <p><strong>${confirmed ? 'Release confirmed' : busy ? 'Search queued or running' : usable ? 'Ready to search' : 'More label details needed'}</strong></p>
+    <p>${esc(reason)}.</p>
+    <dl class="match-inputs">${facts.map(([label, value]) => `<div><dt>${label}</dt><dd>${value ? esc(value) : 'Not recorded'}</dd></div>`).join('')}</dl>
+    <p class="prov">Search uses saved label details, with photo readings filling empty fields. Check these against the photographs; a photo reading is still unconfirmed.</p>
+    ${!input.labelRaw || !input.titleRaw || !input.nameRaw ? '<p>Add the label, title and artist or performer where legible. These help distinguish records sharing a catalogue number.</p>' : ''}
+    ${latest ? `<p><strong>Last attempt: ${esc(latest.state)}</strong> · ${esc(latest.ran_at)} UTC<br>${esc(audit.reason ?? 'No search explanation recorded.')}
+      ${audit.queriesRun !== undefined ? `<br>${audit.queriesRun} searches attempted · ${audit.queryErrors ?? 0} failed` : ''}</p>` : '<p>No search has been attempted yet.</p>'}
+    ${previousDecision ? `<p>Previous decision: ${esc(previousDecision.choice)}${previousDecision.note ? ` — ${esc(previousDecision.note)}` : ''}</p>` : ''}
+    <div class="match-actions">
+      <button class="btn btn-ghost" type="button" data-edit-details>Check / edit label details</button>
+      <button class="btn btn-primary" type="button" data-retry-match ${disabled ? 'disabled' : ''}>${busy ? 'Search pending' : 'Queue a fresh search'}</button>
+      ${latest && latest.state !== 'pending' ? `<a class="btn btn-ghost" href="/review.html?item=${Number(d.item.id)}">Review / link a release</a>` : ''}
+      ${!latest && !confirmed ? '<button class="btn btn-ghost" type="button" data-start-review>Review / link a release</button>' : ''}
+      ${search ? `<a class="btn btn-ghost" href="https://www.discogs.com/search/?type=release&amp;q=${encodeURIComponent(search)}" target="_blank" rel="noopener noreferrer">Search Discogs</a>` : ''}
+      <button class="btn btn-quiet" type="button" data-refresh-match>Refresh status</button>
+    </div>
+    <p class="prov">${confirmed ? 'Confirmed releases are protected from automatic retries.' : busy ? 'The scheduled matcher will process this request using the shared rate limit. Refresh to see its result.' : recent ? 'Wait five minutes after an attempt before requesting another.' : 'A fresh search requires editing to be unlocked. Old attempts and photographs are retained.'}</p>
+  </section>`;
+}
+
 function runHtml(run: Run): string {
-  const reason = parse<{ reason?: string }>(run.queries_json, {}).reason ?? '';
+  const audit = parse<{ reason?: string; attempts?: { type: string; params: Record<string, string>; status: string; results?: number }[] }>(run.queries_json, {});
+  const reason = audit.reason ?? '';
   return `<div class="run">
     <div class="rhead"><span class="state s-${esc(run.state)}">${esc(run.state)}</span>
       <span class="prov">${esc(run.ran_at)}</span></div>
     ${reason ? `<p class="why">${esc(reason)}</p>` : ''}
+    ${audit.attempts?.length ? `<details><summary>Searches attempted (${audit.attempts.length})</summary><ol>${audit.attempts.map(a => `<li>${esc(Object.values(a.params).join(' · '))} — ${a.status === 'error' ? 'request failed' : `${a.results ?? 0} results`}</li>`).join('')}</ol></details>` : ''}
     ${run.candidates.map((cand) => {
     const sig = parse<{ families?: string[] }>(cand.signals_json, {});
     return `<div class="cand-row"><span class="rank">${cand.rank}</span>

@@ -58,10 +58,14 @@ export function checkCatno(raw: string | null | undefined): SanityVerdict {
  */
 export function checkRow(row: {
   catnoRaw?: string | null; labelRaw?: string | null;
-  titleRaw?: string | null; nameRaw?: string | null;
+  titleRaw?: string | null; nameRaw?: string | null; otherNumbers?: string | null;
 }): SanityVerdict {
   const catno = checkCatno(row.catnoRaw);
   if (catno.usable) return { usable: true, reason: 'catalogue number searchable' };
+
+  if ((row.otherNumbers ?? '').split(/[\n|]/).some(n => checkCatno(n).usable)) {
+    return { usable: true, reason: 'alternative catalogue number searchable; check it against the photograph' };
+  }
 
   const title = (row.titleRaw ?? '').trim();
   const name = (row.nameRaw ?? '').trim();
