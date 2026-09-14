@@ -2,6 +2,53 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-09-14 — COLLECTION-PHOTO-FOLLOWUP: request and add photos in the collection
+
+**Decision:** Ship the existing-collection workflow: counted Needs photos
+preset, specific reason badges, visible requests beside the photographs,
+Add photos on every record, and Next needing photos with the collection
+view/position retained. Camera and library inputs share one review dialog.
+Unstored drafts cannot be dismissed accidentally; entered photos remain
+until committed bytes and the target item ID have been read back.
+
+Requests are named, idempotent raw metadata under `photo-request:` with
+requester/time and explicit resolution history. They never enter capture,
+release, reading counts or reading presentation. A request closes only when
+a person checks after a newer online photo exists. Zero-photo records also
+appear; photo counts do not infer missing sides or label content.
+
+Append-only attachment uses the existing edit passphrase and named caller,
+checks R2 existence and cross-item ownership, and replays without making new
+records or duplicate photo rows. Additions use a separate IndexedDB queue
+and upload lock so older capture tabs cannot send them as new captures.
+They inherit byte verification, bounded upload retries and full attachment
+receipts. Auth/storage/network failures remain visible. A collection-load
+outage still exposes pending additions and the backup route. Both local
+queues retain confirmed entries pending the existing retention sign-off.
+Mixed rescue ZIPs use version 3, metadata version 2, and preserve target IDs;
+restorers must append to those targets, never create capture records.
+
+**Rationale:** Keep finding and fixing together, with a precise physical
+photography request and a confirmed online outcome. No new page, dependency,
+schema change, automatic deletion or split is needed. The stale viewing
+blocker in RECORD-EDIT-PHOTOS is removed; its remaining removal/splitting
+scope stays open. The other task owns live request seeding and data imports;
+its reviewed requests are visible in live collection/detail responses.
+
+**Verify:** 346 tests and production build pass. Real-Worker fixture browser
+checks cover mobile/light/dark layouts, explicit request/check, retained
+unsaved draft, offline queue/reload, total API outage, corrected passphrase,
+exact-target attachment, no new capture, next/back and rescue target metadata.
+The deployed interface passes the same checks with API traffic intercepted;
+a first startup timeout cleared on rerun with no page errors. Three live HTML
+pages and twelve linked assets match the build; live API reads expose requests.
+Physical iPhone Safari verification remains a device check. PM validators
+pass with five existing budget warnings; broad history upkeep is deferred.
+
+Source `d817c98` plus outage fallback `257cef9` deployed with `--keep-vars` as
+Worker `45e1280b-7dc8-42e3-92fa-cd1c8b211429`. Build label: `collection photos 1`.
+No catalogue/photo writes were made by this implementation task.
+
 ## 2026-09-14 — CAPTURE-PHOTO-VERIFY: verify local saves and complete uploads
 
 **Decision:** Deployed source `84f82a4` with `--keep-vars`, Worker version

@@ -59,3 +59,4 @@
 - CAPTURE-BACKUP-SALVAGE — deployed metadata-only export, photo-level failure reports and explicit partial rescue ZIPs; source queue untouched and device-specific diagnosis remains open (2026-09-14) — see decision-log
 - CAPTURE-BACKUP-NEXT — Consecutive backup downloads use a native link without a hidden acknowledgement gate; live exports verified (2026-09-14) — see decision-log
 - CAPTURE-PHOTO-VERIFY — Saved photos read back before clearing capture; unreadable entries warn without rewriting; all server attachments required for confirmation (2026-09-14) — see decision-log
+- COLLECTION-PHOTO-FOLLOWUP — Collection photo requests, verified additions to existing records, offline retries and explicit checks deployed (2026-09-14) — see decision-log

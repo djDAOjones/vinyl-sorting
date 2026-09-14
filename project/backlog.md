@@ -20,10 +20,6 @@
   recovery reconciliation in the other task] (2026-09-14) — Upload
   safeguards are deployed; inspect the affected device queue to establish
   its actual failure and recover any retained entries.
-- [~] **COLLECTION-PHOTO-FOLLOWUP Request and add photographs from the
-  collection** (2026-09-14) — Surface specific photography requests and
-  attach verified photos to the existing record with durable retries and
-  human completion.
 - [ ] **PHOTO-BATCH-NEXT Process the next photo batch when its location
   is known** [blocked: New batch location or completed upload]
   (2026-09-14) — User requests another photo batch; await its location or

@@ -20,3 +20,8 @@ Browser sync currently retains all confirmed records/photos to preserve
 recovery options. Do not restore pruning until recovery/backups are verified
 and the maintainer authorises removal of those local copies. Explain the
 storage cost of continued retention at that point; never delete unsent data.
+
+The separate photo-addition queue also retains confirmed images. Apply the
+same approval boundary to it; rescue exports include target item IDs and
+use version 3 for mixed capture/addition backups. Restore additions to their
+existing target rather than importing them as new captures.
