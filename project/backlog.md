@@ -15,6 +15,10 @@
   Worker secrets are per-script and EDIT_TOKEN did not come across — so
   correcting a reading and downloading an export both answer 503 until one
   command is run.
+- [ ] **PHOTO-BATCH-NEXT Process the next photo batch when its location
+  is known** [blocked: New batch location or completed upload]
+  (2026-09-14) — User requests another photo batch; await its location or
+  completed upload before reading and populating it.
 - [~] **SPIKE-PHOTO-TO-FIELDS Can a label photograph populate the
   capture fields?** [spike] [blocked: ground truth typed to the scorer's
   columns — `decoy_numbers` above all] (2026-08-30) — The round trip has
