@@ -2,6 +2,41 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-09-14 — CAPTURE-BACKUP-SALVAGE: preserve readable photos and identify failures
+
+**Decision:** Deployed tested `fd39bed` to the existing Worker with
+`--keep-vars`, version `b1150f1a-c60c-44a2-a661-850b7350c38c`; prior version
+`af9211f0-718c-4116-8faf-e007c6b5215e` remains the rollback. Backup now offers
+metadata-only export, fresh per-part record reads, bounded photo reads with
+a fresh FileReader fallback, and original-size, smaller and single-record
+selections. Original grouping stays stable while the queue is unchanged.
+
+Readable photo bytes are detached from storage-backed blob handles before
+ZIP assembly. A failed image no longer discards the readable remainder:
+version-2 manifests identify every unreadable image, mark the archive
+incomplete and carry a missing-photo report. The UI and filename also say
+INCOMPLETE. Strict callers still reject partial export. One prepared file
+is held until the user acknowledges saving it, bounding memory without
+revoking a URL during a share/save operation. Preparation errors identify
+the failing stage separately from photo-read errors. No source queue writes,
+dependencies or schema changes.
+
+**Rationale:** A generic NotFoundError does not establish whether a DOM
+operation, stored image or share operation failed. Isolate the exact stage
+and preserve readable bytes without claiming unrecoverable images are
+backed up. Device-specific diagnosis remains open. Complete-archive
+restoration belongs to the user's other task; this task has made no import
+writes and continues only the failed-part rescue.
+
+**Verify:** 330 tests and production build pass. Real browser injection
+covers metadata export without photo reads, retry after a DOM-stage failure,
+unreadable-photo isolation, fresh FileReader fallback, later-photo retention
+and single-record rescue with zero queue/API writes. Independent ZIP checks
+validate included hashes and explicit missing-image reports. Six deployed
+assets match build bytes; actual compiled metadata and incomplete ZIP
+files download and pass independent integrity checks. No page errors or
+phone overflow. PM validators pass with existing budget warnings.
+
 ## 2026-09-14 — CAPTURE-QUEUE-BACKUP: portable phone backups and explicit recovery
 
 **Decision:** Deployed `6936730` to the existing Worker with `--keep-vars`,

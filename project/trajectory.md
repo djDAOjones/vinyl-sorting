@@ -56,3 +56,4 @@
 - RECORD-SCREEN-DEPLOY — deployed 8db69ee to vinyl-sorter; live asset, navigation, photo and menu checks pass with no catalogue writes (2026-09-14) — see decision-log
 - CAPTURE-SYNC-RELIABILITY — deployed interrupted-upload recovery, committed storage saves and visible server receipts; device-specific diagnosis remains open (2026-09-14) — see decision-log
 - CAPTURE-QUEUE-BACKUP — deployed portable record/photo ZIP backups, explicit recovery and temporary local diagnostics/retention; actual device recovery remains open (2026-09-14) — see decision-log
+- CAPTURE-BACKUP-SALVAGE — deployed metadata-only export, photo-level failure reports and explicit partial rescue ZIPs; source queue untouched and device-specific diagnosis remains open (2026-09-14) — see decision-log
