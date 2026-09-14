@@ -1,3 +1,5 @@
+import { followupHtml, wirePhotoActions, refreshAdditionStatus, type PhotoRequest } from './collection-photos.ts';
+import { startAdditions } from './photo-additions.ts';
 /**
  * Browse — the screen that shows what is actually in the collection.
  *
@@ -67,6 +69,7 @@ interface Row {
   name_raw: string | null; title_raw: string | null; year_raw: string | null;
   discogs_id: number | null; release_label: string | null; release_title: string | null;
   photo_count: number;
+  photo_needed?: string | null;
   reading_count: number;
   read_catno: string | null;
   read_label: string | null;
@@ -96,6 +99,7 @@ interface Run {
   candidates: Candidate[]; decision: Decision | null;
 }
 interface Detail {
+  photoRequests?: PhotoRequest[];
   release: Record<string, unknown> | null;
   item: Record<string, unknown>;
   captures: Record<string, unknown>[];
@@ -468,7 +472,9 @@ const DEFAULT_COLS = ['id', 'name_raw', 'title_raw', 'label_raw', 'value', 'matc
  */
 interface Preset { key: string; label: string; hint: string; apply: (v: View) => void }
 
+const needsPhotos = (r: Row) => Boolean(r.photo_needed) || r.photo_count === 0;
 const PRESETS: Preset[] = [
+  { key: 'needs-photos', label: 'Needs photos', hint: 'Requested photographs and records with no photos', apply: v => { v.state=''; v.photos='needed'; v.readings=''; v.confirmed=''; } },
   {
     key: 'all',
     label: 'Everything',
@@ -591,6 +597,7 @@ function visible(): Row[] {
   const out = rows.filter((r) => {
     if (!inScope(r, scope)) return false;
     if (view.state && stateOf(r) !== view.state) return false;
+    if (view.photos === 'needed' && !needsPhotos(r)) return false;
     if (view.photos === 'with' && !r.photo_count) return false;
     if (view.photos === 'without' && r.photo_count) return false;
     if (view.readings === 'with' && !r.reading_count) return false;
@@ -601,7 +608,7 @@ function visible(): Row[] {
     // Search reaches every column that can be SHOWN, not the eight the
     // table happened to start with — a screen that can display a matrix
     // number and cannot find one is only half a tool.
-    return COLUMNS.some((c) => String(c.get(r) ?? '').toLowerCase().includes(needle));
+    return (r.photo_needed ?? '').toLowerCase().includes(needle) || COLUMNS.some((c) => String(c.get(r) ?? '').toLowerCase().includes(needle));
   });
 
   const col = COLUMN.get(view.sort) ?? COLUMN.get('id')!;
@@ -650,6 +657,7 @@ const activePreset = (): string => PRESETS.find((p) => {
 })?.key ?? '';
 
 function render(): void {
+  void refreshAdditionStatus().catch(() => {});
   writeUrl();
   const shown = visible();
   const scope = storedList();
@@ -662,10 +670,11 @@ function render(): void {
 
     <div class="views">
       ${PRESETS.map((p) => `<button type="button" class="viewchip${p.key === preset ? ' on' : ''}"
-        data-preset="${p.key}" title="${esc(p.hint)}">${esc(p.label)}</button>`).join('')}
+        data-preset="${p.key}" title="${esc(p.hint)}">${esc(p.label)}${p.key === 'needs-photos' ? ` · ${rows.filter(r => inScope(r, scope) && needsPhotos(r)).length}` : ''}</button>`).join('')}
       <button type="button" class="viewchip cols" id="colsBtn">Columns…</button>
     </div>
 
+    <p class="photo-needs" data-collection-upload-status role="status" hidden></p>
     <div class="filters controls">
       <label class="field grow"><span>Search</span>
         <input id="fText" type="search" placeholder="anything in any column"
@@ -679,6 +688,7 @@ function render(): void {
       <label class="field"><span>Photographs</span>
         <select id="fPhotos">
           <option value="">any</option>
+          <option value="needed"${view.photos === 'needed' ? ' selected' : ''}>needs photos</option>
           <option value="with"${view.photos === 'with' ? ' selected' : ''}>has one</option>
           <option value="without"${view.photos === 'without' ? ' selected' : ''}>none</option>
         </select></label>
@@ -843,10 +853,11 @@ const cell = (v: unknown, c: Column): string => (!has(v)
 
 function rowHtml(r: Row): string {
   return `<tr data-id="${r.id}" tabindex="0" class="${openId === r.id ? 'open' : ''}">${
-    view.cols.map((k) => {
+    view.cols.map((k, index) => {
       const c = COLUMN.get(k);
       if (!c) return '';
-      return c.html ? c.html(r) : cell(c.get(r), c);
+      const html = c.html ? c.html(r) : cell(c.get(r), c);
+      return index === 0 && needsPhotos(r) ? html.replace('</td>', `<span class="photo-needed-badge" title="${esc(r.photo_needed || 'No photos yet')}">Needs photos<small>${esc(r.photo_needed || 'No photos yet')}</small></span></td>`) : html;
     }).join('')}</tr>`;
 }
 
@@ -905,6 +916,16 @@ async function openDetail(id: number, moveToTop = true): Promise<void> {
     panel.innerHTML = detailHtml(detail);
     panel.querySelector('#closeDetail')!.addEventListener('click', leaveDetail);
     wireEditing(panel, id);
+    const summary = recordSummary(detail);
+    const title = summary.filter(f => ['Artist', 'Title'].includes(f.label)).map(f => f.value).filter(Boolean).join(' — ') || `Item ${id}`;
+    wirePhotoActions(panel, id, title, () => afterWrite('Photo details updated.'));
+    panel.querySelector('[data-next-photo]')?.addEventListener('click', () => {
+      const needing = visible().filter(r => needsPhotos(r) && r.id !== id);
+      const next = needing.find(r => r.id > id) ?? needing[0];
+      if (!next) return;
+      const url = new URL(location.href); url.searchParams.set('item', String(next.id));
+      history.replaceState(history.state, '', url); void openDetail(next.id);
+    });
     if (moveToTop) panel.querySelector<HTMLElement>('h1')?.focus({ preventScroll: true });
   } catch (err) {
     if (request !== detailRequest || openId !== id) return;
@@ -1093,6 +1114,7 @@ function detailHtml(d: Detail): string {
 
   const photos = `<section class="record-photos" aria-label="Photographs">
     <h2>Photographs</h2>
+    ${followupHtml(d.photoRequests ?? [], d.photos.length, Math.max(0, ...d.photos.map(p => p.id)))}
     ${d.photos.length ? `<div class="shots">${d.photos.map((p, i) => `
       <figure class="shotfig">
         ${p.r2_key ? `<a data-photo-viewer href="${API}/photos/${encodeURI(p.r2_key)}"
@@ -1107,6 +1129,7 @@ function detailHtml(d: Detail): string {
     <div class="dhead">
       <button type="button" id="closeDetail" class="btn btn-ghost">← Back to collection</button>
       <h1 tabindex="-1">Item ${esc(item.id)}</h1>
+      ${visible().some(r => needsPhotos(r) && r.id !== Number(item.id)) ? '<button class="btn btn-ghost" data-next-photo>Next needing photos →</button>' : ''}
     </div>
     <div class="record-overview">
       <dl class="record-facts">${recordSummary(d).map((f) => `
@@ -1234,7 +1257,8 @@ addEventListener('popstate', () => {
   } else if (id !== null) void openDetail(id);
   if (id === null) showCollection();
 });
-load().catch((err: unknown) => {
+startAdditions(() => { void refreshAdditionStatus().catch(() => {}); });
+load().then(() => refreshAdditionStatus()).catch((err: unknown) => {
   app.innerHTML = `<p class="note-bad">Could not load the collection: ${
     esc(err instanceof Error ? err.message : String(err))}</p>`;
 });

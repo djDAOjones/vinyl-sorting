@@ -83,6 +83,8 @@ export function torchSupported(capabilities: unknown): boolean {
 }
 
 export interface QueuedCapture {
+  /** Only used by the separate photo-addition store, never the capture queue. */
+  targetItemId?: number;
   clientId: string;
   createdAt: number;
   /** Time from starting this disc to submitting it. The done-when is

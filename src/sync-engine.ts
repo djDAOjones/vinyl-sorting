@@ -15,6 +15,7 @@ interface SyncOptions {
   onChange?: () => void;
   onEvent?: (message: string) => void;
   readPhoto?: PhotoReader;
+  headers?: () => Record<string, string>;
   verifyReceipt?: (entry: QueuedCapture, itemId: number, send: Send) => Promise<boolean>;
 }
 class SendError extends Error {
@@ -86,8 +87,8 @@ export function createSyncController(opts: SyncOptions) {
             }
             await renew();
           }
-          const res = await send('/api/captures', { method: 'POST',
-            headers: { 'content-type': 'application/json' }, body: JSON.stringify(toRequestBody(entry)) });
+          const res = await send(entry.targetItemId ? `/api/items/${entry.targetItemId}/photos` : '/api/captures', { method: 'POST',
+            headers: { 'content-type': 'application/json', ...opts.headers?.() }, body: JSON.stringify(entry.targetItemId ? { clientId: entry.clientId, photos: entry.photos.map(p => ({kind: p.kind, r2Key: `labels/${p.key}`})) } : toRequestBody(entry)) });
           if (!res.ok) throw new SendError(`Record upload: HTTP ${res.status}. ${res.body.slice(0, 160)}`, res.status);
           let receipt: unknown;
           try { receipt = JSON.parse(res.body); } catch { /* invalid receipt is a failure below */ }

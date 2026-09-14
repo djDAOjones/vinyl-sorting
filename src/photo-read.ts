@@ -1,4 +1,5 @@
 /** Bounded, read-only Safari recovery. Never writes a replacement blob. */
+import { getEntry as getAddition } from './photo-addition-store.ts';
 import { getEntry } from './queue.ts';
 import type { QueuedCapture } from './queue-logic.ts';
 import { trace } from './sync-debug.ts';
@@ -28,7 +29,7 @@ export async function readStoredPhoto(entry: QueuedCapture, index: number): Prom
   // Reacquire a fresh handle after Safari returns from its share sheet, and
   // use the alternative reader. Failure stays explicit in the ZIP manifest.
   try {
-    const fresh = await deadline(getEntry(entry.clientId), 'Fresh record read');
+    const fresh = await deadline((entry.targetItemId ? getAddition(entry.clientId) : getEntry(entry.clientId)), 'Fresh record read');
     const retry = fresh?.photos.find(p => p.key === photo.key);
     if (!retry) throw new Error('Photo reference not found in fresh record read');
     const bytes = await fileReaderBytes(retry.blob); trace(`Fresh FileReader recovered ${label}`); return bytes;

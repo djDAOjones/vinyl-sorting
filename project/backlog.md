@@ -20,6 +20,10 @@
   recovery reconciliation in the other task] (2026-09-14) — Upload
   safeguards are deployed; inspect the affected device queue to establish
   its actual failure and recover any retained entries.
+- [~] **COLLECTION-PHOTO-FOLLOWUP Request and add photographs from the
+  collection** (2026-09-14) — Surface specific photography requests and
+  attach verified photos to the existing record with durable retries and
+  human completion.
 - [ ] **PHOTO-BATCH-NEXT Process the next photo batch when its location
   is known** [blocked: New batch location or completed upload]
   (2026-09-14) — User requests another photo batch; await its location or
@@ -88,15 +92,10 @@
   full-screen into the camera by design, so on the device the app is
   actually used on there is no way back to the menu except the browser's
   own chrome, which a home-screen PWA does not show.
-- [ ] **RECORD-EDIT-PHOTOS Edit a record's photographs — delete, add,
-  and split by selection** [blocked: whether a photo-reading route can
-  exist without a sign-in] (2026-09-01) — Browse can already correct every
-  field, but its photographs are listed by key and never shown, because
-  serving one needs a Worker GET that a sign-in-free v1 deliberately does
-  not have; so deleting a bad shot, adding a missing disc label, or
-  splitting a record by picking which photos go where is desk work through
-  split-item.mjs, blind, and only reachable by whoever has the
-  credentials.
+- [ ] **RECORD-EDIT-PHOTOS Review photo removal and splitting by
+  selection** (2026-09-14) — Collection photo viewing and additions are
+  implemented; photo removal and splitting still need
+  evidence-preservation design before changing attachments.
 - [ ] **PHOTO-CULL Cull photographs that carry no text no other shot
   carries** [detail](records/PHOTO-CULL.md) (2026-09-01) — Crate 3 took 34
   photographs of 6 records and roughly a fifth were re-shoots of the same

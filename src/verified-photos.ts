@@ -30,7 +30,7 @@ export async function putVerifiedCapture(entry: QueuedCapture, storage: {
   const independent = await copyVerifiedPhotos(entry);
   const verify = async () => {
     const stored = await storage.get(entry.clientId);
-    if (!stored || stored.clientId !== entry.clientId || stored.photos.length !== independent.photos.length) throw new Error('The saved record could not be read back completely');
+    if (!stored || stored.targetItemId !== entry.targetItemId || stored.clientId !== entry.clientId || stored.photos.length !== independent.photos.length) throw new Error('The saved record could not be read back completely');
     if (JSON.stringify(stored.fields) !== JSON.stringify(independent.fields)) throw new Error('The saved record details did not match the entries in hand');
     const checked = await copyVerifiedPhotos(stored);
     for (const [i, p] of independent.photos.entries()) {
@@ -49,7 +49,7 @@ export async function putVerifiedCapture(entry: QueuedCapture, storage: {
 export function completePhotoReceipt(entry: QueuedCapture, itemId: number, value: unknown): boolean {
   if (!value || typeof value !== 'object') return false;
   const v = value as { item?: { id?: unknown; import_ref?: unknown }; captures?: unknown[]; photos?: { r2_key?: unknown }[] };
-  if (v.item?.id !== itemId || v.item.import_ref !== `capture:${entry.clientId}` || !Array.isArray(v.captures) || !v.captures.length || !Array.isArray(v.photos)) return false;
+  if (v.item?.id !== itemId || (entry.targetItemId ? entry.targetItemId !== itemId : v.item.import_ref !== `capture:${entry.clientId}`) || (!entry.targetItemId && (!Array.isArray(v.captures) || !v.captures.length)) || !Array.isArray(v.photos)) return false;
   const keys = new Set(v.photos.map(p => p?.r2_key));
   return entry.photos.every(p => keys.has(`labels/${p.key}`));
 }

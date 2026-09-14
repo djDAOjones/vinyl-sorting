@@ -1,4 +1,8 @@
-import { allEntries, getEntry } from './queue.ts';
+import { allEntries as captures, getEntry as getCapture } from './queue.ts';
+import { allEntries as additions, getEntry as getAddition } from './photo-addition-store.ts';
+import { drainAdditions } from './photo-additions.ts';
+const allEntries = async () => [...await captures(), ...await additions()];
+const getEntry = async (id: string) => await getCapture(id) ?? await getAddition(id);
 import { backupParts, buildQueueBackupReport, queueMetadata } from './queue-backup.ts';
 import { queueHealth, type QueuedCapture } from './queue-logic.ts';
 import { drain, syncError } from './sync.ts';
@@ -40,7 +44,7 @@ async function refresh() {
       `Queue error: ${syncError() ?? h.lastError ?? 'none'}`, `BACKUP REPORT: ${backupReport}`, '', 'ENTRIES (local metadata; no photo content)',
       ...entries.map(e => JSON.stringify({ clientId: e.clientId, state: e.state, createdAt: e.createdAt,
         attempts: e.attempts, nextAttemptAt: e.nextAttemptAt, lastError: e.lastError,
-        serverItemId: e.serverItemId, syncedAt: e.syncedAt,
+        targetItemId: e.targetItemId, serverItemId: e.serverItemId, syncedAt: e.syncedAt,
         photos: e.photos.map(p => ({ key: p.key, kind: p.kind, bytes: p.blob.size, type: p.blob.type })) })),
       '', 'RECENT REQUEST EVENTS', ...readTrace(),
     ].join('\n');
@@ -51,7 +55,7 @@ async function refresh() {
 async function upload(forceRetry = false) {
   if (uploadBusy || exporting) return;
   uploadBusy = true; trace('Recovery upload requested by user');
-  try { const result = await drain(Date.now(), forceRetry); message(`Upload pass: ${result.sent} confirmed, ${result.failed} failed. ${syncError() ?? 'See diagnostics for details. Confirmed entries are retained on this device.'}`); }
+  try { const result = await drain(Date.now(), forceRetry); const added = await drainAdditions(forceRetry); result.sent += added.sent; result.failed += added.failed; message(`Upload pass: ${result.sent} confirmed, ${result.failed} failed. ${syncError() ?? 'See diagnostics for details. Confirmed entries are retained on this device.'}`); }
   catch (err) { trace(`Recovery upload could not start: ${String(err)}`); message(String(err)); }
   finally { uploadBusy = false; await refresh(); }
 }

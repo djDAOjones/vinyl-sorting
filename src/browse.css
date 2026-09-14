@@ -228,3 +228,24 @@ table.rows td.money .asat { font-size: var(--t-xs); color: var(--text-3); margin
   .record-overview { grid-template-columns: 1fr; }
   .dhead { flex-wrap: wrap; gap: var(--s2); }
 }
+
+/* Follow-up lives beside the photographs, using the collection's existing controls. */
+.photo-followup { margin-block: .75rem 1.25rem; }
+.photo-actions { display:flex; flex-wrap:wrap; gap:.6rem; margin-block:.75rem; }
+.photo-needs { padding:.8rem 1rem; border-left:3px solid var(--info); background:var(--info-soft); color:var(--text); border-radius:.3rem; }
+.photo-needs ul { padding-left:1.25rem; }
+.photo-needs li { margin-block:.65rem; }
+.photo-needs small { display:block; }
+.photo-needs .btn { margin-top:.4rem; }
+.photo-needed-badge { display:block; font-size:.7rem; font-weight:600; color:var(--info); margin-top:.35rem; white-space:normal; min-width:7rem; max-width:15rem; }
+.photo-needed-badge small { display:block; font-weight:400; line-height:1.35; }
+.photo-request-form { border:1px solid var(--line-strong); border-radius:.4rem; padding:1rem; margin-block:.75rem; }
+.photo-request-form .field { margin-bottom:.8rem; }
+.photo-add-dialog { width:min(36rem, calc(100vw - 2rem)); max-height:calc(100dvh - 2rem); overflow:auto; padding:1.25rem; border:1px solid var(--line-strong); border-radius:.7rem; background:var(--surface); color:var(--text); }
+.photo-add-dialog::backdrop { background:#0009; }
+.photo-add-dialog .field { margin-block:1rem; }
+.photo-add-dialog input:not([type=file]), .photo-request-form input { width:100%; box-sizing:border-box; }
+.photo-draft-previews { display:grid; grid-template-columns:repeat(auto-fit,minmax(100px,1fr)); gap:.6rem; }
+.photo-draft-previews figure { margin:0; }
+.photo-draft-previews img { width:100%; height:140px; object-fit:contain; background:var(--sunk); }
+@media(max-width:600px) { .photo-add-dialog { padding:1rem; } .photo-actions .btn { flex:1; text-align:center; } .photo-request-form .btn { margin-top:.5rem; } }

@@ -30,7 +30,7 @@ export interface BackupOptions {
   onIssue?: (issue: BackupIssue) => void;
 }
 export function queueMetadata(entries: QueuedCapture[], origin: string): string {
-  return JSON.stringify({ format: 'vinyl-capture-metadata', version: 1, exportedAt: new Date().toISOString(),
+  return JSON.stringify({ format: 'vinyl-capture-metadata', version: entries.some(e => e.targetItemId) ? 2 : 1, exportedAt: new Date().toISOString(),
     origin, containsPhotoBytes: false, entryCount: entries.length,
     photoCount: entries.reduce((n, e) => n + e.photos.length, 0),
     entries: entries.map(({ photos, ...metadata }) => ({ ...metadata,
@@ -83,7 +83,7 @@ export async function buildQueueBackupReport(entries: QueuedCapture[], options: 
     }
     rows.push({ ...metadata, photos: images });
   }
-  const manifest = enc.encode(JSON.stringify({ format: 'vinyl-capture-backup', version: 2,
+  const manifest = enc.encode(JSON.stringify({ format: 'vinyl-capture-backup', version: entries.some(e => e.targetItemId) ? 3 : 2,
     exportedAt: new Date().toISOString(), origin: options.origin, part: options.part, totalParts: options.totalParts,
     complete: issues.length === 0, entryCount: rows.length, photoCount: total, includedPhotoCount,
     missingPhotoCount: issues.length, issues, entries: rows }, null, 2));

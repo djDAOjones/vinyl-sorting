@@ -1,3 +1,4 @@
+import { photoRequests, requestPhoto, attachPhotos } from './photo-followup.ts';
 import { Hono } from 'hono';
 import type { Context, MiddlewareHandler } from 'hono';
 import type { Env } from './env.ts';
@@ -199,7 +200,8 @@ export function createApp() {
               -- mop-up crate is exactly the rows where both are true
               -- and the release still is not settled: photographed,
               -- read, and still unresolved (CATALOGUE-CONTROLS).
-              (SELECT COUNT(*) FROM raw_value v2 WHERE v2.item_id = i.id) AS reading_count,
+              (SELECT COUNT(*) FROM raw_value v2 WHERE v2.item_id = i.id AND v2.field NOT LIKE 'photo-request:%') AS reading_count,
+              (SELECT GROUP_CONCAT(json_extract(v3.value, '$.reason'), ' · ') FROM raw_value v3 WHERE v3.item_id = i.id AND v3.field LIKE 'photo-request:%' AND json_extract(v3.value, '$.resolvedAt') IS NULL) AS photo_needed,
               -- The READING, kept in its own columns beside capture's
               -- and never merged into them. A photo-only row has an
               -- empty capture and its values in raw_value, so the list
@@ -299,7 +301,8 @@ export function createApp() {
       captures: captures.results,
       photos: photos.results,
       provenance: provenance.results,
-      readings: readings.results,
+      readings: readings.results.filter(r => !String(r.field).startsWith('photo-request:')),
+      photoRequests: await photoRequests(c.env, id),
       runs: runs.results.map((r) => {
         const runId = (r as { id: number }).id;
         return {
@@ -338,6 +341,24 @@ export function createApp() {
     }
     await next();
   };
+
+  app.post('/api/items/:id{[0-9]+}/photos', guard, capturerGuard, async (c) => {
+    const id = Number(c.req.param('id'));
+    if (!Number.isSafeInteger(id) || id < 1 || !await c.env.DB.prepare('SELECT id FROM item WHERE id = ?').bind(id).first()) return c.json({ error: 'Record not found' }, 404);
+    const body = await c.req.json().catch(() => null);
+    const error = await attachPhotos(c.env, id, body);
+    return error ? c.json({ error }, 409) : c.json({ itemId: id });
+  });
+  app.post('/api/items/:id{[0-9]+}/photo-requests', guard, capturerGuard, async (c) => {
+    const id = Number(c.req.param('id'));
+    if (!Number.isSafeInteger(id) || id < 1 || !await c.env.DB.prepare('SELECT id FROM item WHERE id = ?').bind(id).first()) return c.json({ error: 'Record not found' }, 404);
+    const body = await c.req.json().catch(() => null);
+    if (!body || typeof body !== 'object') return c.json({ error: 'Expected request details' }, 400);
+    const who = resolveCapturer(c.req.header('x-capturer') ?? '');
+    if (!who) return c.json({ error: 'Set your name first' }, 401);
+    const result = await requestPhoto(c.env, id, body, who);
+    return typeof result === 'string' ? c.json({ error: result }, 400) : c.json({ request: result });
+  });
 
   app.post('/api/items/:id{[0-9]+}/field', guard, async (c) => {
     let body: unknown;
