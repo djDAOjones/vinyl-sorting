@@ -244,7 +244,7 @@ export function createApp() {
 
     // The match history is what makes a wrong match explicable a month
     // later. The review queue shows it once and throws it away.
-    const [captures, photos, provenance, readings, runs, decisions] = await Promise.all([
+    const [captures, photos, provenance, readings, runs, decisions, release] = await Promise.all([
       c.env.DB.prepare('SELECT * FROM capture WHERE item_id = ? ORDER BY captured_at DESC, id DESC')
         .bind(id).all(),
       // `r2_key` only for a named caller. Gating the photograph while
@@ -261,8 +261,9 @@ export function createApp() {
            FROM field_source
           WHERE (entity = 'item' AND entity_id = ?)
              OR (entity = 'capture' AND entity_id IN (SELECT id FROM capture WHERE item_id = ?))
-             OR (entity = 'raw_value' AND entity_id IN (SELECT id FROM raw_value WHERE item_id = ?))`,
-      ).bind(id, id, id).all(),
+             OR (entity = 'raw_value' AND entity_id IN (SELECT id FROM raw_value WHERE item_id = ?))
+             OR (entity = 'release' AND entity_id = (SELECT release_id FROM item WHERE id = ?))`,
+      ).bind(id, id, id, id).all(),
       // Readings that have no home in the four-entity model yet — a
       // photograph's, or a legacy column's. Displayed and marked as
       // what they are; the decision views cannot see them at all.
@@ -277,6 +278,9 @@ export function createApp() {
         `SELECT id, match_run_id, choice, discogs_id, decided_by, decided_at, note
            FROM review_decision WHERE item_id = ? ORDER BY id DESC`,
       ).bind(id).all(),
+      c.env.DB.prepare(`SELECT id, discogs_id, label, year, lowest_price, num_for_sale, price_checked_at
+        FROM release WHERE id = (SELECT release_id FROM item WHERE id = ?)`)
+        .bind(id).first(),
     ]);
 
     const runIds = runs.results.map((r) => (r as { id: number }).id);
@@ -291,6 +295,7 @@ export function createApp() {
 
     return c.json({
       item,
+      release,
       captures: captures.results,
       photos: photos.results,
       provenance: provenance.results,

@@ -36,6 +36,7 @@ import {
   bootChrome, choiceLabel, esc, headerHtml, isKnownList, knownLists, labelOf, parseJson as parse,
   restoreListFocus, storedList, toast,
 } from './chrome.ts';
+import { recordSummary } from './record-summary.ts';
 import type { ListChoice } from './lists.ts';
 
 /**
@@ -85,7 +86,7 @@ interface Provenance {
   entity: string; entity_id: number; field: string; source: string;
   confidence: number | null; confirmed_by: string | null; confirmed_at: string | null;
 }
-interface Photo { id: number; kind: string; r2_key: string; added_at: string }
+interface Photo { id: number; kind: string; r2_key?: string; added_at: string }
 interface Candidate { rank: number; discogs_id: number; score: number; signals_json: string }
 interface Decision {
   choice: string; discogs_id: number | null; decided_by: string; decided_at: string; note: string | null;
@@ -95,6 +96,7 @@ interface Run {
   candidates: Candidate[]; decision: Decision | null;
 }
 interface Detail {
+  release: Record<string, unknown> | null;
   item: Record<string, unknown>;
   captures: Record<string, unknown>[];
   photos: Photo[];
@@ -105,6 +107,13 @@ interface Detail {
 
 let rows: Row[] = [];
 let openId: number | null = null;
+let detailRequest = 0;
+interface CollectionPosition { x: number; y: number; left: number; top: number; row: number | null }
+let collectionPosition: CollectionPosition = { x: 0, y: 0, left: 0, top: 0, row: null };
+const recordInUrl = (): number | null => {
+  const raw = new URLSearchParams(location.search).get('item');
+  return raw && /^[1-9][0-9]*$/.test(raw) && Number.isSafeInteger(Number(raw)) ? Number(raw) : null;
+};
 
 /**
  * The shared passphrase, held beside `dg.who` on this device.
@@ -153,7 +162,7 @@ const flash = toast;
 /** What `?` lists for this screen. */
 const SCREEN_KEYS = [
   { keys: '/', what: 'Jump to the search box' },
-  { keys: 'Esc', what: 'Close the detail panel' },
+  { keys: 'Esc', what: 'Back to the collection' },
 ];
 
 /**
@@ -520,6 +529,8 @@ const view: View = {
  * search box should not put four entries in the back button.
  */
 function readUrl(): void {
+  Object.assign(view, { text: '', state: '', photos: '', readings: '', confirmed: '',
+    sort: 'id', dir: 'asc', cols: [...DEFAULT_COLS] });
   const q = new URLSearchParams(location.search);
   const preset = PRESETS.find((p) => p.key === q.get('view'));
   if (preset) preset.apply(view);
@@ -542,8 +553,9 @@ function writeUrl(): void {
   if (view.sort !== 'id') q.set('sort', view.sort);
   if (view.dir !== 'asc') q.set('dir', view.dir);
   if (view.cols.join(',') !== DEFAULT_COLS.join(',')) q.set('cols', view.cols.join(','));
+  if (openId !== null) q.set('item', String(openId));
   const s = q.toString();
-  history.replaceState(null, '', s ? `?${s}` : location.pathname);
+  history.replaceState(history.state, '', s ? `?${s}` : location.pathname);
 }
 
 /**
@@ -644,6 +656,7 @@ function render(): void {
   const preset = activePreset();
 
   app.innerHTML = `
+    <div id="collectionView"${openId !== null ? ' hidden' : ''}>
     ${headerHtml({ here: 'browse', title: 'The collection',
     aside: `<div class="tally">${tallyHtml(shown.length)}</div>` })}
 
@@ -691,7 +704,8 @@ function render(): void {
     </div>
     ${shown.length ? '' : '<p class="empty-note">Nothing matches those filters.</p>'}
 
-    <div class="detail" id="detail" hidden></div>
+    </div>
+    <section class="detail" id="detail" aria-label="Record details" hidden></section>
     <div id="toast"></div>`;
 
   const on = (id: string, ev: string, fn: (el: HTMLInputElement) => void): void => {
@@ -812,7 +826,12 @@ function repaintList(): void {
 
 function bindRows(): void {
   for (const tr of app.querySelectorAll<HTMLElement>('tr[data-id]')) {
-    tr.addEventListener('click', () => { void openDetail(Number(tr.dataset.id)); });
+    tr.addEventListener('click', () => enterDetail(Number(tr.dataset.id)));
+    tr.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault(); enterDetail(Number(tr.dataset.id));
+      }
+    });
   }
 }
 
@@ -831,21 +850,66 @@ function rowHtml(r: Row): string {
     }).join('')}</tr>`;
 }
 
-async function openDetail(id: number, scroll = true): Promise<void> {
+function enterDetail(id: number): void {
+  const wrap = app.querySelector<HTMLElement>('.tablewrap');
+  collectionPosition = { x: scrollX, y: scrollY, left: wrap?.scrollLeft ?? 0,
+    top: wrap?.scrollTop ?? 0, row: id };
+  history.replaceState({ ...history.state, collectionPosition }, '');
+  const url = new URL(location.href);
+  url.searchParams.set('item', String(id));
+  history.pushState({ collectionPosition, fromCollection: true }, '', url);
+  void openDetail(id);
+}
+
+function showCollection(): void {
+  document.querySelector<HTMLDialogElement>('.photo-viewer[open]')?.close();
+  detailRequest++;
+  openId = null;
+  document.getElementById('detail')!.hidden = true;
+  document.getElementById('collectionView')!.hidden = false;
+  const wrap = app.querySelector<HTMLElement>('.tablewrap');
+  if (wrap) { wrap.scrollLeft = collectionPosition.left; wrap.scrollTop = collectionPosition.top; }
+  const row = app.querySelector<HTMLElement>(`tr[data-id="${collectionPosition.row}"]`);
+  row?.focus({ preventScroll: true });
+  window.scrollTo({ left: collectionPosition.x, top: collectionPosition.y, behavior: 'instant' });
+}
+
+function leaveDetail(): void {
+  if (history.state?.fromCollection) history.back();
+  else {
+    const url = new URL(location.href);
+    url.searchParams.delete('item');
+    history.replaceState({ collectionPosition }, '', url);
+    showCollection();
+  }
+}
+
+async function openDetail(id: number, moveToTop = true): Promise<void> {
+  const request = ++detailRequest;
   openId = id;
   const panel = document.getElementById('detail')!;
+  document.getElementById('collectionView')!.hidden = true;
   panel.hidden = false;
-  panel.innerHTML = '<p class="empty-note">Loading…</p>';
-  const res = await fetch(`${API}/items/${id}`, { headers: whoHeader() });
-  if (!res.ok) { panel.innerHTML = `<p class="empty-note">Could not load item ${id}.</p>`; return; }
-  panel.innerHTML = detailHtml(await res.json() as Detail);
-  panel.querySelector('#closeDetail')?.addEventListener('click', () => {
-    openId = null;
-    panel.hidden = true;
-    for (const tr of app.querySelectorAll('tr.open')) tr.classList.remove('open');
-  });
-  wireEditing(panel, id);
-  if (scroll) panel.scrollIntoView({ behavior: 'instant', block: 'nearest' });
+  panel.innerHTML = `<div class="dhead"><button class="btn btn-ghost" id="closeDetail" type="button">← Back to collection</button>
+    <h1 tabindex="-1">Item ${id}</h1></div><p class="empty-note" role="status">Loading record…</p>`;
+  panel.querySelector('#closeDetail')!.addEventListener('click', leaveDetail);
+  if (moveToTop) {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    panel.querySelector<HTMLElement>('h1')?.focus({ preventScroll: true });
+  }
+  try {
+    const res = await fetch(`${API}/items/${id}`, { headers: whoHeader() });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const detail = await res.json() as Detail;
+    if (request !== detailRequest || openId !== id) return;
+    panel.innerHTML = detailHtml(detail);
+    panel.querySelector('#closeDetail')!.addEventListener('click', leaveDetail);
+    wireEditing(panel, id);
+    if (moveToTop) panel.querySelector<HTMLElement>('h1')?.focus({ preventScroll: true });
+  } catch (err) {
+    if (request !== detailRequest || openId !== id) return;
+    panel.querySelector('[role="status"]')!.textContent = `Could not load item ${id}: ${err instanceof Error ? err.message : String(err)}. Go back to the collection to try again.`;
+  }
 }
 
 /**
@@ -1027,18 +1091,36 @@ function detailHtml(d: Detail): string {
         </span><br>${mark(provOf('item', Number(item.id), 'list'))}</dd>`;
   };
 
+  const photos = `<section class="record-photos" aria-label="Photographs">
+    <h2>Photographs</h2>
+    ${d.photos.length ? `<div class="shots">${d.photos.map((p, i) => `
+      <figure class="shotfig">
+        ${p.r2_key ? `<a data-photo-viewer href="${API}/photos/${encodeURI(p.r2_key)}"
+          aria-label="Open photograph ${i + 1} of item ${esc(item.id)} full-screen">
+          <img src="${API}/photos/${encodeURI(p.r2_key)}" alt="Photograph ${i + 1} of item ${esc(item.id)}">
+        </a>` : '<p class="empty-note">Set your name on this device to view this photograph.</p>'}
+        <figcaption><span class="n">${i + 1}</span>${p.kind === 'other' ? '' : ` · ${esc(p.kind)}`}</figcaption>
+      </figure>`).join('')}</div>` : '<p class="empty-note">No photographs recorded.</p>'}
+    </section>`;
+
   return `
     <div class="dhead">
-      <h2>Item ${esc(item.id)}</h2>
-      <div class="dtools">
-        <span class="prov">${storedCapturer()
-    ? `editing as ${esc(storedCapturer())}`
-    : '<span class="warnish">no name on this device — set one on the review queue</span>'}</span>
-        <button type="button" id="lockBtn" class="btn btn-quiet">${
-  editToken.get() ? 'Editing unlocked' : 'Unlock editing'}</button>
-        <button type="button" id="closeDetail" class="btn btn-quiet">Close</button>
-      </div>
+      <button type="button" id="closeDetail" class="btn btn-ghost">← Back to collection</button>
+      <h1 tabindex="-1">Item ${esc(item.id)}</h1>
     </div>
+    <div class="record-overview">
+      <dl class="record-facts">${recordSummary(d).map((f) => `
+        <div><dt>${esc(f.label)}</dt><dd>${f.value === null ? '<span class="empty">Not recorded</span>' : esc(f.value)}
+        ${f.note ? `<small>${esc(f.note)}</small>` : ''}</dd></div>`).join('')}</dl>
+      ${photos}
+    </div>
+    <details class="record-more">
+      <summary>More details and editing</summary>
+      <div class="dtools">
+        <span class="prov">${storedCapturer() ? `editing as ${esc(storedCapturer())}`
+    : '<span class="warnish">no name on this device — set one on the review queue</span>'}</span>
+        <button type="button" id="lockBtn" class="btn btn-quiet">${editToken.get() ? 'Editing unlocked' : 'Unlock editing'}</button>
+      </div>
     <form class="unlock" id="unlock" hidden>
       <label class="field"><span>Passphrase</span><input id="tokenBox" type="password"
         autocomplete="current-password"></label>
@@ -1090,25 +1172,14 @@ function detailHtml(d: Detail): string {
       </section>
 
       <section>
-        <h3>Photographs ${d.photos.length ? `<span class="n">${d.photos.length}</span>` : ''}</h3>
-        ${d.photos.length
-    ? `<div class="shots">${d.photos.map((p, i) => `
-         <figure class="shotfig">
-           <a data-photo-viewer href="${API}/photos/${encodeURI(p.r2_key)}"
-              aria-label="Open photograph ${i + 1} of item ${d.item.id} full-screen">
-             <img src="${API}/photos/${encodeURI(p.r2_key)}"
-                  alt="Photograph ${i + 1} of item ${d.item.id}">
-           </a>
-           <figcaption><span class="n">${i + 1}</span>
-             ${esc(p.added_at)}${p.kind === 'other' ? '' : ` · ${esc(p.kind)}`}</figcaption>
-         </figure>`).join('')}</div>`
-    : '<p class="empty-note">No photograph. This is one of the 446 rows imported from the spreadsheet.</p>'}
-
+        ${d.photos.length ? `<h3>Photograph details</h3><dl class="facts">${d.photos.map((p, i) =>
+    `<dt>Photograph ${i + 1}</dt><dd>${esc(p.kind)} · ${esc(p.added_at)}</dd>`).join('')}</dl>` : ''}
         <h3>Match history</h3>
         ${d.runs.length ? d.runs.map(runHtml).join('')
     : '<p class="empty-note">Never matched. The matcher runs from cron and has not reached this row.</p>'}
       </section>
-    </div>`;
+    </div>
+    </details>`;
 }
 
 function runHtml(run: Run): string {
@@ -1139,25 +1210,29 @@ app.innerHTML = '<p class="empty-note">Loading the collection…</p>';
 // stay broken for reasons it cannot see.
 ensureCapturerCookie();
 readUrl();
+openId = recordInUrl();
+collectionPosition = history.state?.collectionPosition ?? collectionPosition;
+history.scrollRestoration = 'manual';
 bootChrome(SCREEN_KEYS);
 
-/**
- * Escape closes the detail panel.
- *
- * `chrome.ts` handles Escape for dialogs and for leaving a field; a
- * panel that is neither has to say so itself. The order matters: the
- * shared handler blurs a focused input first, so pressing Escape while
- * editing a value leaves the editor rather than closing the row under
- * it.
- */
+// Native dialogs and inline editors own Escape before record navigation.
 addEventListener('keydown', (e) => {
-  if (e.key !== 'Escape' || openId === null) return;
-  const panel = document.getElementById('detail');
-  if (!panel || panel.hidden) return;
+  if (e.key !== 'Escape' || e.defaultPrevented || openId === null) return;
+  if ((e.target as Element | null)?.closest('input, select, textarea, [contenteditable="true"]')) return;
   if (document.querySelector('dialog[open]')) return;
-  openId = null;
-  panel.hidden = true;
-  for (const tr of app.querySelectorAll('tr.open')) tr.classList.remove('open');
+  leaveDetail();
+});
+addEventListener('popstate', () => {
+  collectionPosition = history.state?.collectionPosition ?? collectionPosition;
+  const before = JSON.stringify(view);
+  readUrl();
+  const id = recordInUrl();
+  if (JSON.stringify(view) !== before) {
+    openId = id;
+    render();
+    if (id !== null) window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  } else if (id !== null) void openDetail(id);
+  if (id === null) showCollection();
 });
 load().catch((err: unknown) => {
   app.innerHTML = `<p class="note-bad">Could not load the collection: ${

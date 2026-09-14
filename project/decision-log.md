@@ -2,6 +2,38 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-09-14 — RECORD-SCREEN: a dedicated record screen with a compact overview
+
+**Decision:** Clicking or keyboard-activating a collection row opens a
+record screen at the top, retaining the table behind it. Back to collection,
+Escape and browser Back restore its filters, columns, ordering, focus and
+page/table scroll. The record has an `item` URL; Forward, reload and direct
+links work. Late or failed requests cannot replace the restored table.
+
+The overview shows Artist, Title, Label, Year, Genre, Value and photographs.
+All existing editing, physical details, provenance, photo dates and match
+history sit under an initially closed “More details and editing” section.
+Photographs retain the full-screen viewer.
+
+**Rationale:** Scrolling below a long table made inspection and returning
+to the list cumbersome. Keeping its DOM gives a direct return without a
+second fetch or reconstruction. Summary values prefer capture over raw
+readings, then use stored release label/year where meaningful, with source
+labels retained. Genre uses recorded raw genre fields or says Not recorded;
+the list name is not a genre. Combined release titles are not split into
+invented artist/title values. Value is the dated lowest Discogs listing,
+not a realised sale price. The detail API adds only stored release fields
+and their provenance; capture, matching and schema are unchanged.
+
+**Verify:** Typecheck, all 311 tests and production build pass. Six new
+tests cover summary order, missing data, fallback/provenance, price states,
+release isolation and capture preservation. Local Chrome checks pass for
+Back/Forward, unchanged table DOM and scroll, keyboard/focus, slow responses,
+404/direct links, reload, editing Escape and photo controls. Desktop and
+390px phone screenshots checked; no page errors. PM validators pass with
+existing budget warnings. No Safari/physical-device verification or live
+deployment. Recorded and closed under the root pm-next workflow.
+
 ## 2026-09-14 — COLLECTION-INTERACTIONS: steady table, full-screen photographs and instant list menu
 
 **Decision:** Sorting or changing visible columns repaints only the table,

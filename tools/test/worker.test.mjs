@@ -855,3 +855,28 @@ test('NEILS-LIST: a new list is a row behind the passphrase, and a capture may u
   assert.equal(body.counts.neils, 1);
   assert.equal(body.counts['hard-house-sell'], 0);
 });
+
+test('RECORD-SCREEN: detail returns only its stored release and provenance without changing capture', async () => {
+  const env = makeEnv();
+  await post(env, { clientId: 'record-screen', catnoRaw: 'SXL 6113' });
+  env.DB.raw.exec(`
+    INSERT INTO release (discogs_id, label, year, lowest_price, price_checked_at)
+      VALUES (100, 'Decca', 1965, 12.5, '2026-09-14'), (200, 'Other label', 1970, 9, '2026-09-14');
+    UPDATE item SET release_id = 1 WHERE id = 1;
+    INSERT INTO field_source (entity, entity_id, field, source)
+      VALUES ('release', 1, 'label', 'discogs'), ('release', 2, 'label', 'legacy');
+  `);
+  const before = env.DB.raw.prepare('SELECT * FROM capture WHERE item_id = 1').get();
+  const body = await (await app.request('/api/items/1', {}, env)).json();
+  assert.equal(body.release.label, 'Decca');
+  assert.equal(body.release.year, 1965);
+  assert.equal(body.release.lowest_price, 12.5);
+  assert.equal(body.release.price_checked_at, '2026-09-14');
+  assert.equal(body.provenance.filter(p => p.entity === 'release').length, 1);
+  assert.equal(body.provenance.find(p => p.entity === 'release').entity_id, 1);
+  assert.deepEqual(env.DB.raw.prepare('SELECT * FROM capture WHERE item_id = 1').get(), before);
+  env.DB.raw.exec('UPDATE item SET release_id = NULL WHERE id = 1');
+  const unmatched = await (await app.request('/api/items/1', {}, env)).json();
+  assert.equal(unmatched.release, null);
+  assert.ok(unmatched.provenance.every(p => p.entity !== 'release'));
+});
