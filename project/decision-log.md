@@ -2,6 +2,36 @@
 
 <!-- Append-only, newest first. -->
 
+
+## 2026-09-15 — AUTO-SOURCE-PREPARATION: automatic unresolved source evidence
+
+**Decision:** Deploy `b70964e`, Worker version
+`cae5a73e-a188-42be-b929-a7b3c4d4a3d9`, after the user's explicit approval of
+saved catalogue numbers/aliases, label, title, performer and year searches to
+Discogs and MusicBrainz, including unconfirmed readings. The earlier automatic
+review deployment rejection is resolved by that approval.
+
+Each five-minute tick inspects up to ten unresolved records, prepares at most
+one MusicBrainz result and queues at most one changed-input Discogs retry.
+Confirmed and auto-accepted records are excluded. Source evidence persists in
+R2, stays unconfirmed and opens without provider requests or editing credentials.
+Changed readings invalidate it. Provider failures wait one then six hours and
+pause after three attempts. Conditional claims preserve newer evidence; failed
+refreshes retain earlier leads with their original dates. No schema, dependency
+or binding changes, and no capture or decision writes from source evidence.
+
+**Rationale:** Prepare evidence before a person opens an unresolved record while
+keeping provider failures, ambiguous leads and actual confirmation distinct.
+Bounded scans, shared pacing and one cursor write per tick limit background work.
+
+**Verify:** 385 tests, typecheck, build, desktop/mobile fixtures and memory/view
+checks passed. Live health, exact asset bytes, anonymous POST rejection and
+mobile/no-automatic-POST checks passed. First scheduled record completed with two
+successful requests and 50 leads; capped result sets remained visibly incomplete.
+This verifies transport/storage, not candidate accuracy. Private evidence:
+`project/reports/auto-source-preparation-2026-09-15/handover.md`.
+
+
 ## 2026-09-15 — MUSICBRAINZ-RECOVERY: deployed recovery and source previews
 
 **Decision:** Deploy the reviewed recovery workflow and queue the fourteen

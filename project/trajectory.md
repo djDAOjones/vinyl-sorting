@@ -64,3 +64,4 @@
 - MATCH-RECOVERY — Stronger searches, visible evidence gaps, preserved retry history and manual resolution for failed or never-searched records; locally verified, deployment pending (2026-09-14) — see decision-log
 - SOURCE-COMPARISON-PILOT — 25 unresolved records compared; MusicBrainz leads and specialist context documented, private evidence retained locally, no catalogue writes (2026-09-15) — see decision-log
 - MUSICBRAINZ-RECOVERY — recovery deployed, fourteen guarded retries queued, separate MusicBrainz candidate panel live with shared pacing and preserved provenance (2026-09-15) — see decision-log
+- AUTO-SOURCE-PREPARATION — unresolved records gather source evidence automatically, changed readings queue Discogs retries, bounded failures and saved leads support review; deployed and live-verified (2026-09-15) — see decision-log
