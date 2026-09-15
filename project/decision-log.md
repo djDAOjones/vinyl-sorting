@@ -2,6 +2,37 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-09-15 — BROWSE-READ-LIMIT: restore browsing during database read exhaustion
+
+**Decision:** Replace the pricing selection's correlated EXISTS query with one
+indexed pass over confirmed items, joining releases by primary key and retaining
+one pricing job per release. Add a query-plan regression guard against repeated
+scans. The live error is D1's daily free row-read limit, not value sorting.
+The new pricing scan and today's diagnostic reads consumed the allowance.
+
+Cache successful public collection pages and list definitions in existing R2.
+On server read failure, serve the dated saved response with explicit snapshot
+metadata. Browsing, filtering and sorting remain available; opening live details
+is disabled in saved mode. Other routes return a clear 503 and UTC reset time
+for the allowance error. Writes, photos and details never use cached responses.
+After the allowance resets, successful reads immediately return live data again.
+
+**Rationale:** Restore the reported page without changing data, upgrading billing,
+or disguising old statuses as current. Seed only the previously verified public
+list responses from 14:46 UTC (641 items) into three dedicated cache objects.
+No database writes, migrations, dependencies or identity/confirmation changes.
+Price work cannot continue until the allowance resets at 00:00 UTC / 01:00 BST;
+the earlier evening completion estimate is withdrawn.
+
+**Verify:** 404 tests and typecheck passed; build and whitespace checks passed.
+New regressions cover quota fallback, page isolation, recovery to fresh data,
+cache storage failure, read-only boundaries, reset time and indexed deduplication.
+Browser fixture under the real error condition displays all 641 rows sorted by
+value and the saved timestamp. Private evidence and original responses are in
+`project/reports/browse-load-fix-2026-09-15/`. Live verification follows deployment.
+
+
+
 ## 2026-09-15 — SIMILAR-EDITION-PRICE: live pricing verified
 
 **Decision:** Deployed `bb05f82` to the existing Worker as version

@@ -126,6 +126,7 @@ interface Detail {
 }
 
 let rows: Row[] = [];
+let snapshot: { savedAt: string; resumesAt: string | null } | null = null;
 let openId: number | null = null;
 let detailRequest = 0;
 interface CollectionPosition { x: number; y: number; left: number; top: number; row: number | null }
@@ -674,13 +675,18 @@ function visible(): Row[] {
 
 async function load(): Promise<void> {
   rows = [];
+  snapshot = null;
   let after = 0;
   // Paged rather than assumed. 484 rows arrive in one fetch at 500, and
   // the loop is what keeps that an optimisation rather than a limit.
   for (let page = 0; page < 50; page++) {
     const res = await fetch(`${API}/items?limit=500&after=${after}`, { headers: whoHeader() });
-    if (!res.ok) throw new Error(`items: HTTP ${res.status}`);
-    const body = await res.json() as { items: Row[]; nextAfter: number | null };
+    if (!res.ok) {
+      const failure = await res.json().catch(() => ({})) as { error?: string };
+      throw new Error(failure.error || `items: HTTP ${res.status}`);
+    }
+    const body = await res.json() as { items: Row[]; nextAfter: number | null; snapshot?: { savedAt: string; resumesAt: string | null } };
+    if (body.snapshot && (!snapshot || body.snapshot.savedAt < snapshot.savedAt)) snapshot = body.snapshot;
     rows.push(...body.items);
     if (body.nextAfter === null) break;
     after = body.nextAfter;
@@ -703,6 +709,7 @@ function render(): void {
   const preset = activePreset();
 
   app.innerHTML = `
+    ${snapshot ? `<p class="photo-needs" role="status">Saved list · ${esc(new Date(snapshot.savedAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))} · ${snapshot.resumesAt ? `Live access resumes at ${esc(new Date(snapshot.resumesAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }))}` : 'Live access temporarily unavailable'} · <a href="${esc(location.href)}">Refresh</a></p>` : ''}
     <div id="collectionView"${openId !== null ? ' hidden' : ''}>
     ${headerHtml({ here: 'browse', title: 'The collection',
     aside: `<div class="tally">${tallyHtml(shown.length)}</div>` })}
@@ -905,6 +912,7 @@ function rowHtml(r: Row): string {
 }
 
 function enterDetail(id: number): void {
+  if (snapshot) { flash('This is a saved list. Live record details are temporarily unavailable.', 'err'); return; }
   const wrap = app.querySelector<HTMLElement>('.tablewrap');
   collectionPosition = { x: scrollX, y: scrollY, left: wrap?.scrollLeft ?? 0,
     top: wrap?.scrollTop ?? 0, row: id };
@@ -939,6 +947,7 @@ function leaveDetail(): void {
 }
 
 async function openDetail(id: number, moveToTop = true): Promise<void> {
+  if (snapshot) { showCollection(); return; }
   const request = ++detailRequest;
   openId = id;
   const panel = document.getElementById('detail')!;

@@ -90,13 +90,15 @@ export function similarPriceFor(index: PriceIndex, id: unknown, confirmed: unkno
  * Exact prices stay in release; indicative prices stay in a separate KV index.
  * Errors retry later without making a failed request look like no listings.
  */
+export const PRICE_DUE_SQL = `SELECT DISTINCT r.id, r.discogs_id, r.lowest_price, r.price_checked_at
+  FROM v_confirmed_field v JOIN item i ON i.id = v.entity_id
+  JOIN release r ON r.id = i.release_id
+  WHERE v.entity = 'item' AND v.field = 'release_id'
+  ORDER BY r.price_checked_at IS NOT NULL, r.price_checked_at, r.id`;
+
 export async function runPriceBatch(env: Env, client: Client, now = Date.now) {
   const index = await readPriceIndex(env);
-  const { results } = await env.DB.prepare(`SELECT r.id, r.discogs_id, r.lowest_price, r.price_checked_at
-    FROM release r WHERE EXISTS (SELECT 1 FROM item i JOIN v_confirmed_field v
-      ON v.entity = 'item' AND v.entity_id = i.id AND v.field = 'release_id'
-      WHERE i.release_id = r.id)
-    ORDER BY r.price_checked_at IS NOT NULL, r.price_checked_at, r.id`).all<{
+  const { results } = await env.DB.prepare(PRICE_DUE_SQL).all<{
       id: number; discogs_id: number; lowest_price: number | null; price_checked_at: string | null;
     }>();
   const start = now();

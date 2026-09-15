@@ -1,3 +1,4 @@
+import { collectionCache, dailyReadLimit, allowanceReset } from './collection-cache.ts';
 import { readPriceIndex, similarPriceFor, runPriceBatch } from './pricing.ts';
 import { prepareSource, sourcePreparation, runSourcePreparation } from './source-preparation.ts';
 import { photoRequests, requestPhoto, attachPhotos } from './photo-followup.ts';
@@ -62,6 +63,7 @@ const listScope = (raw: string | undefined, keys: readonly string[]):
 
 export function createApp() {
   const app = new Hono<{ Bindings: Env }>();
+  app.use('/api/*', collectionCache);
 
   app.get('/api/health', async (c) => {
     const row = await c.env.DB.prepare('SELECT MAX(version) AS version FROM schema_migration')
@@ -691,6 +693,12 @@ export function createApp() {
 
   app.onError((err, c) => {
     console.error('worker error', err);
+    if (dailyReadLimit(err)) {
+      const resumesAt = allowanceReset();
+      c.header('Retry-After', String(Math.ceil((Date.parse(resumesAt) - Date.now()) / 1000)));
+      return c.json({ error: 'Live access is temporarily unavailable. Saved additions remain on your device.',
+        code: 'daily-read-limit', resumesAt }, 503);
+    }
     return c.json({ error: 'internal error' }, 500);
   });
 

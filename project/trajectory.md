@@ -71,3 +71,5 @@
 - CURRENT-RECORD-STATUS (deployment) — live status metadata, confirmation labels, page continuation and Home counts verified (2026-09-15) — see decision-log
 
 - SIMILAR-EDITION-PRICE — Automatic confirmed-release GBP checks and source-linked similar-vinyl estimates fill missing values without changing verified identities (2026-09-15) — see decision-log
+
+- BROWSE-READ-LIMIT — Removed repeated pricing scans and restored dated collection browsing during database read-limit outages (2026-09-15) — see decision-log
