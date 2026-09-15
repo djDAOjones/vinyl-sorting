@@ -2,6 +2,40 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-09-15 — MUSICBRAINZ-RECOVERY: deployed recovery and source previews
+
+**Decision:** Deploy the reviewed recovery workflow and queue the fourteen
+zero-query pilot records after checking current input, latest run and confirmed
+state. Preserve all previous attempts. At handover two reached needs-review with
+real queries and incomplete results; twelve remain queued/running under cron.
+
+Deploy MusicBrainz candidate previews from `45b856e` (Worker version
+`8b1257f8-fba3-4e6e-95bb-682b189352a5`). A known caller with the edit passphrase
+explicitly requests two bounded searches derived from saved evidence. Cards show
+identifiers, format, credited names, conflicts, source links and incomplete
+results. They never confirm or modify catalogue data. Successful evidence is
+cached for 24 hours; changed inputs select a new cache entry.
+
+Use an R2 conditional lease under `_system/musicbrainz/` plus the existing KV
+limiter to serialize callers and enforce spacing. Provider pauses survive across
+queries and callers. No dependency, binding or schema changes. Keep transport in
+the existing outbound-client boundary. Live smoke testing caught the unsupported
+Workers redirect mode; manual redirects now fail without being followed.
+
+**Rationale:** Recovery needs distinct next actions for unsearched evidence,
+provider failures and ambiguous identities. Additional sources help discovery,
+but number agreement, a CD reissue or shared performer words cannot confirm a
+physical pressing. Keep this preview separate from M3 work/performance linking.
+
+**Verify:** Typecheck, all 374 tests and build passed; desktop/mobile fixture
+interactions passed. A synthetic real-service Worker request verified shared
+R2/KV, provider failure, success and cache reuse without a database binding.
+Deployed health, exact asset bytes, anonymous 401 and mobile panel/no automatic
+provider traffic passed. Private queue snapshots and evidence are in ignored
+`project/reports/musicbrainz-recovery-2026-09-15/handover.md`. Saved-record smoke
+was replaced with synthetic input after automatic review rejected that payload.
+
+
 ## 2026-09-15 — SOURCE-COMPARISON-PILOT: additional identification sources
 
 **Decision:** Complete the authorised read-only 25-record pilot. MusicBrainz

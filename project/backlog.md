@@ -66,11 +66,6 @@
   them — so photographing those discs would supply the missing signal
   family and shrink the queue, and the question is whether handling 267
   discs costs less than deciding 293 blind.
-- [~] **MUSICBRAINZ-RECOVERY Recover unresolved records with MusicBrainz
-  candidate evidence** (2026-09-15) — Deploy recovery, queue the fourteen
-  zero-query pilot records with newer readings, and add a guarded
-  MusicBrainz preview that keeps source evidence separate from confirmed
-  catalogue data.
 
 ### Next milestone
 
