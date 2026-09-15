@@ -2,6 +2,22 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-09-15 — SIMILAR-EDITION-PRICE: live pricing verified
+
+**Decision:** Deployed `bb05f82` to the existing Worker as version
+`bd2af7a9-8d2c-4472-881b-3488f4815fa4` under the user's live-deployment instruction.
+
+**Rationale:** Make automatic price checks and source-linked estimates available
+in the actual catalogue. Exact live HTML, JavaScript and CSS match the build;
+all 641 records and 125 confirmations remain present. The first scheduled pass
+persisted a GBP price for previously unpriced item 498 at 14:35 UTC. Initial
+backfill is in progress, not complete; provider pacing controls throughput.
+Fallback selection and display passed fixtures; no live fallback had appeared
+at the first check. Private deployment receipts and counts are in
+`project/reports/similar-edition-price-2026-09-15/`.
+
+
+
 ## 2026-09-15 — SIMILAR-EDITION-PRICE: automatic pricing and source-linked estimates
 
 **Decision:** Check confirmed releases automatically on idle matcher ticks, up to
