@@ -3,6 +3,32 @@
 <!-- Append-only, newest first. -->
 
 
+## 2026-09-15 — COMPACT-CAPTURE-NAV: quiet capture status and list footers
+
+**Decision:** Move the Home menu's Save queued work tile last and give it the
+same icon/title layout as the other destinations. Replace the large Add vinyl
+upload panel with one short status line and an inline Details/Get help link
+when uploads need attention. Open recovery separately to preserve the capture
+in progress. Keep request tracing, backups and retained local records; capture
+errors are recorded in the local trace for the recovery screen.
+
+Add Return to top beneath the collection (all list scopes and filters), review
+candidates, recovery page and Home. The shared control restores heading focus
+and respects reduced motion.
+
+**Rationale:** Keep routine capture uncluttered, put device recovery after daily
+work, and make long lists easy to navigate. This implements the user's interface
+request; the existing incident investigation and retention sign-off remain open.
+
+**Verify:** Final gate: 385 tests and typecheck passed; production build and
+`git diff --check` passed. Local browser checks at 390px and 1280px confirmed
+menu order/layout, ready and pending status, and collection/review/recovery footer
+controls with heading focus. Collection returned to scroll position zero.
+Only a synthetic text record was filed against the in-memory demo API. No live
+records were changed and this change has not been deployed. Existing project
+memory budget warnings remain; broad archival upkeep is outside this UI change.
+
+
 ## 2026-09-15 — AUTO-SOURCE-PREPARATION: automatic unresolved source evidence
 
 **Decision:** Deploy `b70964e`, Worker version

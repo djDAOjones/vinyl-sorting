@@ -14,7 +14,7 @@
 import { parseDiscogsReleaseId } from './discogs-id.ts';
 import { ensureCapturerCookie, rememberCapturer, resolveCapturer, storedCapturer } from './who.ts';
 import {
-  bootChrome, choiceLabel, esc, headerHtml, isTyping, labelOf, parseJson as parse, restoreListFocus,
+  returnToTopHtml, bootChrome, choiceLabel, esc, headerHtml, isTyping, labelOf, parseJson as parse, restoreListFocus,
   storedList, toast,
 } from './chrome.ts';
 
@@ -135,6 +135,7 @@ function render(): void {
       </section>
     </div>
 
+    ${returnToTopHtml}
     <div class="keybar"><div class="inner">
       <span><kbd>1</kbd>–<kbd>5</kbd> choose</span>
       <span><kbd>N</kbd> none of these</span>

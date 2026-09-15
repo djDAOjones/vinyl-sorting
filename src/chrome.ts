@@ -398,6 +398,22 @@ export function headerHtml(opts: HeaderOptions): string {
   </div>`;
 }
 
+/** A footer control shared by long lists, with keyboard focus returned too. */
+export const returnToTopHtml = '<div class="list-footer"><button type="button" class="btn btn-ghost" data-return-top>↑ Return to top</button></div>';
+
+export function installReturnToTop(): void {
+  document.addEventListener('click', (event) => {
+    const button = (event.target as HTMLElement).closest('[data-return-top]');
+    if (!button) return;
+    const heading = button.closest('main')?.querySelector<HTMLElement>('h1');
+    if (heading) {
+      heading.tabIndex = -1;
+      heading.focus({ preventScroll: true });
+    }
+    window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+  });
+}
+
 /* ── Toast ───────────────────────────────────────────────────────── */
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
@@ -554,5 +570,6 @@ export function bootChrome(screenKeys: KeyHelp[] = []): void {
   installKeys(screenKeys);
   installListPick();
   installPhotoViewer();
+  installReturnToTop();
   void refreshLists();
 }

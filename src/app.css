@@ -505,3 +505,6 @@ dialog.photo-viewer[open] { display: flex; flex-direction: column; gap: 0.75rem;
   border: 1px solid #89929b; min-height: var(--tap);
 }
 .photo-viewer img { flex: 1; min-height: 0; width: 100%; object-fit: contain; }
+
+/* End-of-list navigation, outside horizontally scrolling tables. */
+.list-footer { display: flex; justify-content: center; padding: var(--s5) 0; }

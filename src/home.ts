@@ -14,7 +14,7 @@
  */
 
 import {
-  bootChrome, esc, listPickHtml, rememberLists, restoreListFocus, ROUTES, storedList, storedTheme, toast,
+  returnToTopHtml, bootChrome, esc, listPickHtml, rememberLists, restoreListFocus, ROUTES, storedList, storedTheme, toast,
 } from './chrome.ts';
 import type { ListChoice, ListDef } from './lists.ts';
 import { ensureCapturerCookie, forgetCapturer, storedCapturer } from './who.ts';
@@ -48,6 +48,9 @@ const recordCount = (): number | null => {
 };
 
 const ICONS = {
+  recovery: `<svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M12 3v11m-4-4 4 4 4-4M4 15v5h16v-5" stroke="currentColor" stroke-width="1.5"
+      stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   add: `<svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true">
     <rect x="2.75" y="5.75" width="18.5" height="13.5" rx="2.5" stroke="currentColor" stroke-width="1.5"/>
     <path d="M8.5 5.75 10 3.25h4l1.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
@@ -107,7 +110,6 @@ function render(): void {
     </div>
 
     <nav class="tiles">
-      <a class="tile" href="/recovery.html"><span class="name">Save queued work</span><span class="what">Back up this device’s records and photos. Inspect upload errors and resume safely.</span></a>
       <a class="tile lead" href="${ROUTES.capture}">
         ${ICONS.add}
         <span class="name">Add vinyl</span>
@@ -135,6 +137,7 @@ function render(): void {
         <span class="what">Theme, density, matching, and a copy of everything.</span>
         <span class="count quiet">${esc(storedTheme())} theme</span>
       </a>
+      <a class="tile" href="/recovery.html">${ICONS.recovery}<span class="name">Save queued work</span><span class="what">Back up this device’s records and photos. Inspect upload errors and resume safely.</span></a>
     </nav>
 
     <div class="pulse">
@@ -148,6 +151,7 @@ function render(): void {
   lists?.counts.unsorted && storedList() === '' ? stat(lists.counts.unsorted, 'unsorted', 'on') : ''}
     </div>
 
+    ${returnToTopHtml}
     <div class="homefoot">
       <span>Press <kbd>?</kbd> anywhere for the keyboard shortcuts.</span>
       <a class="link" href="${ROUTES.browse}">Everything is searchable →</a>

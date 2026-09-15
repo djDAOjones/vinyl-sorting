@@ -37,7 +37,7 @@ import { startAdditions } from './photo-additions.ts';
 
 import { ensureCapturerCookie, storedCapturer } from './who.ts';
 import {
-  bootChrome, choiceLabel, esc, headerHtml, isKnownList, knownLists, labelOf, parseJson as parse,
+  returnToTopHtml, bootChrome, choiceLabel, esc, headerHtml, isKnownList, knownLists, labelOf, parseJson as parse,
   restoreListFocus, storedList, toast,
 } from './chrome.ts';
 import { recordSummary } from './record-summary.ts';
@@ -720,6 +720,7 @@ function render(): void {
       </table>
     </div>
     ${shown.length ? '' : '<p class="empty-note">Nothing matches those filters.</p>'}
+    ${returnToTopHtml}
 
     </div>
     <section class="detail" id="detail" aria-label="Record details" hidden></section>

@@ -7,7 +7,7 @@ import { backupParts, buildQueueBackupReport, queueMetadata } from './queue-back
 import { queueHealth, type QueuedCapture } from './queue-logic.ts';
 import { drain, syncError } from './sync.ts';
 import { readTrace, RECOVERY_BUILD, trace } from './sync-debug.ts';
-import { esc } from './chrome.ts';
+import { esc, installReturnToTop, returnToTopHtml } from './chrome.ts';
 import { readStoredPhoto } from './photo-read.ts';
 const app = document.getElementById('app')!;
 let snapshot: QueuedCapture[] = [], parts: QueuedCapture[][] = [], smallParts: QueuedCapture[][] = [];
@@ -79,7 +79,7 @@ async function boot() {
     <button class="btn btn-ghost" id="check">Check connection</button> <button class="btn btn-primary" id="upload">Start / resume uploads</button>
     <h2>Temporary diagnostics</h2><p>This includes local entry IDs, photo sizes and upload errors. It contains no photo content. Copy it here when troubleshooting.</p>
     <button class="btn btn-ghost" id="copy">Copy diagnostics</button> <button class="btn btn-ghost" id="refresh">Refresh diagnostics</button>
-    <textarea id="diagnostics" readonly aria-label="Upload diagnostics"></textarea><p>Build: ${esc(RECOVERY_BUILD)}</p>`;
+    <textarea id="diagnostics" readonly aria-label="Upload diagnostics"></textarea><p>Build: ${esc(RECOVERY_BUILD)}</p>${returnToTopHtml}`;
   app.addEventListener('click', async (event) => {
     const link = (event.target as HTMLElement).closest<HTMLAnchorElement>('a#download');
     if (link) { downloadRequested(); return; } // Native user-activated download; never preventDefault.
@@ -190,4 +190,5 @@ async function boot() {
   trace('Recovery screen opened; uploads not started'); await refresh();
   setInterval(() => { void refresh(); }, 5000);
 }
+installReturnToTop();
 void boot().catch(err => { app.textContent = `Cannot read this device queue: ${String(err)}. Keep website data intact and return to the app that shows the waiting entries.`; });

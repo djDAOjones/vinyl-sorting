@@ -25,7 +25,7 @@ import {
   torchSupported, videoConstraints, type QueuedCapture, type QueuedPhoto,
 } from './queue-logic.ts';
 import { startSync, drain, syncError } from './sync.ts';
-import { RECOVERY_BUILD, readTrace } from './sync-debug.ts';
+import { trace } from './sync-debug.ts';
 import {
   forgetCapturer, rememberCapturer, resolveCapturer, storedCapturer,
 } from './who.ts';
@@ -882,25 +882,33 @@ function resetForm(): void {
 }
 
 let statusRead = 0;
-let diagnostics = '';
-function showSyncNotice(tone: string, title: string, message: string, extra = ''): void {
+let lastNoticeError = '';
+function showSyncNotice(tone: string, title: string, message: string): void {
   let notice = document.getElementById('syncNotice');
   if (!notice) {
-    notice = document.createElement('section');
+    notice = document.createElement('p');
     notice.id = 'syncNotice';
-    const header = app.querySelector('header');
+    const header = app.querySelector('.appbar');
     if (header?.parentNode) header.parentNode.insertBefore(notice, header.nextSibling);
     else app.insertBefore(notice, app.firstChild);
   }
   notice.className = `sync-notice sync-${tone}`;
   notice.setAttribute('role', tone === 'error' ? 'alert' : 'status');
   notice.setAttribute('aria-live', 'polite');
-  const html = `<strong>${esc(title)}</strong><p>${esc(message)}</p>${extra}`;
+  notice.title = message;
+  // Recovery reads this shared local trace, including errors from this tab.
+  const error = tone === 'error' ? `${title}: ${message}` : '';
+  if (error && error !== lastNoticeError) trace(error);
+  lastNoticeError = error;
+  // Keep the capture (including any unsaved photos) open while help is viewed.
+  const html = `<span>${esc(title)}</span>${tone === 'ok' ? ''
+    : ` <span aria-hidden="true">·</span> <a href="/recovery.html" target="_blank" rel="noopener" aria-label="${tone === 'error' ? 'Get upload help' : 'View upload details'} (opens in a new tab)">${tone === 'error' ? 'Get help' : 'Details'}</a>`}`;
   if (notice.innerHTML !== html) notice.innerHTML = html;
   const camera = document.querySelector<HTMLElement>('[data-sync-camera]');
   if (camera) {
     camera.className = `camera-sync sync-${tone}`;
-    camera.textContent = `${title}. ${tone === 'error' ? `${message} ` : ''}${tone === 'ok' ? '' : 'Tap Done for upload details.'}`;
+    if (camera.innerHTML !== html) camera.innerHTML = html;
+    camera.title = message;
   }
 }
 async function refreshStatus(): Promise<void> {
@@ -913,46 +921,17 @@ async function refreshStatus(): Promise<void> {
     const problem = saveError ?? syncError();
     const el = document.getElementById('status');
     if (el) el.textContent = `${health.outstanding} awaiting upload · ${s.synced} recent confirmations`;
-    const when = (n: number | null): string => n === null ? 'not available' : new Date(n).toLocaleString('en-GB');
-    diagnostics = [`App: ${location.origin}`, `Capture sync: ${RECOVERY_BUILD}`,
-      `Checked: ${new Date().toISOString()}`, `Browser reports online: ${navigator.onLine}`,
-      `Pending: ${s.pending}; retrying: ${s.failed}; recent confirmed: ${s.synced}`,
-      `Oldest awaiting upload: ${when(health.oldest)}`, `Last server confirmation: ${when(health.lastConfirmed)}`,
-      `Error: ${problem ?? health.lastError ?? 'none recorded'}`, ...readTrace()].join('\n');
-    const expanded = document.querySelector<HTMLDetailsElement>('#syncNotice details')?.open;
-    showSyncNotice(problem ? 'error' : health.tone, problem ? 'Capture needs attention' : health.title,
-      problem ?? health.message,
-      `${health.outstanding || syncError() ? '<button type="button" class="btn btn-ghost" data-retry-uploads>Retry uploads now</button>' : ''}
-      <p><a href="/recovery.html">Save queued work / diagnostics</a></p>
-      <details${expanded ? ' open' : ''}><summary>Upload details</summary>
-        ${health.oldest ? `<p>Oldest waiting: ${esc(when(health.oldest))}</p>` : ''}
-        ${health.lastConfirmed ? `<p>Last confirmed online: ${esc(when(health.lastConfirmed))}</p>` : ''}
-        <p>${esc(health.lastError ?? 'No upload error recorded.')}</p>
-        <button type="button" class="btn btn-quiet" data-copy-sync>Copy diagnostics</button>
-      </details>`);
+    const title = saveError ? 'Save needs attention' : problem ? 'Uploads need attention'
+      : health.outstanding ? `${health.outstanding} awaiting upload`
+      : !navigator.onLine ? 'Offline' : s.synced ? 'All uploaded' : 'Ready to capture';
+    showSyncNotice(problem ? 'error' : health.tone, title, problem ?? health.message);
   } catch (err) {
     if (request !== statusRead) return;
-    diagnostics = `App: ${location.origin}\nPhone storage error: ${err instanceof Error ? err.message : String(err)}`;
-    showSyncNotice('error', 'Phone storage is unavailable',
-      saveError ?? 'We cannot confirm that entries are saved. Stop capturing, keep this page open and check phone storage. Do not clear website data.',
-      '<button type="button" class="btn btn-quiet" data-copy-sync>Copy diagnostics</button>');
+    trace(`Capture storage unavailable: ${String(err)}`);
+    showSyncNotice('error', 'Storage unavailable',
+      saveError ?? 'We cannot confirm that entries are saved. Keep this page open and check phone storage. Do not clear website data.');
   }
 }
-document.addEventListener('click', (e) => {
-  const target = e.target as HTMLElement;
-  const retry = target.closest<HTMLButtonElement>('[data-retry-uploads]');
-  if (retry) {
-    retry.disabled = true;
-    retry.textContent = 'Retrying…';
-    void drain(Date.now(), true).then(() => { void refreshStatus(); }, (err) => {
-      showSyncNotice('error', 'Uploads could not start', String(err));
-    });
-  }
-  if (target.closest('[data-copy-sync]')) {
-    void Promise.resolve().then(() => navigator.clipboard.writeText(diagnostics)).then(() => flash('Upload diagnostics copied.'))
-      .catch(() => { showSyncNotice('error', 'Could not copy diagnostics', diagnostics); });
-  }
-});
 
 render();
 startSync(() => { void refreshStatus(); });
