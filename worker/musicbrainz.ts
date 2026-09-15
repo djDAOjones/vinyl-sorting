@@ -102,11 +102,14 @@ export async function previewMusicBrainz(env: Env, input: QueryInput, opts: Opti
   const attempts: MBPreview['attempts'] = [];
   const candidates = new Map<string, MBCandidate>();
   let incomplete = false;
+  let quietMs = 1_100;
+  let upstreamPaused = false;
   try {
     for (const spec of queries) {
       const url = new URL(BASE); url.search = new URLSearchParams({ query: spec.query, fmt: 'json', limit: '25' }).toString();
       const attempt: MBPreview['attempts'][number] = { ...spec, url: url.toString(), requests: 0 };
       attempts.push(attempt);
+      if (upstreamPaused) { attempt.error = 'Skipped while MusicBrainz requested a pause'; incomplete = true; continue; }
       try {
         for (let retry = 0; retry < 2; retry++) {
           if (now() + 15_000 >= leasedUntil) throw new Error('Search time budget reached');
@@ -114,12 +117,18 @@ export async function previewMusicBrainz(env: Env, input: QueryInput, opts: Opti
           if (!budget.allowed && budget.retryAfterMs <= 5_000) { await sleep(budget.retryAfterMs + 100); budget = await limiter.take('musicbrainz'); }
           if (!budget.allowed) throw new Error('Shared MusicBrainz request budget unavailable');
           attempt.requests++;
-          const res = await fetchImpl(url, { headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' }, signal: AbortSignal.timeout(8_000), redirect: 'error' });
-          if ([429, 503].includes(res.status) && retry === 0) {
-            await res.body?.cancel();
-            const wait = Number(res.headers.get('retry-after') ?? 2);
-            if (!Number.isFinite(wait) || wait > 5) throw new Error(`HTTP ${res.status}; upstream requested a longer pause`);
-            await sleep(Math.max(2, wait) * 1000); continue;
+          const res = await fetchImpl(url, { headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' }, signal: AbortSignal.timeout(8_000), redirect: 'manual' });
+          if ([429, 503].includes(res.status)) {
+            const header = res.headers.get('retry-after');
+            const seconds = header && !/^\d+$/.test(header) ? (Date.parse(header) - now()) / 1000 : Number(header ?? 2);
+            const wait = Number.isFinite(seconds) ? Math.max(2, seconds) : 30;
+            quietMs = Math.max(quietMs, 30_000, wait * 1000);
+            if (wait > 5 || retry > 0) upstreamPaused = true;
+            if (retry === 0) {
+              await res.body?.cancel();
+              if (wait > 5) throw new Error(`HTTP ${res.status}; upstream requested a longer pause`);
+              await sleep(wait * 1000); continue;
+            }
           }
           if (!res.ok) { await res.body?.cancel(); throw new Error(`HTTP ${res.status}`); }
           const data = await res.json() as { count?: number; releases?: unknown[] };
@@ -145,6 +154,6 @@ export async function previewMusicBrainz(env: Env, input: QueryInput, opts: Opti
     return preview;
   } finally {
     // Conditional release cannot clear a newer owner's lease.
-    await env.PHOTOS.put(SLOT, JSON.stringify({ until: now() + 1_100 }), { onlyIf: { etagMatches: lease.etag } });
+    await env.PHOTOS.put(SLOT, JSON.stringify({ until: now() + quietMs }), { onlyIf: { etagMatches: lease.etag } });
   }
 }

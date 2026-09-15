@@ -56,6 +56,7 @@ test('serial source searches are paced, cached, and leave every catalogue table 
   const p = await previewMusicBrainz(env, input, { ...clock, fetchImpl });
   assert.equal(calls.length, 2); assert.ok(calls[1].time - calls[0].time >= 1000);
   assert.match(calls[0].opts.headers['User-Agent'], /VinylSorter.*github/);
+  assert.equal(calls[0].opts.redirect, 'manual', 'Workers support manual/follow; redirects must never be followed');
   assert.equal(p.candidates.length, 1); assert.equal(p.incomplete, false);
   assert.deepEqual(env.DB.raw.prepare('SELECT * FROM field_source').all(), before);
   for (const table of ['item','capture','release','match_run','raw_value','review_decision']) assert.equal(env.DB.raw.prepare(`SELECT count(*) n FROM ${table}`).get().n, 0);
@@ -82,10 +83,10 @@ test('two callers race for one global lease; only one reaches the provider', asy
 test('503 retries are bounded and partial evidence remains incomplete and briefly cached', async () => {
   const { env, clock } = setup(); let calls = 0;
   const p = await previewMusicBrainz(env, input, { ...clock, fetchImpl: async () => {
-    calls++; return calls <= 2 ? new Response('busy', { status: 503 }) : response();
+    calls++; return calls >= 2 ? new Response('busy', { status: 503 }) : response();
   } });
-  assert.equal(calls, 3); assert.equal(p.attempts[0].requests, 2);
-  assert.match(p.attempts[0].error, /503/); assert.equal(p.incomplete, true);
+  assert.equal(calls, 3); assert.equal(p.attempts[1].requests, 2);
+  assert.match(p.attempts[1].error, /503/); assert.equal(p.incomplete, true);
   assert.equal(p.candidates.length, 1); assert.equal(Date.parse(p.expiresAt) - Date.parse(p.retrievedAt), 60_000);
 });
 
@@ -100,6 +101,8 @@ test('long upstream pause and unavailable coordination fail without uncontrolled
   const { env, clock } = setup();let calls = 0;
   const p = await previewMusicBrainz(env, { catnoRaw: 'CB 391' }, { ...clock, fetchImpl: async () => { calls++; return new Response('', { status: 503, headers: { 'retry-after': '60' } }); } });
   assert.equal(calls, 1);assert.match(p.attempts[0].error, /longer pause/);
+  await assert.rejects(previewMusicBrainz(env, input, { ...clock, fetchImpl: async () => { calls++; return response(); } }), /cooling down/);
+  assert.equal(calls, 1, 'upstream pause applies across different records and callers');
   env.PHOTOS = undefined;
   await assert.rejects(previewMusicBrainz(env, input, { ...clock, fetchImpl: async () => { throw new Error('unexpected'); } }), /coordination/);
 });
