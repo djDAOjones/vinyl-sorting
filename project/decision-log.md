@@ -2,6 +2,21 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-09-15 — BROWSE-READ-LIMIT: live recovery verified
+
+**Decision:** Deployed `ff74eee` as Worker version
+`83cd9061-8c70-4320-8d12-9b837d64144f` and verified the exact reported URL.
+
+**Rationale:** The live API returns all 641 entries across both pages, using
+explicitly dated fallback when the second page hits the read limit. The browser
+shows 151 rows in the selected Rock and pop to sell list, descending price order,
+a saved-view notice, and no collection-load error. Live HTML/JS/CSS match the
+built candidate. Full live details and pricing remain limited until reset;
+no claim that the external allowance was restored. Private receipt:
+`project/reports/browse-load-fix-2026-09-15/deployment-check.json`.
+
+
+
 ## 2026-09-15 — BROWSE-READ-LIMIT: restore browsing during database read exhaustion
 
 **Decision:** Replace the pricing selection's correlated EXISTS query with one
