@@ -11,6 +11,7 @@
  * basis to disagree with it, and disagreeing is the whole job.
  */
 
+import { STATUS_LABELS, itemStatus } from './item-status.ts';
 import { parseDiscogsReleaseId } from './discogs-id.ts';
 import { ensureCapturerCookie, rememberCapturer, resolveCapturer, storedCapturer } from './who.ts';
 import {
@@ -27,6 +28,7 @@ interface Candidate {
 }
 interface QueueItem {
   run_id: number; item_id: number; state: string; queries_json: string;
+  release_confirmed?: number; review_choice?: string | null; ran_at?: string;
   catno_raw: string | null; label_raw: string | null; title_raw: string | null; name_raw: string | null;
   crate: string | null; position: string | null; last_verified_at: string | null;
   photo_keys: string | null;
@@ -36,6 +38,7 @@ interface QueueItem {
 
 let queue: QueueItem[] = [];
 let cursor = 0;
+let nextAfter: number | null = null;
 let resolvedCount = 0;
 
 /**
@@ -70,13 +73,15 @@ async function load(): Promise<void> {
   // dance crate reviews the dance crate, and "all" is the whole queue.
   const q = new URLSearchParams({ limit: '200' });
   const page = new URLSearchParams(location.search);
-  for (const key of ['item', 'view', 'include']) if (page.has(key)) q.set(key, page.get(key)!);
+  for (const key of ['item', 'view', 'include', 'after']) if (page.has(key)) q.set(key, page.get(key)!);
   const scope = storedList();
   if (scope && !page.has('item')) q.set('list', scope);
   const res = await fetch(`${API}/review-queue?${q}`,
     who ? { headers: { 'x-capturer': who } } : {});
-  if (!res.ok) { app.innerHTML = '<p class="note-bad">Could not load the review queue. Refresh to try again.</p>'; return; }
-  queue = (await res.json() as { queue: QueueItem[] }).queue;
+  if (!res.ok) { app.innerHTML = '<p class="note-bad">Could not load the records. Refresh to try again.</p>'; return; }
+  const pageResult = await res.json() as { queue: QueueItem[]; nextAfter?: number | null };
+  queue = pageResult.queue;
+  nextAfter = pageResult.nextAfter ?? null;
   cursor = 0;
   render();
 }
@@ -86,8 +91,9 @@ function render(): void {
   const item = queue[cursor];
   if (!item) return renderDone();
 
-  const audit = parse<{ reason?: string; input?: Record<string, string | null> }>(item.queries_json, {});
+  const audit = parse<{ reason?: string; incomplete?: boolean; queryErrors?: number; queriesRun?: number; retry?: string; manualReview?: boolean; input?: Record<string, string | null> }>(item.queries_json, {});
   const refusal = audit.reason ?? '';
+  const current = itemStatus({ confirmed: item.release_confirmed, choice: item.review_choice, state: item.state, ranAt: item.ran_at, ...audit });
 
   app.innerHTML = `
     ${headerHtml({ here: 'review', title: 'Resolve entries',
@@ -96,8 +102,8 @@ function render(): void {
 
     ${reviewNavigation()}
     <p><a href="/browse.html?item=${item.item_id}">Prepare this record: check details, search again or request photographs →</a></p>
-    <p class="prov">Search status: ${esc(item.state)}. Compare the catalogue number, label, mono/stereo and pressing details before confirming.</p>
-    ${refusal ? `<p class="note-info"><strong>Search finding:</strong> ${esc(refusal)}</p>` : ''}
+    <p class="prov">${STATUS_LABELS[current]}. Compare the catalogue number, label, mono/stereo and pressing details before confirming.</p>
+    ${refusal ? `<details class="note-info"><summary>Search details</summary><p>${esc(refusal)}</p></details>` : ''}
 
     <div class="split">
       <section class="readoff">
@@ -367,16 +373,20 @@ function renderWhoAmI(): void {
 }
 
 function reviewNavigation(): string {
-  return '<nav class="review-actions" aria-label="Review queues"><a href="/review.html">Needs review</a><a href="/review.html?view=recovery">All unresolved attempts</a><a href="/review.html?view=recovery&amp;include=skipped">Include deferred / no match</a></nav>';
+  return '<nav class="review-actions" aria-label="Review options"><a href="/review.html">Review candidates</a><a href="/review.html?view=recovery">All unresolved attempts</a><a href="/review.html?view=recovery&amp;include=skipped">Include deferred / no match</a></nav>';
 }
 
 function renderDone(): void {
+  const next = new URLSearchParams(location.search);
+  next.delete('item');
+  if (nextAfter !== null) next.set('after', String(nextAfter));
   app.innerHTML = `
     ${headerHtml({ here: 'review', title: 'Resolve entries' })}
     ${reviewNavigation()}
     <p><a href="/browse.html?view=unresolved">Prepare records in the collection →</a></p>
     <div class="done">
-      <strong>No more entries in this view${storedList() ? ` — ${esc(choiceLabel(storedList()))}` : ''}</strong>
+      <strong>${nextAfter !== null ? 'Ready for the next records' : 'No more entries in this view'}${storedList() ? ` — ${esc(choiceLabel(storedList()))}` : ''}</strong>
+      ${nextAfter !== null ? `<p><a class="btn btn-primary" href="/review.html?${esc(next.toString())}">Continue reviewing</a></p>` : ''}
       ${resolvedCount} reviewed this session. Use the links above to revisit deferred records or prepare another search.
     </div>`;
 }
@@ -427,7 +437,7 @@ function rollback(at: number, why: string): void {
   resolvedCount--;
   cursor = Math.min(cursor, at);
   render();
-  toast(`Could not record that decision (${why}). The item is still in the queue.`, 'err');
+  toast(`Could not record that decision (${why}). The record still needs a decision.`, 'err');
 }
 
 const choose = (discogsId: number): Promise<void> => resolve({ choice: 'candidate', discogsId });

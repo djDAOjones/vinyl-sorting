@@ -3,6 +3,33 @@
 <!-- Append-only, newest first. -->
 
 
+## 2026-09-15 — CURRENT-RECORD-STATUS: current labels and plain capture actions
+
+**Decision:** Derive visible status from saved confirmation, the latest review
+decision and search evidence. Confirmed records override historic machine labels;
+deferred and unidentified decisions, incomplete/failed searches, pending work,
+automatic matches needing a check and stale empty searches have distinct labels.
+Use these labels in the collection, filters and record preparation. Keep photo
+requests separate and original machine history intact.
+
+Change the capture button to Add, simplify capture guidance and put search
+mechanics behind optional details. Home counts exclude deferred/finished reviews;
+remove the historical-run matched total from the Home summary. Review pages now
+carry a continuation cursor, with Continue reviewing after a full page, and omit
+confirmed records except when explicitly opening one record's history.
+
+**Rationale:** The user requested accurate statuses and ordinary language. A
+historical machine outcome is evidence, not the current task a person should see.
+No catalogue, confirmation, provider, schema or dependency changes were needed.
+
+**Verify:** 390 tests and typecheck passed, including five new regressions for
+status precedence, partial searches, stale requests, latest-decision metadata,
+count consistency and pagination beyond 200 records. Build and whitespace checks
+passed. Browser fixtures verified status rendering/filtering and the Add button;
+390px capture measurements had no horizontal overflow. Existing recovery tracing
+and retained local captures remain in place. Live verification follows deployment.
+
+
 ## 2026-09-15 — COMPACT-CAPTURE-NAV: live deployment verified
 
 **Decision:** Deploy the user-approved UI commit `02fbdb4` to the existing

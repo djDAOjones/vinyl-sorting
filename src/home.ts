@@ -113,15 +113,15 @@ function render(): void {
       <a class="tile lead" href="${ROUTES.capture}">
         ${ICONS.add}
         <span class="name">Add vinyl</span>
-        <span class="what">Photograph a label and queue it. Works with no signal.</span>
+        <span class="what">Photograph a record and add it. Works offline.</span>
         ${queued ? `<span class="count">${queued} waiting to upload</span>` : ''}
       </a>
 
       <a class="tile" href="${ROUTES.review}">
         ${ICONS.review}
         <span class="name">Resolve entries</span>
-        <span class="what">Confirm what the matcher could not settle on its own.</span>
-        ${countLine(needsReview, 'to review', 'to review')}
+        <span class="what">Check record details and choose the right release.</span>
+        ${countLine(needsReview, 'to resolve', 'to resolve')}
       </a>
 
       <a class="tile" href="${ROUTES.browse}">
@@ -141,10 +141,9 @@ function render(): void {
     </nav>
 
     <div class="pulse">
-      ${stat(stateCount('auto-accepted'), 'matched', 'good')}
-      ${stat(needsReview, 'to review', 'on')}
+      ${stat(needsReview, 'to resolve', 'on')}
       ${stat(stats ? stats.decisionEligible : null, 'confirmed')}
-      ${stat(stats ? stats.unmatched : null, 'never tried')}
+      ${stat(stats ? stats.unmatched : null, 'not searched')}
       ${/* Rows on no list at all — a phone on the previous build files
            there. Shown only when there are some, and only across all
            lists, since none of them is on the one in view. */

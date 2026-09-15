@@ -226,8 +226,12 @@ export function createApp() {
                 WHERE r2.item_id = i.id AND r2.field = 'title_raw') AS read_title,
               (SELECT r2.value FROM raw_value r2
                 WHERE r2.item_id = i.id AND r2.field = 'other_numbers') AS read_other,
-              (SELECT m.state FROM match_run m WHERE m.item_id = i.id
-                ORDER BY m.id DESC LIMIT 1) AS match_state,
+              m.state AS match_state, m.ran_at AS match_ran_at, d.choice AS review_choice,
+              json_extract(m.queries_json, '$.queriesRun') AS match_queries_run,
+              json_extract(m.queries_json, '$.queryErrors') AS match_query_errors,
+              json_extract(m.queries_json, '$.incomplete') AS match_incomplete,
+              json_extract(m.queries_json, '$.retry') AS match_retry,
+              json_extract(m.queries_json, '$.manualReview') AS match_manual_review,
               EXISTS (SELECT 1 FROM v_confirmed_field v
                        WHERE v.entity = 'item' AND v.entity_id = i.id
                          AND v.field = 'release_id') AS release_confirmed
@@ -236,6 +240,8 @@ export function createApp() {
                                          WHERE item_id = i.id
                                          ORDER BY captured_at DESC, id DESC LIMIT 1)
          LEFT JOIN release r ON r.id = i.release_id
+         LEFT JOIN match_run m ON m.id = (SELECT MAX(m2.id) FROM match_run m2 WHERE m2.item_id = i.id)
+         LEFT JOIN review_decision d ON d.match_run_id = m.id
         WHERE i.id > ?
         ORDER BY i.id
         LIMIT ?`,
@@ -480,6 +486,7 @@ export function createApp() {
    */
   app.get('/api/review-queue', async (c) => {
     const limit = Math.min(Number(c.req.query('limit') ?? 50) || 50, 200);
+    const after = Math.max(0, Number(c.req.query('after')) || 0);
     const named = namedCaller(c);
     // Skipped items leave the default queue but are re-queueable:
     // re-verification is a normal operation, not a migration.
@@ -498,7 +505,9 @@ export function createApp() {
     const { results } = await c.env.DB.prepare(
       `SELECT m.id AS run_id, m.item_id, m.state, m.ran_at, m.queries_json,
               c.catno_raw, c.label_raw, c.title_raw, c.name_raw,
-              i.crate, i.position, i.last_verified_at, i.list,
+              i.crate, i.position, i.last_verified_at, i.list, d.choice AS review_choice,
+              EXISTS (SELECT 1 FROM v_confirmed_field f WHERE f.entity='item'
+                AND f.entity_id=i.id AND f.field='release_id') AS release_confirmed,
               ${named
     // The photographs of the record being judged. A match cannot be
     // checked against a disc you cannot see — which is what the
@@ -521,12 +530,16 @@ export function createApp() {
           -- rather than in a test, which is why the test below now
           -- exists.
           AND m.id = (SELECT MAX(m2.id) FROM match_run m2 WHERE m2.item_id = i.id)
+          AND i.id > ?
           AND (? IS NULL OR i.id = ?)
           AND (? IS NOT NULL OR d.id IS NULL OR (? = 1 AND d.choice IN ('skip', 'none')))
+          ${itemId ? '' : `AND NOT EXISTS (SELECT 1 FROM v_confirmed_field f WHERE f.entity='item' AND f.entity_id=i.id AND f.field='release_id')`}
           AND ${scope.pred}
         ORDER BY m.item_id
         LIMIT ?`,
-    ).bind(recovery || itemId ? 1 : 0, itemId, itemId, itemId, includeSkipped ? 1 : 0, ...scope.args, limit).all();
+    ).bind(recovery || itemId ? 1 : 0, itemId ? 0 : after, itemId, itemId, itemId, includeSkipped ? 1 : 0, ...scope.args, limit + 1).all();
+    const hasMore = results.length > limit;
+    if (hasMore) results.pop();
 
     // D1 allows at most 100 bound parameters per query, so the id list
     // is chunked rather than the page size being capped. Local SQLite
@@ -553,6 +566,7 @@ export function createApp() {
       byRun.get(key)?.push(cand);
     }
     return c.json({
+      nextAfter: hasMore ? (results.at(-1) as { item_id: number }).item_id : null,
       queue: results.map((r) => ({ ...r, candidates: byRun.get((r as { run_id: number }).run_id) ?? [] })),
     });
   });
@@ -641,10 +655,10 @@ export function createApp() {
       `SELECT COUNT(*) AS n FROM item i
         WHERE (SELECT m.state FROM match_run m WHERE m.item_id = i.id
                 ORDER BY m.id DESC LIMIT 1) = 'needs-review'
+          AND NOT EXISTS (SELECT 1 FROM v_confirmed_field f WHERE f.entity='item' AND f.entity_id=i.id AND f.field='release_id')
           AND NOT EXISTS (SELECT 1 FROM review_decision d
                            WHERE d.match_run_id = (SELECT MAX(m2.id) FROM match_run m2
-                                                    WHERE m2.item_id = i.id)
-                             AND d.choice <> 'skip')
+                                                    WHERE m2.item_id = i.id))
           AND ${scope.pred}`,
     ).bind(...scope.args).first<{ n: number }>();
     return c.json({

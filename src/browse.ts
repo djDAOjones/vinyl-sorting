@@ -41,6 +41,8 @@ import {
   restoreListFocus, storedList, toast,
 } from './chrome.ts';
 import { recordSummary } from './record-summary.ts';
+import { itemStatus, STATUS_LABELS, SEARCH_LABELS, DECISION_LABELS, type ItemStatus } from './item-status.ts';
+import { checkRow } from '../worker/match/sanity.ts';
 import type { MatchRow } from '../worker/match/run.ts';
 import type { ListChoice } from './lists.ts';
 
@@ -82,6 +84,13 @@ interface Row {
   matrix_runout: string | null;
   release_year: number | null;
   match_state: string | null;
+  review_choice?: string | null;
+  match_ran_at?: string | null;
+  match_queries_run?: number | null;
+  match_query_errors?: number | null;
+  match_incomplete?: number | null;
+  match_retry?: string | null;
+  match_manual_review?: number | null;
   release_confirmed: number;
   lowest_price: number | null;
   num_for_sale: number | null;
@@ -210,8 +219,17 @@ const CAPTURE_FIELDS = [
   'catno_raw', 'label_raw', 'name_raw', 'title_raw', 'year_raw', 'matrix_runout',
 ] as const;
 
-const STATES = ['auto-accepted', 'needs-review', 'rejected', 'error', 'pending', 'unmatched'] as const;
-const stateOf = (r: Row): string => r.match_state ?? 'unmatched';
+const STATES = Object.keys(STATUS_LABELS) as ItemStatus[];
+const stateOf = (r: Row): ItemStatus => itemStatus({
+  confirmed: r.release_confirmed, choice: r.review_choice, state: r.match_state,
+  ranAt: r.match_ran_at, queriesRun: r.match_queries_run, queryErrors: r.match_query_errors,
+  incomplete: r.match_incomplete, retry: r.match_retry, manualReview: r.match_manual_review,
+  searchable: checkRow({
+    catnoRaw: r.catno_raw?.trim() || r.read_catno, labelRaw: r.label_raw?.trim() || r.read_label,
+    titleRaw: r.title_raw?.trim() || r.read_title, nameRaw: r.name_raw?.trim() || r.read_name,
+    otherNumbers: r.read_other,
+  }).usable,
+});
 
 /* ── Columns, sorts and saved views (CATALOGUE-CONTROLS) ──────────
  *
@@ -402,10 +420,9 @@ const COLUMNS: Column[] = [
   },
   {
     key: 'match_state',
-    label: 'match',
-    get: (r) => stateOf(r),
-    html: (r) => `<td><span class="chip s-${stateOf(r)}">${stateOf(r)}</span>${
-      r.release_confirmed ? '<span class="tick" title="release confirmed by a person">✓</span>' : ''}</td>`,
+    label: 'status',
+    get: (r) => STATUS_LABELS[stateOf(r)],
+    html: (r) => `<td><span class="chip s-${stateOf(r)}">${STATUS_LABELS[stateOf(r)]}</span></td>`,
   },
   // The reading's own columns. Marked `.reading` so they never look
   // like something a person typed — the provenance rule permits showing
@@ -491,7 +508,7 @@ const PRESETS: Preset[] = [
   {
     key: 'review',
     label: 'Needs review',
-    hint: 'What the matcher could not settle',
+    hint: 'Candidates waiting for a decision',
     apply: (v) => { v.state = 'needs-review'; v.photos = ''; v.readings = ''; v.confirmed = ''; },
   },
   {
@@ -551,6 +568,10 @@ function readUrl(): void {
     const v = q.get(k);
     if (v !== null) view[k] = v;
   }
+  const oldStates: Record<string, ItemStatus> = {
+    'auto-accepted': 'check-match', rejected: 'not-identified', error: 'search-failed', pending: 'searching', unmatched: 'waiting',
+  };
+  view.state = oldStates[view.state] ?? view.state;
   const sort = q.get('sort');
   if (sort && COLUMN.has(sort)) view.sort = sort;
   if (q.get('dir') === 'desc') view.dir = 'desc';
@@ -686,10 +707,10 @@ function render(): void {
       <label class="field grow"><span>Search</span>
         <input id="fText" type="search" placeholder="anything in any column"
           value="${esc(view.text)}"></label>
-      <label class="field"><span>Match state</span>
+      <label class="field"><span>Status</span>
         <select id="fState">
           <option value="">any</option>
-          ${STATES.map((st) => `<option value="${st}"${view.state === st ? ' selected' : ''}>${st}
+          ${STATES.map((st) => `<option value="${st}"${view.state === st ? ' selected' : ''}>${STATUS_LABELS[st]}
             (${rows.filter((r) => inScope(r, scope) && stateOf(r) === st).length})</option>`).join('')}
         </select></label>
       <label class="field"><span>Photographs</span>
@@ -937,8 +958,8 @@ async function openDetail(id: number, moveToTop = true): Promise<void> {
       const button = event.currentTarget as HTMLButtonElement;
       button.disabled = true;
       try {
-        if (await write(`/items/${id}/retry-match`, {})) await afterWrite('Search queued. Refresh this record after the next scheduled run.');
-      } catch { flash('Could not queue the search. Check the connection and refresh before retrying.', 'err'); }
+        if (await write(`/items/${id}/retry-match`, {})) await afterWrite('Search requested. Refresh shortly to see the result.');
+      } catch { flash('Could not start the search. Check the connection and refresh before retrying.', 'err'); }
       finally { button.disabled = false; }
     });
     panel.querySelector('[data-edit-details]')?.addEventListener('click', () => {
@@ -1216,9 +1237,8 @@ function detailHtml(d: Detail): string {
         </dl>
 
         ${d.readings.length ? `
-        <h3>Readings not yet in the model</h3>
-        <p class="empty-note">Held in <code>raw_value</code> — displayed, and unreachable from
-          any cluster, coverage check or sell list until a person confirms one.</p>
+        <h3>Other photo readings</h3>
+        <p class="empty-note">Read from photographs. Check these details before using them to identify the record.</p>
         <dl class="facts">${d.readings.map((r) => `<dt>${esc(r.field)}</dt><dd>${esc(r.value)}${
     (CAPTURE_FIELDS as readonly string[]).includes(r.field)
       ? `<span class="ftools"><button type="button" class="tiny promote" data-field="${esc(r.field)}"
@@ -1231,7 +1251,7 @@ function detailHtml(d: Detail): string {
     `<dt>Photograph ${i + 1}</dt><dd>${esc(p.kind)} · ${esc(p.added_at)}</dd>`).join('')}</dl>` : ''}
         <h3>Match history</h3>
         ${d.runs.length ? d.runs.map(runHtml).join('')
-    : '<p class="empty-note">Never matched. The matcher runs from cron and has not reached this row.</p>'}
+    : '<p class="empty-note">This record has not been searched yet.</p>'}
       </section>
     </div>
     </details>`;
@@ -1239,15 +1259,17 @@ function detailHtml(d: Detail): string {
 
 function preparationHtml(d: Detail): string {
   if (!d.matching) return '';
-  const { input, usable, reason } = d.matching;
+  const { input, usable } = d.matching;
   const latest = d.runs[0];
   const previousDecision = d.runs.find(run => run.decision)?.decision;
-  const audit = parse<{ incomplete?: boolean; queriesRun?: number; queryErrors?: number; reason?: string; retry?: string }>(latest?.queries_json ?? '', {});
+  const audit = parse<{ incomplete?: boolean; queriesRun?: number; queryErrors?: number; reason?: string; retry?: string; manualReview?: boolean }>(latest?.queries_json ?? '', {});
   const confirmed = d.provenance.some(p => p.entity === 'item' && p.field === 'release_id' && p.confirmed_by && p.confirmed_at);
   const elapsed = latest ? Date.now() - (stamp(latest.ran_at)?.getTime() ?? Date.now()) : Infinity;
   const busy = latest?.state === 'pending' && (audit.retry === 'queued' || elapsed < 15 * 60_000);
   const recent = elapsed < 5 * 60_000;
   const disabled = confirmed || !usable || busy || recent;
+  const currentStatus = itemStatus({ confirmed, choice: latest?.decision?.choice,
+    state: latest?.state, searchable: usable, ranAt: latest?.ran_at, ...audit });
   const facts = [
     ['Catalogue number', input.catnoRaw], ['Label', input.labelRaw],
     ['Title', input.titleRaw], ['Artist / performer', input.nameRaw], ['Other numbers', input.otherNumbers],
@@ -1255,23 +1277,23 @@ function preparationHtml(d: Detail): string {
   const search = [input.labelRaw, input.catnoRaw].filter(Boolean).join(' ') || [input.nameRaw, input.titleRaw].filter(Boolean).join(' ');
   return `<section class="match-preparation" aria-label="Prepare to resolve">
     <h2>Prepare to resolve</h2>
-    <p><strong>${confirmed ? 'Release confirmed' : busy ? 'Search queued or running' : usable ? 'Ready to search' : 'More label details needed'}</strong></p>
-    <p>${esc(reason)}.</p>
+    <p><strong>${STATUS_LABELS[currentStatus]}</strong></p>
+    ${!usable && !confirmed ? '<p>Add clear label details to identify this record.</p>' : ''}
     <dl class="match-inputs">${facts.map(([label, value]) => `<div><dt>${label}</dt><dd>${value ? esc(value) : 'Not recorded'}</dd></div>`).join('')}</dl>
     <p class="prov">Search uses saved label details, with photo readings filling empty fields. Check these against the photographs; a photo reading is still unconfirmed.</p>
     ${!input.labelRaw || !input.titleRaw || !input.nameRaw ? '<p>Add the label, title and artist or performer where legible. These help distinguish records sharing a catalogue number.</p>' : ''}
-    ${latest ? `<p><strong>Last attempt: ${esc(latest.state)}</strong> · ${esc(latest.ran_at)} UTC<br>${esc(audit.reason ?? 'No search explanation recorded.')}
-      ${audit.queriesRun !== undefined ? `<br>${audit.queriesRun} searches attempted · ${audit.queryErrors ?? 0} failed` : ''}</p>` : '<p>No search has been attempted yet.</p>'}
-    ${previousDecision ? `<p>Previous decision: ${esc(previousDecision.choice)}${previousDecision.note ? ` — ${esc(previousDecision.note)}` : ''}</p>` : ''}
+    ${latest ? `<details><summary>Search details</summary><p><strong>Last attempt: ${esc(SEARCH_LABELS[latest.state] ?? 'Search result')}</strong> · ${esc(latest.ran_at)} UTC<br>${esc(audit.reason ?? 'No search explanation recorded.')}
+      ${audit.queriesRun !== undefined ? `<br>${audit.queriesRun} searches attempted · ${audit.queryErrors ?? 0} failed` : ''}</p></details>` : '<p>No search has been attempted yet.</p>'}
+    ${previousDecision ? `<p>Previous decision: ${esc(DECISION_LABELS[previousDecision.choice] ?? 'Recorded')}${previousDecision.note ? ` — ${esc(previousDecision.note)}` : ''}</p>` : ''}
     <div class="match-actions">
       <button class="btn btn-ghost" type="button" data-edit-details>Check / edit label details</button>
-      <button class="btn btn-primary" type="button" data-retry-match ${disabled ? 'disabled' : ''}>${busy ? 'Search pending' : 'Queue a fresh search'}</button>
+      <button class="btn btn-primary" type="button" data-retry-match ${disabled ? 'disabled' : ''}>${busy ? 'Search pending' : 'Search again'}</button>
       ${latest && latest.state !== 'pending' ? `<a class="btn btn-ghost" href="/review.html?item=${Number(d.item.id)}">Review / link a release</a>` : ''}
       ${!latest && !confirmed ? '<button class="btn btn-ghost" type="button" data-start-review>Review / link a release</button>' : ''}
       ${search ? `<a class="btn btn-ghost" href="https://www.discogs.com/search/?type=release&amp;q=${encodeURIComponent(search)}" target="_blank" rel="noopener noreferrer">Search Discogs</a>` : ''}
       <button class="btn btn-quiet" type="button" data-refresh-match>Refresh status</button>
     </div>
-    <p class="prov">${confirmed ? 'Confirmed releases are protected from automatic retries.' : busy ? 'The scheduled matcher will process this request using the shared rate limit. Refresh to see its result.' : recent ? 'Wait five minutes after an attempt before requesting another.' : 'A fresh search requires editing to be unlocked. Old attempts and photographs are retained.'}</p>
+    <p class="prov">${confirmed ? 'Confirmed releases are protected from automatic retries.' : busy ? 'Your search is waiting or in progress. Refresh to see the result.' : recent ? 'Wait five minutes after an attempt before requesting another.' : 'A fresh search requires editing to be unlocked. Old attempts and photographs are retained.'}</p>
   </section>`;
 }
 
@@ -1279,7 +1301,7 @@ function runHtml(run: Run): string {
   const audit = parse<{ reason?: string; attempts?: { type: string; params: Record<string, string>; status: string; results?: number }[] }>(run.queries_json, {});
   const reason = audit.reason ?? '';
   return `<div class="run">
-    <div class="rhead"><span class="state s-${esc(run.state)}">${esc(run.state)}</span>
+    <div class="rhead"><span class="state s-${esc(run.state)}">${esc(SEARCH_LABELS[run.state] ?? 'Search result')}</span>
       <span class="prov">${esc(run.ran_at)}</span></div>
     ${reason ? `<p class="why">${esc(reason)}</p>` : ''}
     ${audit.attempts?.length ? `<details><summary>Searches attempted (${audit.attempts.length})</summary><ol>${audit.attempts.map(a => `<li>${esc(Object.values(a.params).join(' · '))} — ${a.status === 'error' ? 'request failed' : `${a.results ?? 0} results`}</li>`).join('')}</ol></details>` : ''}
@@ -1291,7 +1313,7 @@ function runHtml(run: Run): string {
         <span class="score">${cand.score}</span></div>`;
   }).join('')}
     ${run.decision
-    ? `<p class="verdict"><strong>${esc(run.decision.choice)}</strong>${
+    ? `<p class="verdict"><strong>${esc(DECISION_LABELS[run.decision.choice] ?? 'Recorded')}</strong>${
       run.decision.discogs_id ? ` → Discogs ${run.decision.discogs_id}` : ''
     } · ${esc(run.decision.decided_by)} · ${esc(run.decision.decided_at)}${
       run.decision.note ? ` · ${esc(run.decision.note)}` : ''}</p>`

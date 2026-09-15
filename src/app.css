@@ -230,8 +230,13 @@ input[type="checkbox"], input[type="radio"] {
   padding: 0.12rem 0.4rem;
   white-space: nowrap;
 }
+.chip.s-confirmed,
 .chip.s-auto-accepted { background: var(--ok-soft); color: var(--ok); }
+.chip.s-check-match,
 .chip.s-needs-review  { background: var(--info-soft); color: var(--info); }
+.chip.s-search-incomplete,
+.chip.s-search-failed,
+.chip.s-needs-details,
 .chip.s-rejected,
 .chip.s-error         { background: var(--danger-soft); color: var(--danger); }
 .chip.accent          { background: var(--accent-soft); color: var(--accent); }

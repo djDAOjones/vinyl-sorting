@@ -87,16 +87,14 @@ const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice
 function renderWhoGate(): void {
   app.innerHTML = `
     ${headerHtml({ here: 'capture', title: 'Add vinyl', list: false,
-    aside: '<div class="tally" id="status">queue…</div>' })}
+    aside: '<div class="tally" id="status">Checking…</div>' })}
 
     <fieldset>
       <legend>Who is capturing?</legend>
       <label><span>Your first name</span>
         <input id="whoBox" autocomplete="off" autocapitalize="words" spellcheck="false"
           enterkeyhint="go"></label>
-      <p class="note">It goes on every record you photograph. Typed once on this phone,
-        then never again — and until it is, this is also the only thing between the page
-        and whoever else finds the link.</p>
+      <p class="note">Your name is saved with each record. Enter it once on this device.</p>
     </fieldset>
 
     <div id="flash"></div>
@@ -130,7 +128,7 @@ function renderWhoGate(): void {
  * Once per device, like the name, and then changeable from the header
  * — a crate is walked on one list, so the choice is made per crate
  * rather than per disc, and nothing about it goes between the shutter
- * and Queue it. Four buttons rather than the selector, because the
+ * and Add. Four buttons rather than the selector, because the
  * first answer is given with a thumb in a loft and a native picker is
  * two taps where a button is one.
  *
@@ -141,7 +139,7 @@ function renderWhoGate(): void {
 function renderListGate(): void {
   app.innerHTML = `
     ${headerHtml({ here: 'capture', title: 'Add vinyl', list: false,
-    aside: '<div class="tally" id="status">queue…</div>' })}
+    aside: '<div class="tally" id="status">Checking…</div>' })}
 
     <fieldset>
       <legend>Which list is this crate on?</legend>
@@ -178,7 +176,7 @@ function render(): void {
         title="What to photograph, and in what order">?</button>
       <button class="whoTag" id="whoTag" type="button"
         title="Hand the phone over">${capturer}</button>
-      <div class="tally" id="status">queue…</div>` })}
+      <div class="tally" id="status">Checking…</div>` })}
 
     <div class="cam" id="cam" hidden>
       <video id="video" playsinline muted autoplay></video>
@@ -212,8 +210,7 @@ function render(): void {
           enterkeyhint="next" placeholder="Decca"></label>
       <label><span>Composer, conductor or soloist</span>
         <input id="nameRaw" autocomplete="off" enterkeyhint="done" placeholder="Solti"></label>
-      <p class="note">Label and catalogue number stay in separate boxes: mashing the two together is
-        what pointed 9% of the old matches at the wrong record.</p>
+      <p class="note">Copy these details from the record label.</p>
     </fieldset>
 
     <!-- PARKED, not deleted (maintainer, 2026-08-31). Condition grading and the
@@ -221,7 +218,7 @@ function render(): void {
          system: the Worker still accepts every one of these fields, readFields
          still looks for each id, and removing these two comment markers puts the
          markup back exactly as it was. They are off the page because every field
-         between the shutter and "Queue it" is a reason to stop cataloguing, which
+         between the shutter and "Add" is a reason to stop cataloguing, which
          is the brief's stated risk — and because all of it is still legible on the
          photograph afterwards, where condition and matrix are read more reliably
          than they are typed one-handed in a loft.
@@ -257,7 +254,7 @@ function render(): void {
     <div id="flash"></div>
 
     <div class="bar"><div class="inner">
-      <button class="primary" id="save" type="button">Queue it</button>
+      <button class="primary" id="save" type="button">Add</button>
       <button class="ghost" id="clear" type="button">Clear</button>
     </div></div>`;
 
@@ -277,7 +274,7 @@ function render(): void {
   // down. The photographs in hand survive too; only typing is lost.
   $('whoTag').addEventListener('click', () => {
     if (!confirm(`Capturing as ${capturer}. Hand the phone to someone else?`
-      + '\nThe queue and the photographs in hand are kept; typing is cleared.')) return;
+      + '\nSaved records and these photographs are kept; typing is cleared.')) return;
     forgetCapturer();
     render();
   });
@@ -303,7 +300,7 @@ function render(): void {
    * Enter walks down the three boxes, and the last one puts the
    * keyboard away.
    *
-   * On a phone the keyboard covers the bottom bar, so "Queue it" is
+   * On a phone the keyboard covers the bottom bar, so "Add" is
    * unreachable until something dismisses it — which used to mean
    * hunting for the keyboard's own close key. Enter is where the thumb
    * already is. It deliberately does not submit: the photographs are
@@ -324,7 +321,7 @@ function render(): void {
   renderPhotos();
   $('save').addEventListener('click', () => { void save('form'); });
   $('clear').addEventListener('click', () => {
-    // Clear sits a thumb's width from "Queue it" and there is no undo
+    // Clear sits a thumb's width from "Add" and there is no undo
     // anywhere: a mis-tap threw away every photograph of the disc in
     // hand, silently. Ask, but only when there is something to lose.
     const typed = boxes.some((b) => b.value.trim());
@@ -560,7 +557,7 @@ async function grabFrame(): Promise<void> {
  * Paint the shot button and the strip from `photos`.
  *
  * The button never changes into a "done" state: another photograph is
- * more often wanted than not, so it stays one tap away and `Queue it`
+ * more often wanted than not, so it stays one tap away and `Add`
  * is what says you have finished with this disc.
  */
 function renderPhotos(): void {
@@ -578,11 +575,8 @@ function renderPhotos(): void {
   const done = document.getElementById('camOff');
   if (done) done.textContent = photos.length ? `Done · ${photos.length}` : 'Done';
 
-  // The count belongs on the button that acts on it. The strip is above
-  // the fold once the form is filled, so "Queue it" alone gave no way to
-  // tell four photographs from none without scrolling back up.
-  const queueBtn = document.getElementById('save');
-  if (queueBtn) queueBtn.textContent = n ? `Queue it · ${n} photo${n === 1 ? '' : 's'}` : 'Queue it';
+  const addButton = document.getElementById('save');
+  if (addButton) addButton.textContent = 'Add';
 
   // Next disc carries its count for the same reason, and is inert until
   // there is one: inside the viewfinder the shutter is the ONLY way to
@@ -730,7 +724,7 @@ function readFields(): Record<string, string> {
   if (!out.capturedBy) out.capturedBy = storedCapturer() ?? '';
   // The list is the device's current choice, never a box: it is set
   // once per crate in the header, and a box between the shutter and
-  // Queue it is a reason to stop cataloguing (FOUR-LISTS).
+  // Add is a reason to stop cataloguing (FOUR-LISTS).
   const list = storedList();
   out.list = isKnownList(list) ? list : '';
   return out;
@@ -920,7 +914,7 @@ async function refreshStatus(): Promise<void> {
     const health = queueHealth(entries, Date.now(), navigator.onLine);
     const problem = saveError ?? syncError();
     const el = document.getElementById('status');
-    if (el) el.textContent = `${health.outstanding} awaiting upload · ${s.synced} recent confirmations`;
+    if (el) el.textContent = `${health.outstanding} awaiting upload · ${s.synced} recently added`;
     const title = saveError ? 'Save needs attention' : problem ? 'Uploads need attention'
       : health.outstanding ? `${health.outstanding} awaiting upload`
       : !navigator.onLine ? 'Offline' : s.synced ? 'All uploaded' : 'Ready to capture';
