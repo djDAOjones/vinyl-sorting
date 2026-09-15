@@ -43,3 +43,14 @@ test('value distinguishes unknown, none listed and a zero price, and shows the c
   assert.equal(byLabel(d).Value.value, '~£0.00');
   assert.match(byLabel(d).Value.note, /checked 2026-07-01/);
 });
+
+test('similar-edition values are estimates with source and date; exact release takes priority', () => {
+  const d = base();
+  d.release = { lowest_price: null, similar_price: { amount: 7.5, sourceReleaseId: 200, checkedAt: '2026-09-15' } };
+  assert.equal(byLabel(d).Value.value, '~£7.50 (estimate)');
+  assert.equal(byLabel(d).Value.url, 'https://www.discogs.com/release/200');
+  assert.match(byLabel(d).Value.note, /Similar vinyl edition.*2026-09-15/);
+  d.release.lowest_price = 10;
+  assert.equal(byLabel(d).Value.value, '~£10.00');
+  assert.equal(byLabel(d).Value.url, undefined);
+});

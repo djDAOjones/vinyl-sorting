@@ -2,6 +2,35 @@
 
 <!-- Append-only, newest first. -->
 
+## 2026-09-15 — SIMILAR-EDITION-PRICE: automatic pricing and source-linked estimates
+
+**Decision:** Check confirmed releases automatically on idle matcher ticks, up to
+five per tick using the existing centrally paced Discogs client. Request GBP,
+refresh after 30 days and retry failures after an hour. Re-check exact releases
+first: the audit found 116 of 125 confirmed items had never been priced.
+
+When an exact release has no asking price, inspect at most two master-version
+pages and four vinyl candidates, preferring the same country, label and nearby
+year. Require the same master, physical format/disc count and ordered programme;
+reject explicit mono/stereo differences. Keep the result in a separate KV index.
+Show “similar edition” with the source link, date and estimate label; exact prices
+take priority. No capture, identity, confirmation, schema or dependency changes.
+
+**Rationale:** The user requested rough prices for investigating otherwise blank
+values. A related pressing can help but is not the verified pressing's price.
+No public route can spend provider requests, and stored estimates never feed
+confirmation, decision eligibility or exports. Bounded searches may still find
+no suitable edition, and prices are asking prices rather than sold values.
+
+**Verify:** Typecheck and 399 tests passed, including price precedence, missing
+responses, failure retention, confirmation restrictions, candidate compatibility,
+bounds and central pacing. Build passed. Browser fixtures show the estimate and
+source on both collection and record screens. Public Discogs release and version
+responses verified the API fields. Private evidence is under
+`project/reports/similar-edition-price-2026-09-15/`.
+
+
+
 
 ## 2026-09-15 — CURRENT-RECORD-STATUS: live follow-up verified
 

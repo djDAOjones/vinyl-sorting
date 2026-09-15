@@ -1,3 +1,4 @@
+import type { SimilarPrice } from '../worker/pricing.ts';
 import type { SourcePreparation } from '../worker/source-preparation.ts';
 import { musicbrainzPanelHtml, wireMusicbrainz } from './musicbrainz-panel.ts';
 import { followupHtml, wirePhotoActions, refreshAdditionStatus, type PhotoRequest } from './collection-photos.ts';
@@ -92,6 +93,7 @@ interface Row {
   match_retry?: string | null;
   match_manual_review?: number | null;
   release_confirmed: number;
+  similar_price?: SimilarPrice | null;
   lowest_price: number | null;
   num_for_sale: number | null;
   price_checked_at: string | null;
@@ -296,6 +298,15 @@ const PRICE_STALE_DAYS = 30;
  * stale market snapshot cannot read as today's (CATALOGUE-CONTROLS).
  */
 function valueCell(r: Row): string {
+  if (!has(r.lowest_price) && r.similar_price) {
+    const e = r.similar_price;
+    const at = stamp(e.checkedAt);
+    const stale = (daysSince(e.checkedAt) ?? 0) > PRICE_STALE_DAYS;
+    return `<td class="num money${stale ? ' stale' : ''}">~${esc(MONEY.format(e.amount))}
+      <a class="asat" href="https://www.discogs.com/release/${e.sourceReleaseId}" target="_blank" rel="noopener noreferrer"
+        title="Estimate from another vinyl edition · lowest asking price · ${esc([e.country, e.year, at ? DAY.format(at) : e.checkedAt].filter(Boolean).join(' · '))}">similar edition</a>
+      ${stale && at ? `<span class="asat">${esc(DAY.format(at))}</span>` : ''}</td>`;
+  }
   const when = r.price_checked_at;
   if (!has(r.lowest_price) && !when) return '<td class="empty">—</td>';
   const at = stamp(when);
@@ -441,7 +452,7 @@ const COLUMNS: Column[] = [
    * every absent value on this screen already follows, and the one
    * CATALOGUE-CONTROLS closes on.
    */
-  { key: 'value', label: '~value', get: (r) => r.lowest_price, num: true, html: valueCell },
+  { key: 'value', label: '~value', get: (r) => r.lowest_price ?? r.similar_price?.amount ?? null, num: true, html: valueCell },
   // The date on its own, for anyone who wants staleness as a column
   // rather than as a tooltip — the same shape as `verified`.
   { key: 'price_checked_at', label: 'priced', get: (r) => r.price_checked_at, mono: true },
@@ -865,8 +876,11 @@ function repaintList(): void {
 
 function bindRows(): void {
   for (const tr of app.querySelectorAll<HTMLElement>('tr[data-id]')) {
-    tr.addEventListener('click', () => enterDetail(Number(tr.dataset.id)));
+    tr.addEventListener('click', (e) => {
+      if (!(e.target as Element).closest('a')) enterDetail(Number(tr.dataset.id));
+    });
     tr.addEventListener('keydown', (e) => {
+      if ((e.target as Element).closest('a')) return;
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault(); enterDetail(Number(tr.dataset.id));
       }
@@ -1185,7 +1199,7 @@ function detailHtml(d: Detail): string {
     <div class="record-overview">
       <dl class="record-facts">${recordSummary(d).map((f) => `
         <div><dt>${esc(f.label)}</dt><dd>${f.value === null ? '<span class="empty">Not recorded</span>' : esc(f.value)}
-        ${f.note ? `<small>${esc(f.note)}</small>` : ''}</dd></div>`).join('')}</dl>
+        ${f.note ? `<small>${esc(f.note)}</small>` : ''}${f.url ? `<a href="${esc(f.url)}" target="_blank" rel="noopener noreferrer">Similar edition ↗</a>` : ''}</dd></div>`).join('')}</dl>
       ${photos}
     </div>
     ${preparationHtml(d)}

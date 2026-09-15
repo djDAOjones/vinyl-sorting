@@ -1,3 +1,4 @@
+import { readPriceIndex, similarPriceFor, runPriceBatch } from './pricing.ts';
 import { prepareSource, sourcePreparation, runSourcePreparation } from './source-preparation.ts';
 import { photoRequests, requestPhoto, attachPhotos } from './photo-followup.ts';
 import { Hono } from 'hono';
@@ -247,7 +248,10 @@ export function createApp() {
         LIMIT ?`,
     ).bind(after, limit).all();
     const next = results.length === limit ? (results[results.length - 1] as { id: number }).id : null;
-    return c.json({ items: results, nextAfter: next });
+    const prices = await readPriceIndex(c.env);
+    return c.json({ items: results.map(r => ({ ...r,
+      similar_price: similarPriceFor(prices, r.discogs_id, r.release_confirmed, r.lowest_price),
+    })), nextAfter: next });
   });
 
   app.get('/api/items/:id{[0-9]+}', async (c) => {
@@ -312,7 +316,8 @@ export function createApp() {
       || runs.results[0]?.state === 'auto-accepted';
     return c.json({
       item,
-      release,
+      release: release ? { ...release, similar_price: similarPriceFor(await readPriceIndex(c.env),
+        release.discogs_id, provenance.results.some(p => p.entity === 'item' && p.field === 'release_id' && ['shelf', 'discogs', 'musicbrainz'].includes(String(p.source)) && p.confirmed_at && p.confirmed_by), release.lowest_price) } : null,
       sourcePreparation: matchInput ? await sourcePreparation(c.env, id, matchInput, settled) : null,
       captures: captures.results,
       photos: photos.results,
@@ -928,6 +933,11 @@ export async function runMatchBatch(
     if (queryErrors === queriesRun) await limiter.startCooldown('discogs', COOLDOWN_MS);
   }
 
+  // Pricing uses idle search capacity, with the same shared provider client.
+  if (!processed) {
+    try { console.log('pricing:', JSON.stringify(await runPriceBatch(env, client, now))); }
+    catch { console.error('pricing: check could not finish; will retry'); }
+  }
   return { processed, rowsWritten, stoppedShort, interval, errorRate };
 }
 

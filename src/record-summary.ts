@@ -1,3 +1,4 @@
+import type { SimilarPrice } from '../worker/pricing.ts';
 /** Display-only fallbacks. Never write these values back into capture. */
 interface Source {
   entity: string; entity_id: number; field: string; source: string;
@@ -10,7 +11,7 @@ interface SummaryInput {
   readings: { id: number; field: string; value: string }[];
   provenance: Source[];
 }
-export interface SummaryField { label: string; value: string | null; note: string }
+export interface SummaryField { label: string; value: string | null; note: string; url?: string }
 const present = (v: unknown): boolean => v !== null && v !== undefined && String(v).trim() !== '';
 const MONEY = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' });
 
@@ -36,13 +37,15 @@ export function recordSummary(d: SummaryInput): SummaryField[] {
   const genre = d.readings.find((r) => ['genre', 'genres', 'genreraw'].includes(r.field.toLowerCase().replace(/[\s_]/g, '')) && present(r.value));
   const release = d.release;
   const priced = typeof release?.lowest_price === 'number' && Number.isFinite(release.lowest_price);
+  const estimate = !priced ? release?.similar_price as SimilarPrice | undefined : undefined;
   const checked = present(release?.price_checked_at) ? String(release!.price_checked_at) : null;
   return [
     field('Artist', 'name_raw'), field('Title', 'title_raw'), field('Label', 'label_raw', 'label'),
     field('Year', 'year_raw', 'year'),
     { label: 'Genre', value: genre?.value ?? null,
       note: genre ? sourceNote('raw_value', genre.id, genre.field, 'Reading') : '' },
-    { label: 'Value', value: priced ? `~${MONEY.format(release!.lowest_price as number)}` : checked ? 'None listed' : null,
-      note: priced || checked ? `Lowest Discogs listing${checked ? ` · checked ${checked}` : ' · check date not recorded'}` : '' },
+    { label: 'Value', ...(estimate ? { url: `https://www.discogs.com/release/${estimate.sourceReleaseId}` } : {}),
+      value: estimate ? `~${MONEY.format(estimate.amount)} (estimate)` : priced ? `~${MONEY.format(release!.lowest_price as number)}` : checked ? 'None listed' : null,
+      note: estimate ? `Similar vinyl edition · lowest asking price · checked ${estimate.checkedAt}` : priced || checked ? `Lowest Discogs listing${checked ? ` · checked ${checked}` : ' · check date not recorded'}` : '' },
   ];
 }

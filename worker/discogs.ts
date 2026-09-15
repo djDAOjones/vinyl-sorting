@@ -222,4 +222,13 @@ export class DiscogsClient {
   async getRelease(id: number, currency: string = PRICE_CURRENCY): Promise<Record<string, unknown>> {
     return await this.#get(`/releases/${id}`, { curr_abbr: currency }) as Record<string, unknown>;
   }
+
+  /** Bounded edition discovery; prices still come from GBP release requests. */
+  async getVersions(masterId: number, page = 1): Promise<{
+    versions?: Record<string, unknown>[]; pagination?: { pages?: number };
+  }> {
+    return await this.#get(`/masters/${masterId}/versions`, { per_page: '100', page: String(page) }) as {
+      versions?: Record<string, unknown>[]; pagination?: { pages?: number };
+    };
+  }
 }
