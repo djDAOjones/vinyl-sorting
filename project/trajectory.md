@@ -66,3 +66,4 @@
 - MUSICBRAINZ-RECOVERY — recovery deployed, fourteen guarded retries queued, separate MusicBrainz candidate panel live with shared pacing and preserved provenance (2026-09-15) — see decision-log
 - AUTO-SOURCE-PREPARATION — unresolved records gather source evidence automatically, changed readings queue Discogs retries, bounded failures and saved leads support review; deployed and live-verified (2026-09-15) — see decision-log
 - COMPACT-CAPTURE-NAV — recovery menu last, one-line capture status and accessible return-to-top list footers; 385 tests and browser checks passed (2026-09-15) — see decision-log
+- COMPACT-CAPTURE-NAV (deployment) — user-approved UI live; health and exact served asset checks passed (2026-09-15) — see decision-log

@@ -3,6 +3,24 @@
 <!-- Append-only, newest first. -->
 
 
+## 2026-09-15 — COMPACT-CAPTURE-NAV: live deployment verified
+
+**Decision:** Deploy the user-approved UI commit `02fbdb4` to the existing
+vinyl-sorter Worker, version `efc95a36-d6e0-4d0f-a108-2c8cece78814`.
+Bindings and the five-minute cron are unchanged. No schema or catalogue writes.
+
+**Rationale:** The user explicitly requested live deployment of the completed
+menu, compact status and return-to-top changes. A subsequent read-only audit
+confirmed that collection labels show old machine outcomes alongside newer
+review decisions; recommendations remain an audit, not an unrequested data fix.
+
+**Verify:** Existing exact-commit gate passed 385 tests; rebuild passed. Live
+health and byte-for-byte HTML/JS/CSS checks passed for all five affected pages.
+Private deployment hashes, live counts and evidence-bounded audit are in
+`project/reports/live-audit-2026-09-15/REPORT.md`. Memory and view checks passed
+with the existing budget warnings.
+
+
 ## 2026-09-15 — COMPACT-CAPTURE-NAV: quiet capture status and list footers
 
 **Decision:** Move the Home menu's Save queued work tile last and give it the
