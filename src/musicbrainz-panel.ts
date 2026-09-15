@@ -1,15 +1,36 @@
+import type { SourcePreparation } from '../worker/source-preparation.ts';
 import type { MBPreview, MBCandidate } from '../worker/musicbrainz.ts';
 const esc = (v: unknown) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
-export function musicbrainzPanelHtml(): string {
+export function musicbrainzPanelHtml(preparation?: SourcePreparation | null): string {
   return `<section class="match-preparation musicbrainz-panel" aria-label="MusicBrainz evidence">
     <h2>MusicBrainz evidence</h2>
     <p>Find another route to identifying this record. Results are unconfirmed leads: a CD or another coupling may help identify the music without identifying your vinyl edition.</p>
     <button type="button" class="btn btn-ghost" data-musicbrainz-search>Search MusicBrainz</button>
-    <p class="prov">Uses the saved label details above. Unlock editing to search. Successful searches are reused for 24 hours; changing the details starts a new search.</p>
-    <div data-musicbrainz-results aria-live="polite"></div>
+    <p class="prov">Unresolved records are checked automatically in the background using saved label details. Unlock editing to search on demand. Changing the details queues fresh evidence.</p>
+    <div data-musicbrainz-results aria-live="polite">${sourcePreparationHtml(preparation)}</div>
   </section>`;
 }
+
+export function sourcePreparationHtml(p?: SourcePreparation | null): string {
+  if (!p) return '';
+  const messages: Record<SourcePreparation['status'], string> = {
+    waiting: 'Waiting for the automatic source check. You can search now or return later.',
+    'needs-details': 'Add a readable catalogue number, or a title with a name or label, to prepare source evidence.',
+    settled: 'This record is already identified. Additional source searches are available on request.',
+    unavailable: 'Saved source evidence is temporarily unavailable. Refresh later.',
+    running: 'Automatic source preparation is in progress. Refresh shortly for results.',
+    ready: 'Source evidence is ready for review.',
+    incomplete: 'A provider request failed. Saved leads remain available; another attempt is scheduled.',
+    paused: 'Automatic attempts have paused after repeated failures. Check the saved details and search again when ready.',
+  };
+  return `<p><strong>${esc(messages[p.status])}</strong></p>
+    ${p.evidence?.retryAt && p.status === 'incomplete' ? `<p class="prov">Next attempt no earlier than ${esc(p.evidence.retryAt)}.</p>` : ''}
+    ${p.evidence?.error ? `<p>${esc(p.evidence.error)}</p>` : ''}
+    ${p.evidence?.preview ? musicbrainzResultsHtml({ ...p.evidence.preview, cached: true }) : ''}
+    ${p.evidence?.retainedPreview ? `<details><summary>Earlier saved leads (before this attempt)</summary>${musicbrainzResultsHtml({ ...p.evidence.retainedPreview, cached: true })}</details>` : ''}`;
+}
+
 const card = (c: MBCandidate) => `<article class="mb-candidate">
   <h3><a href="https://musicbrainz.org/release/${esc(c.id)}" target="_blank" rel="noopener noreferrer">${esc(c.title)}</a></h3>
   <p>${esc(c.artists || 'Credited names not recorded')}</p>
@@ -46,9 +67,9 @@ export function wireMusicbrainz(panel: HTMLElement, itemId: number, headers: () 
     button.disabled = true; results.textContent = 'Searching MusicBrainz… This can take a few seconds.';
     try {
       const response = await fetch(`/api/items/${itemId}/musicbrainz`, { method: 'POST', headers: auth });
-      const body = await response.json() as MBPreview & { error?: string };
+      const body = await response.json() as MBPreview & { error?: string; sourcePreparation?: SourcePreparation };
       if (!response.ok) throw new Error(body.error ?? `Search unavailable (HTTP ${response.status})`);
-      if (results.isConnected) results.innerHTML = musicbrainzResultsHtml(body);
+      if (results.isConnected) results.innerHTML = body.sourcePreparation ? sourcePreparationHtml(body.sourcePreparation) : musicbrainzResultsHtml(body);
     } catch (error) { if (results.isConnected) results.textContent = error instanceof Error ? error.message : 'Search failed. Try again later.'; }
     finally { button.disabled = false; }
   });

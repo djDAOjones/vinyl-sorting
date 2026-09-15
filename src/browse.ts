@@ -1,3 +1,4 @@
+import type { SourcePreparation } from '../worker/source-preparation.ts';
 import { musicbrainzPanelHtml, wireMusicbrainz } from './musicbrainz-panel.ts';
 import { followupHtml, wirePhotoActions, refreshAdditionStatus, type PhotoRequest } from './collection-photos.ts';
 import { startAdditions } from './photo-additions.ts';
@@ -101,6 +102,7 @@ interface Run {
   candidates: Candidate[]; decision: Decision | null;
 }
 interface Detail {
+  sourcePreparation?: SourcePreparation | null;
   matching?: { input: MatchRow; usable: boolean; reason: string } | null;
   photoRequests?: PhotoRequest[];
   release: Record<string, unknown> | null;
@@ -1165,7 +1167,7 @@ function detailHtml(d: Detail): string {
       ${photos}
     </div>
     ${preparationHtml(d)}
-    ${musicbrainzPanelHtml()}
+    ${musicbrainzPanelHtml(d.sourcePreparation)}
     <details class="record-more">
       <summary>More details and editing</summary>
       <div class="dtools">

@@ -449,9 +449,11 @@ family; all automatic matches still require human confirmation before they
 feed collection decisions.
 
 
-MusicBrainz evidence is available on each record below preparation. Unlock editing
-and select **Search MusicBrainz**. Candidates stay unconfirmed and show format,
-number and name differences; they never change capture or confirmed releases.
-Searches use saved details, share pacing across callers, and report failures or
-result limits. Successful previews are reused for 24 hours. The shared search
-lease uses one `_system/musicbrainz/` object in the existing R2 bucket.
+Unresolved records automatically gather MusicBrainz evidence below preparation.
+Saved results open without unlocking or provider requests. Failed requests retry
+after one and six hours, then pause; changed readings queue fresh evidence and a
+Discogs retry. Confirmed/auto-accepted records are skipped. Unlock editing for
+**Search MusicBrainz** on demand. Candidates remain unconfirmed; compare format,
+label, number, credits and package against photographs. Evidence persists under
+`_system/source-preparation/` in R2. One record per cron tick shares the central
+MusicBrainz lease, spacing and backoff. No catalogue fields change.

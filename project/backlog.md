@@ -66,6 +66,10 @@
   them — so photographing those discs would supply the missing signal
   family and shrink the queue, and the question is whether handling 267
   discs costs less than deciding 293 blind.
+- [~] **AUTO-SOURCE-PREPARATION Automatic source preparation for
+  unresolved records** (2026-09-15) — Prepare MusicBrainz evidence in the
+  background and retry changed Discogs inputs, retaining source
+  distinctions and bounded failure states for review.
 
 ### Next milestone
 

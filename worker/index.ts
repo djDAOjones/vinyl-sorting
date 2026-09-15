@@ -1,4 +1,4 @@
-import { previewMusicBrainz } from './musicbrainz.ts';
+import { prepareSource, sourcePreparation, runSourcePreparation } from './source-preparation.ts';
 import { photoRequests, requestPhoto, attachPhotos } from './photo-followup.ts';
 import { Hono } from 'hono';
 import type { Context, MiddlewareHandler } from 'hono';
@@ -301,15 +301,19 @@ export function createApp() {
       ).bind(...runIds).all()).results
       : [];
 
+    const matchInput = await loadMatchRow(c.env, id);
+    const settled = provenance.results.some(p => p.entity === 'item' && p.field === 'release_id' && p.confirmed_by)
+      || runs.results[0]?.state === 'auto-accepted';
     return c.json({
       item,
       release,
+      sourcePreparation: matchInput ? await sourcePreparation(c.env, id, matchInput, settled) : null,
       captures: captures.results,
       photos: photos.results,
       provenance: provenance.results,
       readings: readings.results.filter(r => !String(r.field).startsWith('photo-request:')),
       photoRequests: await photoRequests(c.env, id),
-      matching: await loadMatchRow(c.env, id).then(input => input ? { input, ...checkRow(input) } : null),
+      matching: matchInput ? { input: matchInput, ...checkRow(matchInput) } : null,
       runs: runs.results.map((r) => {
         const runId = (r as { id: number }).id;
         return {
@@ -354,7 +358,12 @@ export function createApp() {
     const input = await loadMatchRow(c.env, Number(c.req.param('id')));
     if (!input) return c.json({ error: 'Record not found' }, 404);
     if (!checkRow(input).usable) return c.json({ error: 'Add usable label details before searching.' }, 422);
-    try { return c.json(await previewMusicBrainz(c.env, input)); }
+    try {
+      const result = await prepareSource(c.env, input.itemId, input, true);
+      if (!result) return c.json({ error: 'A source search is already running. Refresh shortly.' }, 409);
+      if (!result.preview) return c.json({ error: result.error ?? 'Search unavailable' }, 503);
+      return c.json({ ...result.preview, sourcePreparation: { status: result.status, evidence: result } });
+    }
     catch (error) { return c.json({ error: error instanceof Error ? error.message : 'MusicBrainz search unavailable' }, 503); }
   });
 
@@ -911,6 +920,9 @@ export async function runMatchBatch(
 export default {
   fetch: (req: Request, env: Env, ctx: ExecutionContext) => createApp().fetch(req, env, ctx),
   scheduled: async (_event: ScheduledController, env: Env, ctx: ExecutionContext) => {
+    ctx.waitUntil(runSourcePreparation(env).then(result => {
+      console.log('source preparation:', JSON.stringify(result));
+    }).catch(error => console.error('source preparation failed', error)));
     ctx.waitUntil(runMatchBatch(env).then(({
       processed, rowsWritten, stoppedShort, cooledDown, interval, errorRate,
     }) => {
