@@ -1,3 +1,4 @@
+import { previewMusicBrainz } from './musicbrainz.ts';
 import { photoRequests, requestPhoto, attachPhotos } from './photo-followup.ts';
 import { Hono } from 'hono';
 import type { Context, MiddlewareHandler } from 'hono';
@@ -347,6 +348,15 @@ export function createApp() {
     }
     await next();
   };
+
+  // Fixed operation over stored evidence, authenticated before any upstream call.
+  app.post('/api/items/:id{[0-9]+}/musicbrainz', guard, capturerGuard, async (c) => {
+    const input = await loadMatchRow(c.env, Number(c.req.param('id')));
+    if (!input) return c.json({ error: 'Record not found' }, 404);
+    if (!checkRow(input).usable) return c.json({ error: 'Add usable label details before searching.' }, 422);
+    try { return c.json(await previewMusicBrainz(c.env, input)); }
+    catch (error) { return c.json({ error: error instanceof Error ? error.message : 'MusicBrainz search unavailable' }, 503); }
+  });
 
   app.post('/api/items/:id{[0-9]+}/retry-match', guard, capturerGuard, async (c) => {
     const result = await requestMatch(c.env, Number(c.req.param('id')),

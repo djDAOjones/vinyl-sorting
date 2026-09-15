@@ -1,3 +1,4 @@
+import { musicbrainzPanelHtml, wireMusicbrainz } from './musicbrainz-panel.ts';
 import { followupHtml, wirePhotoActions, refreshAdditionStatus, type PhotoRequest } from './collection-photos.ts';
 import { startAdditions } from './photo-additions.ts';
 /**
@@ -920,6 +921,7 @@ async function openDetail(id: number, moveToTop = true): Promise<void> {
     panel.innerHTML = detailHtml(detail);
     panel.querySelector('#closeDetail')!.addEventListener('click', leaveDetail);
     wireEditing(panel, id);
+    wireMusicbrainz(panel, id, () => ({ ...whoHeader(), 'x-edit-token': editToken.get() }));
     panel.querySelector<HTMLButtonElement>('[data-start-review]')?.addEventListener('click', async (event) => {
       const button = event.currentTarget as HTMLButtonElement;
       button.disabled = true;
@@ -1163,6 +1165,7 @@ function detailHtml(d: Detail): string {
       ${photos}
     </div>
     ${preparationHtml(d)}
+    ${musicbrainzPanelHtml()}
     <details class="record-more">
       <summary>More details and editing</summary>
       <div class="dtools">

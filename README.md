@@ -447,3 +447,11 @@ Errors, budget truncation and candidate limits are labelled incomplete and
 cannot produce an automatic match. Alternative numbers remain one evidence
 family; all automatic matches still require human confirmation before they
 feed collection decisions.
+
+
+MusicBrainz evidence is available on each record below preparation. Unlock editing
+and select **Search MusicBrainz**. Candidates stay unconfirmed and show format,
+number and name differences; they never change capture or confirmed releases.
+Searches use saved details, share pacing across callers, and report failures or
+result limits. Successful previews are reused for 24 hours. The shared search
+lease uses one `_system/musicbrainz/` object in the existing R2 bucket.

@@ -10,6 +10,10 @@
 
 import type { RateLimiter } from './rate-limit.ts';
 
+// Shared transport stays in the existing outbound client boundary.
+// MusicBrainz calls this only after its own shared lease and limiter.
+export const upstreamFetch: typeof fetch = (input, init) => fetch(input, init);
+
 const BASE = 'https://api.discogs.com';
 
 /** Discogs requires a descriptive user-agent and blocks generic ones. */

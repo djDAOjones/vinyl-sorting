@@ -258,3 +258,8 @@ table.rows td.money .asat { font-size: var(--t-xs); color: var(--text-3); margin
 .match-inputs dd { margin: .25rem 0 0; overflow-wrap: anywhere; white-space: pre-line; }
 .match-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; }
 .match-preparation p, .run li { overflow-wrap: anywhere; }
+
+.mb-candidate { border-top: 1px solid var(--line, #404040); padding: 1rem 0; }
+.mb-candidate h3 { margin: .3rem 0; }
+.mb-differences { font-weight: 600; }
+.musicbrainz-panel code { white-space: normal; overflow-wrap: anywhere; }
