@@ -68,3 +68,4 @@
 - COMPACT-CAPTURE-NAV — recovery menu last, one-line capture status and accessible return-to-top list footers; 385 tests and browser checks passed (2026-09-15) — see decision-log
 - COMPACT-CAPTURE-NAV (deployment) — user-approved UI live; health and exact served asset checks passed (2026-09-15) — see decision-log
 - CURRENT-RECORD-STATUS — current status labels, plain Add action, accurate active-review counts and continuation beyond 200; 390 tests passed (2026-09-15) — see decision-log
+- CURRENT-RECORD-STATUS (deployment) — live status metadata, confirmation labels, page continuation and Home counts verified (2026-09-15) — see decision-log

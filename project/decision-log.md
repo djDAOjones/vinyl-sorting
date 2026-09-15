@@ -3,6 +3,22 @@
 <!-- Append-only, newest first. -->
 
 
+## 2026-09-15 — CURRENT-RECORD-STATUS: live follow-up verified
+
+**Decision:** Deploy `fd0251d` to the existing Worker, version
+`a0df917f-b67d-42c5-907e-147149dd54ba`, completing the user's live UI request.
+
+**Rationale:** Put the requested current-status and Add wording changes in the
+actual capture and catalogue workflow. Data and provider behaviour are unchanged.
+
+**Verify:** Live health and exact HTML/JS/CSS comparisons passed. List responses
+carry latest review/search evidence; default review pagination reaches the whole
+active selection and agrees with Home, without confirmed or decided entries.
+Applying the shared display rule to live rows classifies every saved confirmation
+as Confirmed. Private receipts and counts are in
+`project/reports/current-record-status-2026-09-15/`. Memory/view checks passed.
+
+
 ## 2026-09-15 — CURRENT-RECORD-STATUS: current labels and plain capture actions
 
 **Decision:** Derive visible status from saved confirmation, the latest review
